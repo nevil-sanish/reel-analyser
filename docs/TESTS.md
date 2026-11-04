@@ -1,0 +1,149 @@
+# Reel Bot: test catalogue
+
+Every test the app must have, by ID. Code doesn't exist yet: all tests are **planned**. When a test is written, set its status to **written** and fill in its file; when it runs in CI or a release check, **passing**. **Update this file in the same commit as the code or doc change it tests** ([RELEASES.md](RELEASES.md) §2). Endpoint IDs refer to [ENDPOINTS.md](ENDPOINTS.md).
+
+## 0. Levels, locations and commands
+
+| Level | What | Where | Run with |
+|---|---|---|---|
+| **unit** | Pure logic, no Android, no network | Kotlin: `mobile/android/app/src/test/kotlin/app/reelbrain/` · Dart: `mobile/test/` | `cd mobile/android && ./gradlew :app:testDebugUnitTest` · `cd mobile && flutter test` |
+| **fixture** | Parsers fed saved real responses | Fixtures in `mobile/android/app/src/test/resources/ig/` and `mobile/test/fixtures/` | same as unit |
+| **integration** | Several parts with fakes for the network | `mobile/test/` (Dart), Robolectric for Kotlin if needed | same as unit |
+| **live** | Real calls to Instagram/YouTube/Gemini from a phone | Debug screen → "Run live checks" (no CI: needs a residential IP and keys) | manually, weekly and before each release |
+| **manual** | Steps a person does on a phone | this file | before each release; results go in the release notes |
+
+Fixture rules:
+- Save fixtures from a **logged-out** browser or the app's own WebView; strip cookies and tokens.
+- Name: `{endpoint}-{case}-{yyyymmdd}.html|json`, e.g. `ig-embed-video-20261105.html`.
+- When a live test fails, save the new response as a fixture first, then fix the parser until both old and new fixtures pass.
+
+Status values: **planned** · **written** · **passing** · **retired** (keep the row, say why).
+
+---
+
+## 1. Instagram fetcher (Phase 1)
+
+| ID | Level | Covers | Given → Expect | Status |
+|---|---|---|---|---|
+| T-IG-U01 | unit | shortcode → `mediaId` | Known pairs (from yt-dlp's test cases) decode correctly; invalid character → error | planned |
+| T-IG-U02 | unit | URL parsing | `/reel/`, `/reels/`, `/p/`, `/tv/`, with `?igsh=` and trailing text → same `code` | planned |
+| T-IG-U03 | unit | IG-CDN | `oe=` hex expiry parsed; expired URL not downloaded; > 100 MB stops | planned |
+| T-IG-U04 | unit | cascade order | Fake steps: step 1 returns video → steps 2–6 not called; steps 1–4 empty, 5 metadata → result has caption, no video, `step = 5` | planned |
+| T-IG-U05 | unit | rate limits | Two fetches 1 s apart → second waits ≥ 5 s; a 429 → no `IG-*` call for 30 min | planned |
+| T-IG-U06 | unit | negative cache | Private post → same `code` not fetched again within 1 h; other codes still fetched | planned |
+| T-IG-U07 | unit | single-flight | Two concurrent fetches of one `code` → one network fetch, both get the result | planned |
+| T-IG-F01 | fixture | IG-EMBED | Embed page with `contextJSON` + `video_url` → video URL, caption, author | planned |
+| T-IG-F02 | fixture | IG-EMBED | Embed page with `gql_data: null` → "no data", cascade continues | planned |
+| T-IG-F03 | fixture | IG-POST-PAGE | `data-sjs` scripts with `if_not_gated_logged_out` → item found by `pk`; ≥ 480 px rendition chosen | planned |
+| T-IG-F04 | fixture | IG-POST-PAGE | Login-wall page → rate-limit rule triggered | planned |
+| T-IG-F05 | fixture | IG-GQL-LOGGEDOUT | Response with `xig_polaris_media.if_not_gated_logged_out` → video URL | planned |
+| T-IG-F06 | fixture | IG-GQL-LOGGEDOUT | Response without `data` → "stale query" → IG-JS-BUNDLE called once | planned |
+| T-IG-F07 | fixture | IG-GQL-WEB | Response with `xdt_shortcode_media.video_url` → video URL; null → next step | planned |
+| T-IG-F08 | fixture | IG-OEMBED | oEmbed JSON → title, author, thumbnail | planned |
+| T-IG-F09 | fixture | IG-JS-BUNDLE | Saved bundle → `docId` for both query names; missing → keeps bundled id | planned |
+| T-IG-F10 | fixture | carousels | Carousel in each format (embed, page, GraphQL) → first video, else images | planned |
+
+## 2. Pipeline and analysis (Phase 1)
+
+| ID | Level | Covers | Given → Expect | Status |
+|---|---|---|---|---|
+| T-PIPE-01 | integration | GEM-GENERATE (YouTube) | Shorts URL → `fileData.fileUri` request; status `done` | planned |
+| T-PIPE-02 | integration | YT-OEMBED | Gemini rejects the URL → oEmbed used → status `caption+thumbnail` | planned |
+| T-PIPE-03 | integration | GEM-GENERATE (Instagram video) | `fetchInstagram` returns `videoPath` ≤ 20 MB → `inlineData`; status `done`; `step` stored; video file deleted | planned |
+| T-PIPE-04 | integration | caption+thumbnail | `fetchInstagram` returns caption + thumbnail only → status `caption+thumbnail` | planned |
+| T-PIPE-05 | integration | APIFY-RUN | Apify key set and steps 1–5 give no video → Apify called with `Authorization: Bearer`; key never in the URL | planned |
+| T-PIPE-06 | integration | GEM-GENERATE errors | 429 or 5xx → item stays `queued`; 400 → next thinking level, then next model | planned |
+| T-PIPE-07 | integration | GEM-UPLOAD | Video > 20 MB → resumable upload, poll until `ACTIVE`, generate, then `DELETE` | planned |
+| T-PIPE-08 | integration | no key | No Gemini key → item stays `queued`; library shows the "Add your Gemini key" banner | planned |
+| T-PIPE-09 | integration | nothing found | `fetchInstagram` empty and nothing captured → status `failed` | planned |
+| T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | planned |
+| T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | planned |
+
+## 3. Share, channel, background (Phase 1)
+
+| ID | Level | Covers | Given → Expect | Status |
+|---|---|---|---|---|
+| T-SHARE-01 | unit | SHARE-IN | Instagram share text with words around the URL → URL extracted, `igsh` stripped | planned |
+| T-SHARE-02 | unit | SHARE-IN | `youtube.com/shorts/{id}?si=…` and `youtu.be/{id}` → canonical Shorts URL | planned |
+| T-SHARE-03 | unit | SHARE-IN | Non-reel text → "Not a reel link", no row | planned |
+| T-SHARE-04 | unit | SHARE-IN | URL-less row < 10 s old (bubble Save) → URL attached to it; older → new row | planned |
+| T-CH-01 | integration | CH-COUNTER | `pendingItems` / `setPendingStatus` round-trip | planned |
+| T-CH-02 | integration | CH-COUNTER | `fetchInstagram` maps Kotlin result to Dart types; errors become typed exceptions | planned |
+| T-BG-01 | integration | WM-ANALYSE | `callbackDispatcher` initialises stores and processes the queue without the UI | planned |
+| T-BG-02 | manual | WM-ANALYSE | Share 3 reels, keep the app closed 30 min → all analysed | planned |
+
+## 4. Counter (Phase 2)
+
+| ID | Level | Covers | Given → Expect | Status |
+|---|---|---|---|---|
+| T-TRK-01 | unit | ReelTracker | 20 reels × 3 s → count 20 | planned |
+| T-TRK-02 | unit | ReelTracker | Half-swipe (0.5 s) + swipe back + 0.75 s refresh flicker → count 1 | planned |
+| T-TRK-03 | unit | ReelTracker | Swipe back, rewatch later the same day → each reel once | planned |
+| T-TRK-04 | unit | ReelTracker | 2 s on one reel → counted while still on it | planned |
+| T-TRK-05 | unit | ReelTracker | Nothing readable for 3 s → 0 reels, 1 unknown | planned |
+| T-TRK-06 | unit | ReelTracker | 4 s on a reel → dwell ≈ 4 s | planned |
+| T-TRK-07 | unit | ReelTracker | 10 s, 60 s gap (asleep), 10 s → screen time ≈ 20 s | planned |
+| T-TRK-08 | unit | ReelTracker | Leave Reels for the feed → session ends | planned |
+| T-TRK-09 | unit | ReelTracker | Same reel on IG and YT → counted separately | planned |
+| T-FP-01 | unit | Fingerprint | Truncated "… more" vs expanded caption → same id | planned |
+| T-FP-02 | unit | Fingerprint | `normalize` strips "… more" / "...more" / "less", lowercases | planned |
+| T-FP-03 | unit | Fingerprint | Blank item → null | planned |
+| T-FP-04 | unit | Fingerprint | Different author or app → different id | planned |
+| T-FP-05 | unit | Fingerprint | Same author, no caption/audio/title, likes `12K` vs `340` → two reels | planned |
+| T-FP-06 | unit | Fingerprint | Caption-less reel, likes `12.3K` → `12.4K` mid-watch → one reel | planned |
+| T-FP-07 | unit | Fingerprint | Reel with caption, likes change → one reel | planned |
+| T-FP-08 | unit | Fingerprint | `likeBucket`: `523`→`520`, `12.3K`→`12000`, `1.2M`→`1200000`, junk→`""` | planned |
+| T-RULE-01 | unit | DetectionRules | Not on Reels screen → `inReels = false` | planned |
+| T-RULE-02 | unit | DetectionRules | Known ids → author, caption, likes read | planned |
+| T-RULE-03 | unit | DetectionRules | Fallback: bottom-half text used; `12.3K`, `Subscribe` skipped | planned |
+| T-RULE-04 | unit | DetectionRules | Mid-swipe: page covering the centre wins | planned |
+| T-RULE-05 | unit | DetectionRules | Invisible nodes ignored | planned |
+| T-RULE-06 | fixture | DetectionRules | Captured `tree_instagram` / `tree_youtube` dumps from a real phone → expected `Observation` | planned |
+| T-ALERT-01 | unit | unknown alert | Fires at 5 unknown and ≥ 30%; not at 4; not twice a day | planned |
+| T-CH-03 | integration | CH-COUNTER | `daily`, `seenItems`, `debugState`, `setCapture` | planned |
+| T-CH-04 | integration | CH-COUNTER | `status` fields on API 29, 33, 35 | planned |
+
+## 5. Bubble, auto-Save, digest, releases (Phases 3–4)
+
+| ID | Level | Covers | Given → Expect | Status |
+|---|---|---|---|---|
+| T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | planned |
+| T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | planned |
+| T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | planned |
+| T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | planned |
+| T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | planned |
+
+## 6. Live checks (debug screen, weekly and before each release)
+
+Run from the phone, logged out, with a fixed set of public test URLs kept in `mobile/assets/live_urls.json` (3 Instagram reels, 1 carousel, 1 photo post, 1 private post, 2 Shorts, 1 unlisted video). Record results in the release notes.
+
+| ID | Covers | Expect | Status |
+|---|---|---|---|
+| T-LIVE-01 | IG-EMBED | Returns metadata for all public posts; note which give a video | planned |
+| T-LIVE-02 | IG-POST-PAGE | Video for ≥ 2 of 3 reels | planned |
+| T-LIVE-03 | IG-GQL-LOGGEDOUT | Video for ≥ 2 of 3 reels; no stale-query error | planned |
+| T-LIVE-04 | IG-GQL-WEB | Video for ≥ 2 of 3 reels; no stale-query error | planned |
+| T-LIVE-05 | IG-OEMBED | Title + thumbnail for all public posts | planned |
+| T-LIVE-06 | IG-CDN | Downloaded file plays; size < 100 MB | planned |
+| T-LIVE-07 | APIFY-RUN | (only with a key) video for all reels | planned |
+| T-LIVE-08 | GEM-GENERATE | Summary for both Shorts | planned |
+| T-LIVE-09 | YT-OEMBED | Unlisted video → oEmbed result or clear `failed` | planned |
+| T-LIVE-10 | whole cascade | **≥ 80% of public reels get a video without Apify** (Phase 1 exit bar) | planned |
+
+## 7. Manual release checks
+
+| ID | Steps | Expect | Status |
+|---|---|---|---|
+| T-MAN-01 | Fresh install from the GitHub release APK on Android 13+ | Installs (note any Play Protect prompt) | planned |
+| T-MAN-02 | Share 10 reels + 10 Shorts with the app closed | All summarised within 30 min (Phase 1 exit test) | planned |
+| T-MAN-03 | Sloppy-use counter test: 20 reels + 20 Shorts with 5 swipe-backs, 3 half-swipes, 1 refresh, 2 rewatches, 3 caption-less reels from one creator | Count within ±1 (Phase 2 exit test) | planned |
+| T-MAN-04 | Setup checklist on a Xiaomi/Realme and a stock phone | Every button opens the right screen | planned |
+| T-MAN-05 | Reboot, kill the app | Counting and background analysis resume | planned |
+| T-MAN-06 | Rename one detection id on purpose | Unknown alert fires | planned |
+| T-MAN-07 | Force-run the digest: `adb shell cmd jobscheduler run -f app.reelbrain <id>` | Notification as in T-DIG-01/02 | planned |
+
+## 8. Change log
+
+| Date | Change |
+|---|---|
+| 2026-11-05 | First version: all tests planned, mapped to [ENDPOINTS.md](ENDPOINTS.md) and [PLAN.md](PLAN.md) phases. |
