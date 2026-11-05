@@ -48,6 +48,9 @@ object Fingerprint {
     }
 }
 
+/** The phone's local calendar day, which is what "today" means to the user. */
+fun localDate(ms: Long): String = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(ms))
+
 interface TrackerSink {
     /** Repeats of (date, app, fp) are ignored. */
     fun commitItem(date: String, app: String, fp: String, firstSeen: Long, item: ItemText)
@@ -62,7 +65,7 @@ class ReelTracker(
     private val minDwellMs: Long = 1500,
     private val maxGapMs: Long = 5000,
     private val flushEveryMs: Long = 30000,
-    private val dateOf: (Long) -> String = { SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date(it)) },
+    private val dateOf: (Long) -> String = ::localDate,
 ) {
     private var app: String? = null
     private var lastSeen = 0L
@@ -124,4 +127,10 @@ class ReelTracker(
         if (now > lastFlush) sink.addScreenTime(dateOf(lastFlush), app!!, now - lastFlush)
         lastFlush = now
     }
+}
+
+/** "Reel Bot can't read Instagram/YouTube any more": at least 5 unknown and 30% of the day's items, once a day. */
+object UnknownAlert {
+    fun shouldAlert(reels: Long, unknown: Long, alreadyAlerted: Boolean) =
+        !alreadyAlerted && unknown >= 5 && unknown * 10 >= (reels + unknown) * 3
 }

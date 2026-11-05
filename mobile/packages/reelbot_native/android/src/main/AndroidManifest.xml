@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <application>
     <activity android:name="app.reelbrain.ShareReceiverActivity" android:exported="true"
         android:theme="@android:style/Theme.Translucent.NoTitleBar"
@@ -11,5 +13,11 @@
         <data android:mimeType="text/plain"/>
       </intent-filter>
     </activity>
+    <service android:name="app.reelbrain.ReelCounterService" android:exported="false"
+        android:label="Reel Bot"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
+      <meta-data android:name="android.accessibilityservice" android:resource="@xml/reel_counter_service"/>
+    </service>
   </application>
 </manifest>

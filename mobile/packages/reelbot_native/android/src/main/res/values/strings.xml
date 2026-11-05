@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reelbot_service_summary">Counts the Instagram Reels and YouTube Shorts you watch.</string>
+    <string name="reelbot_service_description">Reel Bot reads the Reels and Shorts screens to count what you watch and for how long. Everything stays on your phone. It never taps, types or scrolls for you.</string>
+</resources>

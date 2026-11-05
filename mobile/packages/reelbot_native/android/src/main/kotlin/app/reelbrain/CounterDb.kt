@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 /** `counter.db`, owned by Kotlin; Dart reaches it only through `reelbot/counter` (PLAN §4.7). */
-class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 1) {
+class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 2), TrackerSink {
     companion object {
         @Volatile private var instance: CounterDb? = null
         fun get(ctx: Context): CounterDb =
@@ -25,9 +25,84 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
               created_at INTEGER NOT NULL,
               status TEXT NOT NULL DEFAULT 'queued')"""
         )
+        createCounterTables(db)
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) createCounterTables(db)
+    }
+
+    /** Version 2: the Phase 2 counter (IMPLEMENTATION §3.3). */
+    private fun createCounterTables(db: SQLiteDatabase) {
+        listOf(
+            """CREATE TABLE seen_items (
+              date TEXT NOT NULL, app TEXT NOT NULL, fp TEXT NOT NULL,
+              first_seen INTEGER NOT NULL, dwell_ms INTEGER NOT NULL DEFAULT 0,
+              author TEXT NOT NULL DEFAULT '', caption TEXT NOT NULL DEFAULT '',
+              PRIMARY KEY (date, app, fp))""",
+            "CREATE TABLE screen_time (date TEXT NOT NULL, app TEXT NOT NULL, ms INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (date, app))",
+            "CREATE TABLE unknown_items (date TEXT NOT NULL, app TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (date, app))",
+            "CREATE TABLE debug_state (k TEXT PRIMARY KEY, v TEXT NOT NULL, ts INTEGER NOT NULL)",
+            """CREATE VIEW daily_counts AS
+              SELECT d.date, d.app,
+                (SELECT COUNT(*) FROM seen_items s WHERE s.date = d.date AND s.app = d.app) AS reels,
+                COALESCE((SELECT ms FROM screen_time t WHERE t.date = d.date AND t.app = d.app), 0) AS ms,
+                COALESCE((SELECT n FROM unknown_items u WHERE u.date = d.date AND u.app = d.app), 0) AS unknown
+              FROM (SELECT date, app FROM seen_items UNION SELECT date, app FROM screen_time
+                    UNION SELECT date, app FROM unknown_items) d""",
+        ).forEach(db::execSQL)
+    }
+
+    override fun commitItem(date: String, app: String, fp: String, firstSeen: Long, item: ItemText) {
+        writableDatabase.insertWithOnConflict("seen_items", null, ContentValues().apply {
+            put("date", date); put("app", app); put("fp", fp); put("first_seen", firstSeen)
+            put("author", item.author); put("caption", item.caption.ifBlank { item.title })
+        }, SQLiteDatabase.CONFLICT_IGNORE)
+    }
+
+    override fun addDwell(date: String, app: String, fp: String, ms: Long) {
+        writableDatabase.execSQL("UPDATE seen_items SET dwell_ms = dwell_ms + ? WHERE date = ? AND app = ? AND fp = ?", arrayOf<Any>(ms, date, app, fp))
+    }
+
+    override fun addScreenTime(date: String, app: String, ms: Long) = bump("screen_time", "ms", date, app, ms)
+    override fun addUnknown(date: String, app: String) = bump("unknown_items", "n", date, app, 1)
+
+    /** UPSERT needs SQLite 3.24 (Android 11); minSdk is 29. */
+    private fun bump(table: String, col: String, date: String, app: String, by: Long) {
+        val db = writableDatabase
+        db.execSQL("INSERT OR IGNORE INTO $table (date, app) VALUES (?, ?)", arrayOf(date, app))
+        db.execSQL("UPDATE $table SET $col = $col + ? WHERE date = ? AND app = ?", arrayOf<Any>(by, date, app))
+    }
+
+    fun daily(days: Int, today: String): List<Map<String, Any?>> = query(
+        "SELECT date, app, reels, ms, unknown FROM daily_counts WHERE date > date(?, ?) ORDER BY date DESC, app",
+        arrayOf(today, "-$days days"),
+    ) { mapOf("date" to it.getString(0), "app" to it.getString(1), "reels" to it.getLong(2), "ms" to it.getLong(3), "unknown" to it.getLong(4)) }
+
+    fun seenItems(date: String): List<Map<String, Any?>> = query(
+        "SELECT app, fp, first_seen, dwell_ms, author, caption FROM seen_items WHERE date = ? ORDER BY first_seen DESC", arrayOf(date),
+    ) {
+        mapOf("app" to it.getString(0), "fp" to it.getString(1), "firstSeen" to it.getLong(2), "dwellMs" to it.getLong(3),
+            "author" to it.getString(4), "caption" to it.getString(5))
+    }
+
+    fun debugState(): List<Map<String, Any?>> =
+        query("SELECT k, v, ts FROM debug_state ORDER BY k", null) { mapOf("k" to it.getString(0), "v" to it.getString(1), "ts" to it.getLong(2)) }
+
+    fun debug(k: String): String? = query("SELECT v FROM debug_state WHERE k = ?", arrayOf(k)) { it.getString(0) }.firstOrNull()
+
+    fun setDebug(k: String, v: String, ts: Long) {
+        writableDatabase.insertWithOnConflict("debug_state", null, ContentValues().apply { put("k", k); put("v", v); put("ts", ts) },
+            SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    /** (reels, unknown) for one app on one day, for the unknown alert. */
+    fun totals(date: String, app: String): Pair<Long, Long> =
+        query("SELECT reels, unknown FROM daily_counts WHERE date = ? AND app = ?", arrayOf(date, app)) { it.getLong(0) to it.getLong(1) }
+            .firstOrNull() ?: (0L to 0L)
+
+    private fun <T> query(sql: String, args: Array<String>?, row: (android.database.Cursor) -> T): List<T> =
+        readableDatabase.rawQuery(sql, args).use { c -> buildList { while (c.moveToNext()) add(row(c)) } }
 
     /** SHARE-IN: fills a fresh URL-less bubble row, else inserts a new queued row. */
     @Synchronized

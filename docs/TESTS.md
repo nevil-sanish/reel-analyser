@@ -100,7 +100,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-RULE-04 | unit | DetectionRules | Mid-swipe: page covering the centre wins | passing |
 | T-RULE-05 | unit | DetectionRules | Invisible nodes ignored | passing |
 | T-RULE-06 | fixture | DetectionRules | Captured `tree_instagram` / `tree_youtube` dumps from a real phone → expected `Observation` | planned |
-| T-ALERT-01 | unit | unknown alert | Fires at 5 unknown and ≥ 30%; not at 4; not twice a day | planned |
+| T-ALERT-01 | unit | unknown alert | Fires at 5 unknown and ≥ 30%; not at 4; not twice a day | passing |
 | T-CH-03 | integration | CH-COUNTER | `daily`, `seenItems`, `debugState`, `setCapture` | planned |
 | T-CH-04 | integration | CH-COUNTER | `status` fields on API 29, 33, 35 | planned |
 

@@ -1,8 +1,15 @@
 package app.reelbrain
 
+import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
+import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -52,6 +59,22 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 saveDownload(call.argument<String>("name")!!, call.argument<String>("text")!!)
                 null
             }
+            "daily" -> result.success(CounterDb.get(ctx).daily(call.argument<Int>("days") ?: 14, localDate(System.currentTimeMillis())))
+            "seenItems" -> result.success(CounterDb.get(ctx).seenItems(call.argument<String>("date")!!))
+            "debugState" -> result.success(CounterDb.get(ctx).debugState())
+            "setCapture" -> {
+                prefs().edit().putBoolean(ReelCounterService.CAPTURE, call.argument<Boolean>("on") == true).apply()
+                result.success(null)
+            }
+            "status" -> result.success(status())
+            "openAccessibilitySettings" -> result.success(launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
+            "openAppInfo" -> result.success(launch(appInfo()))
+            "openNotificationSettings" -> result.success(launch(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)))
+            "requestBatteryExemption" -> result.success(
+                launch(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")))
+                    || launch(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)))
+            "openAutostart" -> result.success(autostart.any { (p, a) -> launch(Intent().setComponent(ComponentName(p, a))) } || launch(appInfo()))
             else -> result.notImplemented()
         }
     }
@@ -68,6 +91,47 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
         }
     }
+
+    private fun prefs() = ctx.getSharedPreferences(ReelCounterService.PREFS, Context.MODE_PRIVATE)
+
+    private fun status(): Map<String, Any?> {
+        val ours = ComponentName(ctx, ReelCounterService::class.java)
+        val enabled = (Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: "")
+            .split(':').any { ComponentName.unflattenFromString(it) == ours }
+        return mapOf(
+            "serviceEnabled" to enabled,
+            "serviceRunning" to ReelCounterService.running,
+            "batteryExempt" to ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName),
+            "notificationsAllowed" to ctx.getSystemService(NotificationManager::class.java).areNotificationsEnabled(),
+            "sdkInt" to Build.VERSION.SDK_INT,
+            "manufacturer" to Build.MANUFACTURER,
+            "capture" to prefs().getBoolean(ReelCounterService.CAPTURE, false),
+        )
+    }
+
+    private fun appInfo() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}"))
+
+    /** No activity here (the plugin also runs in the background engine), so start from the app context. */
+    private fun launch(i: Intent): Boolean = try {
+        ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    /** OEM autostart screens (IMPLEMENTATION §3.5), tried in order. */
+    private val autostart = listOf(
+        "com.miui.securitycenter" to "com.miui.permcenter.autostart.AutoStartManagementActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.permission.startup.StartupAppListActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.startupapp.StartupAppListActivity",
+        "com.oplus.safecenter" to "com.oplus.safecenter.permission.startup.StartupAppListActivity",
+        "com.oppo.safe" to "com.oppo.safe.permission.startup.StartupAppListActivity",
+        "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+        "com.iqoo.secure" to "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity",
+        "com.huawei.systemmanager" to "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+        "com.letv.android.letvsafe" to "com.letv.android.letvsafe.AutobootManageActivity",
+        "com.asus.mobilemanager" to "com.asus.mobilemanager.powersaver.PowerSaverSettings",
+    )
 
     /** Export: `Downloads/ReelBot/<name>` via MediaStore (minSdk 29, so no storage permission). */
     private fun saveDownload(name: String, text: String) {

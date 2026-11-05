@@ -164,3 +164,13 @@ class FingerprintTest {
         assertEquals("", Fingerprint.likeBucket("Like"))
     }
 }
+
+class UnknownAlertTest {
+    // T-ALERT-01
+    @Test fun firesAtFiveAndThirtyPercentOncePerDay() {
+        assertTrue(UnknownAlert.shouldAlert(reels = 10, unknown = 5, alreadyAlerted = false))
+        assertFalse(UnknownAlert.shouldAlert(reels = 0, unknown = 4, alreadyAlerted = false))
+        assertFalse(UnknownAlert.shouldAlert(reels = 20, unknown = 5, alreadyAlerted = false))
+        assertFalse(UnknownAlert.shouldAlert(reels = 10, unknown = 5, alreadyAlerted = true))
+    }
+}
