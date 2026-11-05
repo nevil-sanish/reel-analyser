@@ -15,6 +15,9 @@ class Brand {
   /// Light by default; Settings and the sun/moon button switch it. Saved, so it sticks across launches.
   static final mode = ValueNotifier(ThemeMode.light);
 
+  /// Settings → Reduce effects: a still background and no blur, for phones whose GPU stutters on them.
+  static final reduceEffects = ValueNotifier(false);
+
   /// The glass tint over the liquid background: clear in dark mode, milky in light.
   static Color glass(Brightness b) => b == Brightness.dark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.7);
   static Color glassEdge(Brightness b) =>

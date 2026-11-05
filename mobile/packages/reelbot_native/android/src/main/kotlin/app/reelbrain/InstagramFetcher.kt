@@ -72,8 +72,6 @@ class InstagramFetcher private constructor(private val ctx: Context) {
 
     private class ExpiredLink : Exception()
 
-    private class Page(val loginWall: Boolean, val scripts: List<String>, val lsd: String, val bundles: List<String>, val rendered: IgMedia?)
-
     private val cascade = IgCascade()
     private val main = Handler(Looper.getMainLooper())
     private val prefs = ctx.getSharedPreferences("ig_queries", Context.MODE_PRIVATE)
@@ -107,7 +105,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
 
     private fun steps(code: String): List<(String) -> StepResult> {
         val mediaId = IgParse.mediaId(code)
-        var page: Page? = null
+        var page: IgParse.Page? = null
         return listOf(
             { _ -> embedStep(code) },
             { _ -> playerStep(code) },
@@ -207,7 +205,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
     // --- step 3: IG-POST-PAGE -----------------------------------------------------------
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
-    private fun loadPage(code: String): Page? {
+    private fun loadPage(code: String): IgParse.Page? {
         cascade.throttle()
         val done = CompletableFuture<String>()
         main.post {
@@ -227,11 +225,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         }
         val raw = try { done.get(TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS) } catch (_: TimeoutException) { return null }
         // evaluateJavascript hands back the returned string JSON-encoded.
-        val o = runCatching { JSONObject(JSONArray("[$raw]").getString(0)) }.getOrNull() ?: return null
-        val scripts = o.optJSONArray("scripts")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty()
-        val bundles = o.optJSONArray("bundles")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty()
-        val rendered = IgParse.rendered(o.optString("video"), o.optString("videoUrl"), o.optString("ogImage"), o.optString("ogDescription"))
-        return Page(o.optString("path").startsWith("/accounts/login"), scripts, o.optString("lsd"), bundles, rendered)
+        return runCatching { JSONArray("[$raw]").getString(0) }.getOrNull()?.let(IgParse::page)
     }
 
     private inner class JsBridge {
@@ -245,7 +239,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
 
     // --- steps 4–5: IG-GQL-LOGGEDOUT / IG-GQL-WEB, plus IG-JS-BUNDLE ---------------------
 
-    private fun gqlStep(page: Page, key: String, variables: String, web: Boolean): StepResult {
+    private fun gqlStep(page: IgParse.Page, key: String, variables: String, web: Boolean): StepResult {
         var rediscovered = false
         while (true) {
             val (name, docId) = query(key)

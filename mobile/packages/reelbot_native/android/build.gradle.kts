@@ -76,4 +76,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // android.jar's org.json is a stub on the JVM; the fixture tests need the real one.
     testImplementation("org.json:json:20250517")
+    // T-CH-01/02: the plugin on a JVM Android runtime, with WorkManager's test setup for the digest it schedules.
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation("androidx.work:work-testing:2.11.2")
 }

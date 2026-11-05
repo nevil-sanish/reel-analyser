@@ -57,6 +57,22 @@ class IgParseTest {
         assertEquals(IgParse.Gql.RequireLogin, IgParse.gql("""{"require_login":true,"status":"fail"}""", web = false))
     }
 
+    // T-IG-F04: the login page still renders og: tags, so the wall has to be read from the path, not the content.
+    // What a wall then does to the cascade (skip only that step) is T-IG-U08.
+    @Test fun loginWallPage() {
+        val wall = IgParse.page(fx("ig-postpage-loginwall-synthetic.json"))!!
+        assertTrue(wall.loginWall)
+        assertTrue(wall.rendered != null)
+        assertNull(IgParse.postPage(wall.scripts, IgParse.mediaId("Cuy8bLvo1Xa")))
+        assertEquals(IgParse.Gql.RequireLogin, IgParse.gql(fx("ig-gql-require-login-synthetic.json"), web = true))
+
+        val open = IgParse.page("""{"path":"/reel/Cuy8bLvo1Xa/","scripts":["x"],"lsd":"t","bundles":[]}""")!!
+        assertFalse(open.loginWall)
+        assertEquals(listOf("x"), open.scripts)
+        assertNull(open.rendered)
+        assertNull(IgParse.page("not json"))
+    }
+
     // T-IG-F07
     @Test fun webQuery() {
         val r = IgParse.gql(fx("ig-gql-web-video-synthetic.json"), web = true) as IgParse.Gql.Found

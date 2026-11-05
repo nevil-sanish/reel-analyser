@@ -194,6 +194,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (v) => Brand.mode.value = v ? ThemeMode.dark : ThemeMode.light,
               ),
             ),
+            ValueListenableBuilder(
+              valueListenable: Brand.reduceEffects,
+              builder: (_, reduced, _) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.blur_off_rounded),
+                title: const Text('Reduce effects'),
+                subtitle: const Text('A still background and no blur. Try it if scrolling stutters.'),
+                value: reduced,
+                onChanged: (v) => Brand.reduceEffects.value = v,
+              ),
+            ),
           ]),
           _section('Counter', [
             ListTile(

@@ -24,6 +24,17 @@ void main() {
           'debugState' => [
               {'k': 'now', 'v': '{}', 'ts': 1},
             ],
+          'pendingItems' => [
+              {'id': 7, 'url': 'https://www.instagram.com/reel/A/', 'app': 'instagram', 'createdAt': 9, 'status': 'queued'},
+            ],
+          'fetchInstagram' => c.arguments['url'] == 'limited'
+              ? throw PlatformException(code: 'rate_limited')
+              : c.arguments['url'] == 'broken'
+                  ? throw PlatformException(code: 'failed', message: 'IllegalArgumentException')
+                  : {
+                      'step': 2, 'author': 'chef', 'caption': 'Rice', 'thumbnailUrl': 't',
+                      'videoPath': '/v.mp4', 'images': ['a', 'b'],
+                    },
           _ => null,
         };
       },
@@ -44,5 +55,25 @@ void main() {
     expect(await b.debugState(), {'now': '{}'});
     await b.setCapture(true);
     expect(calls.last.arguments, {'on': true});
+  });
+
+  // T-CH-01 (Dart side; the Kotlin round-trip is CounterPluginTest)
+  test('T-CH-01 pendingItems maps rows; setPendingStatus sends id, status and title', () async {
+    final b = CounterBridge();
+    final p = (await b.pendingItems(status: 'queued')).single;
+    expect((p.id, p.url, p.app, p.createdAt, p.author), (7, 'https://www.instagram.com/reel/A/', 'instagram', 9, ''));
+    expect(calls.last.arguments, {'status': 'queued'});
+    await b.setPendingStatus(7, 'done', title: 'Rice');
+    expect(calls.last.arguments, {'id': 7, 'status': 'done', 'title': 'Rice'});
+  });
+
+  // T-CH-02
+  test('T-CH-02 fetchInstagram maps the result; rate_limited becomes RateLimited, others stay PlatformException', () async {
+    final b = CounterBridge();
+    final f = await b.fetchInstagram('ok');
+    expect((f.step, f.author, f.caption, f.thumbnailUrl, f.videoPath), (2, 'chef', 'Rice', 't', '/v.mp4'));
+    expect(f.images, ['a', 'b']);
+    await expectLater(b.fetchInstagram('limited'), throwsA(isA<RateLimited>()));
+    await expectLater(b.fetchInstagram('broken'), throwsA(isA<PlatformException>().having((e) => e.code, 'code', 'failed')));
   });
 }

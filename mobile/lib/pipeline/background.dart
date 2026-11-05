@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../app_services.dart';
+import '../native/counter_bridge.dart';
+import 'runner.dart';
 
 /// WM-ANALYSE: runs in a background engine, without the UI.
 @pragma('vm:entry-point')
@@ -10,19 +12,23 @@ void callbackDispatcher() {
     WidgetsFlutterBinding.ensureInitialized();
     final s = await AppServices.create();
     try {
-      if (await s.runner.processQueue() > 0) {
-        // Only from the background: with the app open, the library already shows the new notes.
-        final t = s.runner.finishedTitles;
-        await s.bridge.notifyNotes(
-          t.length == 1 ? 'Note ready' : '${t.length} notes ready',
-          t.length == 1 ? t.single : t.take(3).join(' · '),
-        );
-      }
+      await analyseAndNotify(s.runner, s.bridge);
     } finally {
       await s.library.close();
     }
     return true;
   });
+}
+
+/// The task's work once the stores are open; T-BG-01 runs it with fakes.
+Future<void> analyseAndNotify(Runner runner, CounterBridge bridge) async {
+  if (await runner.processQueue() == 0) return;
+  // Only from the background: with the app open, the library already shows the new notes.
+  final t = runner.finishedTitles;
+  await bridge.notifyNotes(
+    t.length == 1 ? 'Note ready' : '${t.length} notes ready',
+    t.length == 1 ? t.single : t.take(3).join(' · '),
+  );
 }
 
 Future<void> scheduleBackgroundAnalysis() async {

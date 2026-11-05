@@ -15,10 +15,21 @@ class LiquidBackground extends StatefulWidget {
 }
 
 class _LiquidBackgroundState extends State<LiquidBackground> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 30))..repeat();
+  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 30));
+
+  // A stopped controller also stops asking for frames, which is the point of reducing effects.
+  void _sync() => Brand.reduceEffects.value ? _c.stop() : _c.repeat();
+
+  @override
+  void initState() {
+    super.initState();
+    Brand.reduceEffects.addListener(_sync);
+    _sync();
+  }
 
   @override
   void dispose() {
+    Brand.reduceEffects.removeListener(_sync);
     _c.dispose();
     super.dispose();
   }
@@ -79,24 +90,30 @@ class Glass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: DecoratedBox(
+    return ValueListenableBuilder(
+      valueListenable: Brand.reduceEffects,
+      builder: (_, reduced, _) {
+        final surface = DecoratedBox(
           decoration: BoxDecoration(
-            color: Brand.glass(b),
+            // Without the blur the tint is laid on the base colour, so text stays readable over the blobs.
+            color: reduced ? Color.alphaBlend(Brand.glass(b), Brand.base(b)) : Brand.glass(b),
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(color: Brand.glassEdge(b)),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white.withValues(alpha: b == Brightness.dark ? 0.12 : 0.5), Colors.white.withValues(alpha: 0.02)],
-            ),
+            gradient: reduced
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white.withValues(alpha: b == Brightness.dark ? 0.12 : 0.5), Colors.white.withValues(alpha: 0.02)],
+                  ),
           ),
           child: Padding(padding: padding, child: child),
-        ),
-      ),
+        );
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: reduced ? surface : BackdropFilter(filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24), child: surface),
+        );
+      },
     );
   }
 }

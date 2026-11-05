@@ -8,6 +8,7 @@ import 'package:reelbrain/core/models.dart';
 import 'package:reelbrain/data/export.dart';
 import 'package:reelbrain/data/library_db.dart';
 import 'package:reelbrain/native/counter_bridge.dart';
+import 'package:reelbrain/pipeline/background.dart';
 import 'package:reelbrain/pipeline/gemini.dart';
 import 'package:reelbrain/pipeline/runner.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -39,6 +40,9 @@ class FakeBridge implements CounterBridge {
       ];
   @override
   Future<void> saveDownload(String name, String text) async {}
+  final notified = <(String, String)>[];
+  @override
+  Future<void> notifyNotes(String title, String text) async => notified.add((title, text));
 }
 
 const _note = {
@@ -362,5 +366,18 @@ void main() {
     await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Squats', summary: 'legs', savedAt: 2));
     expect((await db.reels(query: 'food')).single.url, 'u1');
     expect((await db.reels(query: 'LEGS')).single.url, 'u2');
+  });
+
+  test('T-BG-01 the background task analyses the queue and posts one "note ready"', () async {
+    final yt2 = PendingItem(id: 3, url: 'https://www.youtube.com/shorts/hijklmn', app: 'youtube', createdAt: 7);
+    final b = FakeBridge([yt, yt2]);
+    await analyseAndNotify(runner(b, (r) async => http.Response(_gemOk(), 200)), b);
+    expect(b.statuses, {1: 'done', 3: 'done'});
+    expect(b.notified, [('2 notes ready', 'Rice · Rice')]);
+
+    // Nothing queued: no notification.
+    final idle = FakeBridge([]);
+    await analyseAndNotify(runner(idle, (r) async => http.Response(_gemOk(), 200)), idle);
+    expect(idle.notified, isEmpty);
   });
 }

@@ -21,6 +21,8 @@ Future<void> main() async {
   unawaited(services.sweepPhotos());
   if (await services.keys.flag('dark')) Brand.mode.value = ThemeMode.dark;
   Brand.mode.addListener(() => services.keys.setFlagTo('dark', Brand.mode.value == ThemeMode.dark));
+  Brand.reduceEffects.value = await services.keys.flag('reduce_effects');
+  Brand.reduceEffects.addListener(() => services.keys.setFlagTo('reduce_effects', Brand.reduceEffects.value));
   runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
 }
 

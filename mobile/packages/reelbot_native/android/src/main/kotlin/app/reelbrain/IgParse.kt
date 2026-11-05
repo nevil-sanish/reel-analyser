@@ -154,6 +154,17 @@ object IgParse {
         return media.takeIf { it.hasVideo || it.hasMeta }
     }
 
+    /** IG-POST-PAGE as the WebView's COLLECT_JS read it. */
+    class Page(val loginWall: Boolean, val scripts: List<String>, val lsd: String, val bundles: List<String>, val rendered: IgMedia?)
+
+    /** A page that ended up on `/accounts/login` is a login wall, whatever else it rendered. */
+    fun page(collected: String): Page? {
+        val o = runCatching { JSONObject(collected) }.getOrNull() ?: return null
+        fun list(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty()
+        val rendered = rendered(o.optString("video"), o.optString("videoUrl"), o.optString("ogImage"), o.optString("ogDescription"))
+        return Page(o.optString("path").startsWith("/accounts/login"), list("scripts"), o.optString("lsd"), list("bundles"), rendered)
+    }
+
     fun postPage(scripts: List<String>, mediaId: String): IgMedia? {
         for (s in scripts) {
             val root = runCatching { JSONObject(s) }.getOrNull() ?: runCatching { JSONArray(s) }.getOrNull() ?: continue
