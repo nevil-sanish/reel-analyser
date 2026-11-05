@@ -110,6 +110,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 |---|---|---|---|---|
 | T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | planned |
 | T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | planned |
+| T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | passing |
 | T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | planned |
 | T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | planned |
 | T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | planned |

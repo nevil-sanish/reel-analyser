@@ -29,6 +29,8 @@ object DetectionRules {
     /** They briefly cover a reel without you leaving it. */
     val ignored = setOf(
         "com.android.systemui", "app.reelbrain",
+        // The system share sheet, which auto-Save and manual Share open on top of the reel.
+        "com.android.intentresolver", "com.google.android.intentresolver", "android",
         "com.google.android.inputmethod.latin", "com.samsung.android.honeyboard", "com.touchtype.swiftkey",
     )
 

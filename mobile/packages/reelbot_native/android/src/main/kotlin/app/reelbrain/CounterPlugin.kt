@@ -66,6 +66,10 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 prefs().edit().putBoolean(ReelCounterService.CAPTURE, call.argument<Boolean>("on") == true).apply()
                 result.success(null)
             }
+            "setAutoSave" -> {
+                prefs().edit().putBoolean(ReelCounterService.AUTO_SAVE, call.argument<Boolean>("on") == true).apply()
+                result.success(null)
+            }
             "status" -> result.success(status())
             "openAccessibilitySettings" -> result.success(launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
             "openAppInfo" -> result.success(launch(appInfo()))
@@ -106,6 +110,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "sdkInt" to Build.VERSION.SDK_INT,
             "manufacturer" to Build.MANUFACTURER,
             "capture" to prefs().getBoolean(ReelCounterService.CAPTURE, false),
+            "autoSave" to prefs().getBoolean(ReelCounterService.AUTO_SAVE, false),
         )
     }
 

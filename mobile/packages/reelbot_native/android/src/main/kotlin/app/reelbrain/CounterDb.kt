@@ -120,6 +120,14 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         })
     }
 
+    /** Bubble Save: a URL-less row the next shared link attaches to within 10 s (SHARE-IN). */
+    fun addBubbleSave(app: String, item: ItemText?, onScreenText: String, now: Long) {
+        writableDatabase.insert("pending_items", null, ContentValues().apply {
+            put("app", app); put("author", item?.author ?: ""); put("caption", item?.caption?.ifBlank { item.title } ?: "")
+            put("on_screen_text", onScreenText); put("created_at", now)
+        })
+    }
+
     fun pending(status: String?): List<Map<String, Any?>> {
         val where = if (status == null) "" else "WHERE status = ?"
         val args = if (status == null) null else arrayOf(status)
