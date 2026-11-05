@@ -65,6 +65,96 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 Nothing else leaves the phone: no analytics, no tracking, no Reel Bot server.
 
+## Technical workflow
+
+### Components
+
+```
+┌──────────────────────── Android phone ────────────────────────────────────────┐
+│                                                                               │
+│  Kotlin plugin (mobile/packages/reelbot_native)    Flutter app (mobile/lib)   │
+│  ─────────────────────────────────────────────     ────────────────────────   │
+│  ShareReceiverActivity   share in (links, photos)  Runner     queue → notes   │
+│  InstagramFetcher        logged-out cascade        Gemini / ChatModel  AI     │
+│  ReelCounterService      Accessibility counter     LibraryDb  notes, chats    │
+│  OverlayBubble, SaveAutomator   bubble             KeyStore   keys, flags     │
+│  DigestWorker            9 pm digest               UI: Ask, Insights, Library │
+│  CounterDb (counter.db)  queue + counts                                       │
+│            ▲                                                ▲                 │
+│            └──────── method channel "reelbot/counter" ──────┘                 │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
+
+The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That way the background engine started by `workmanager` can call it too.
+
+### Where things are stored (all on the phone)
+
+| Store | Owner | Holds |
+|---|---|---|
+| `counter.db` (SQLite) | Kotlin | `pending_items`: the queue (link or `photo:<path>`, status, note title). `seen_items`: one anonymous fingerprint per reel watched per day, with time and dwell, never the content. `screen_time`, `unknown_items`, `debug_state`. |
+| `reel_brain.db` (SQLite) | Dart | `reels`: notes (title, summary, key points, tags, author, source, seen/archived). `chats`: saved conversations. `meta`: a lock so the app and the background job never analyse at the same time. |
+| Encrypted secure storage | Dart | API keys (several Gemini, OpenAI, Claude, Groq, Apify) and small flags (theme, intro seen). |
+| `files/photos/*.jpg` | Kotlin | Photos you shared, kept so their notes can show them. |
+| `cache/ig/*.mp4` | Kotlin | A downloaded reel, deleted right after analysis. |
+| `Downloads/ReelBot/` | you | Export: `library.json` plus one Markdown file per note. |
+
+### Background jobs
+
+| Job | Scheduler | When | Does |
+|---|---|---|---|
+| `analyse` | `workmanager` (Dart) | every 15 min, needs network, plus on app open | runs the queue, then posts "Note ready" |
+| `reelbot_digest` | WorkManager (Kotlin) | hourly; posts once after 21:00 | digest, or a nudge, on days the app wasn't opened |
+
+### How each item is analysed
+
+1. **YouTube Short:** the link is rewritten to `youtube.com/watch?v=ID` and sent to Gemini as `fileData`, so Gemini watches it itself and nothing is downloaded. If Gemini can't (a private video, or the daily cap), the note is made from YouTube oEmbed's title and thumbnail.
+2. **Instagram reel:** `InstagramFetcher` tries these steps in order, logged out, with 5 s between requests, and stops at the first one that finds the video:
+   1. the embed HTML;
+   2. the embed **player**: a hidden WebView presses play and takes the video it loads;
+   3. the post page JSON;
+   4. the logged-out GraphQL query;
+   5. the web GraphQL query;
+   6. oEmbed (caption and thumbnail only);
+   7. Apify, if you added a token.
+
+   The video (≤ 100 MB) is downloaded, sent to Gemini (inline up to 20 MB, otherwise through the Files API), and then deleted. If Instagram shows a login wall or returns 429, everything pauses for 30 min.
+3. **Instagram photo post or carousel:** the same steps collect every still image. Up to 10 are downloaded and sent in one request.
+4. **Shared photo:** the JPEG from app storage is sent as one image.
+5. **No media at all:** the note is made from the caption, the thumbnail and any on-screen text, and is marked as such.
+
+**Provider order for notes:**
+- Gemini first. It uses your keys in turn, one reel per key, and a 429 or a rejected key moves that reel to the next key.
+- If every Gemini key fails or there are none, OpenAI and then Claude are tried, with 6 JPEG frames taken from the video (`MediaMetadataRetriever`) or the pictures.
+
+**Token savers:** the cheapest model first; on Gemini, minimal thinking, low media resolution and video sampled at 0.5 fps (a retry drops these settings if a model rejects them); and a prompt that asks for a short JSON note (title, 1 sentence, ≤ 3 points, ≤ 3 tags).
+
+### Counting reels you watch
+
+```
+Accessibility events ─▶ DetectionRules (is this Reels/Shorts? read author, caption, likes)
+                     ─▶ ReelTracker (fingerprint, 1.5 s dwell, per-day dedupe, screen time)
+                     ─▶ counter.db ─▶ Insights tab, Ask strip, bubble count, digest
+```
+
+The fingerprint is a SHA-1 of the app, author, the first 40 caption characters, the audio and the title. Only that hash is stored. If 5 or more reels in a day (and at least 30% of them) can't be read, one "counting may be broken" alert is posted.
+
+### Chat
+
+Each question sends the best-matching notes as context: the top 8 in full and the next 32 as title plus summary, chosen by keyword overlap. It also sends the last 10 turns. No embeddings, and no server.
+
+### Outside services
+
+| Service | Used for | Sent |
+|---|---|---|
+| `www.instagram.com` (embed, post page, GraphQL, oEmbed), `*.cdninstagram.com` / `*.fbcdn.net` | fetching reels and posts you shared | public page requests, logged out |
+| `youtube.com/oembed` | title and thumbnail when Gemini can't watch a Short | the Short's link |
+| `generativelanguage.googleapis.com` (Gemini) | notes and chat | the video, link or images, plus your key |
+| `api.openai.com` | fallback notes and chat | frames or images, plus your key |
+| `api.anthropic.com` (Claude) | fallback notes and chat | frames or images, plus your key |
+| `api.groq.com` | chat only | your question and the matching notes |
+| `api.apify.com` | optional last resort for Instagram | the post's link, plus your token |
+| `github.com` (browser) | feedback | only the text you type, after you review it |
+
 ## Install
 
 1. Download `reel-bot-vX.Y.Z.apk` from [Releases](https://github.com/nevil-sanish/reel-brain/releases) and open it. If Play Protect warns, choose *Install anyway*.
