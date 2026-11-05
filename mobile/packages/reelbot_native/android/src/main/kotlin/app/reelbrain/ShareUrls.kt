@@ -22,7 +22,10 @@ object ShareUrls {
         return null
     }
 
-    /** A URL-less row from a bubble Save gets the next shared link if it is under 10 s old (IMPLEMENTATION §2.2). */
+    /**
+     * A URL-less row from a bubble Save gets the next shared link if it is under 2 min old (IMPLEMENTATION §2.2).
+     * v0.5.0: was 10 s, too short for a manual Share; the Dart runner waits the same 2 min before going text-only.
+     */
     fun shouldAttach(newestUrl: String?, newestCreatedAt: Long?, now: Long): Boolean =
-        newestCreatedAt != null && newestUrl.isNullOrEmpty() && now - newestCreatedAt in 0 until 10_000
+        newestCreatedAt != null && newestUrl.isNullOrEmpty() && now - newestCreatedAt in 0 until 120_000
 }

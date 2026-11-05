@@ -80,6 +80,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(null)
             }
             "status" -> result.success(status())
+            "openUrl" -> result.success(launch(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url")!!))))
             "openAccessibilitySettings" -> result.success(launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
             "openAppInfo" -> result.success(launch(appInfo()))
             "openNotificationSettings" -> result.success(launch(

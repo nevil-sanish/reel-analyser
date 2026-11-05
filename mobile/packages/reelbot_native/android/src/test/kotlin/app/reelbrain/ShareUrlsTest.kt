@@ -38,10 +38,10 @@ class ShareUrlsTest {
     }
 
     // T-SHARE-04
-    @Test fun urlLessRowUnderTenSecondsGetsTheLink() {
+    @Test fun urlLessRowUnderTwoMinutesGetsTheLink() {
         assertTrue(ShareUrls.shouldAttach(null, 1_000, 5_000))
-        assertTrue(ShareUrls.shouldAttach("", 1_000, 10_999))
-        assertFalse(ShareUrls.shouldAttach(null, 1_000, 11_000))
+        assertTrue(ShareUrls.shouldAttach("", 1_000, 120_999))
+        assertFalse(ShareUrls.shouldAttach(null, 1_000, 121_000))
         assertFalse(ShareUrls.shouldAttach("https://x", 1_000, 2_000))
         assertFalse(ShareUrls.shouldAttach(null, null, 2_000))
     }

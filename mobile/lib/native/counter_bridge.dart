@@ -149,6 +149,13 @@ class CounterBridge {
   Future<void> setPendingStatus(int id, String status, {String title = ''}) =>
       _ch.invokeMethod('setPendingStatus', {'id': id, 'status': status, 'title': title});
 
+  /// Evenly spaced JPEG frames of a downloaded video, for OpenAI / Claude, which take images but not video.
+  Future<List<List<int>>> videoFrames(String path, {int count = 6}) async =>
+      (await _ch.invokeListMethod<Uint8List>('videoFrames', {'path': path, 'count': count}) ?? []).toList();
+
+  /// Opens a web page in the browser (feedback goes to the project's GitHub issues this way).
+  Future<void> openUrl(String url) => _ch.invokeMethod('openUrl', {'url': url});
+
   /// The digest is skipped on days the app was opened.
   Future<void> markOpened() => _ch.invokeMethod('markOpened');
 

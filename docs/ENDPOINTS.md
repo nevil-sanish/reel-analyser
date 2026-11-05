@@ -175,6 +175,18 @@ Rules for every `IG-*` call:
 - Accepted URLs: `instagram.com/(reel|reels|p|tv)/{code}`, `youtube.com/shorts/{id}`, `youtu.be/{id}`. Tracking params (`igsh`, `si`) stripped.
 - **Tests:** `T-SHARE-01`…`T-SHARE-04`
 
+### OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT: other AI providers (v0.5.0)
+- Owner `lib/pipeline/providers.dart` (`ChatModel`). Raw HTTP; keys from Settings.
+- **OpenAI** `POST https://api.openai.com/v1/chat/completions`, `gpt-6.1-terra`, `reasoning_effort: none`, images as `image_url` data URLs with `detail: low`.
+- **Claude** `POST https://api.anthropic.com/v1/messages`, `claude-opus-5-5`, headers `x-api-key`, `anthropic-version: 2026-10-21`, `anthropic-beta: server-side-fallback-2026-07-01`; body `output_config.effort: low`, `fallbacks: "default"`; a `refusal` stop reason counts as rejected.
+- **Groq** `POST https://api.groq.com/openai/v1/chat/completions`, `llama-3.3-70b-versatile`. Chat only.
+- Notes: OpenAI and Claude get 6 frames (`videoFrames`) or the thumbnail, never audio, and only when Gemini has no key or every Gemini key is rate-limited or rejected. 401/403 → bad key, 429/5xx/network → retry later.
+- Chat sends every saved note (title, tags, URL, summary, key points) as the system prompt plus the last 10 turns.
+- **Tests:** `T-PIPE-12`
+
+### FEEDBACK: GitHub issue (v0.5.0)
+- Settings → Send feedback opens `https://github.com/nevil-sanish/reel-notes-bot/issues/new?title=Feedback&body=…` in the browser with only the typed text and the app version. The user submits it on GitHub. Nothing else leaves the phone except reels the user shares to an AI provider.
+
 ### CH-COUNTER: method channel `reelbot/counter`
 - Owner `CounterPlugin.kt` (Kotlin) and `lib/native/counter_bridge.dart` (Dart). Registered as a plugin, so it exists in background engines too.
 
@@ -185,6 +197,8 @@ Rules for every `IG-*` call:
 | `markOpened` | 4 | — | `null` (writes `last_opened`) | `T-DIG-02` |
 | `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath}`; error `rate_limited` | `T-CH-02` |
 | `saveDownload` | 1 | `{name, text}` | `null` (writes `Downloads/ReelBot/<name>`) | manual `T-MAN-01` |
+| `videoFrames` | 5 | `{path, count}` | `List<Uint8List>` 512 px JPEGs, evenly spaced | `T-PIPE-12` (faked) |
+| `openUrl` | 5 | `{url}` | `null` (ACTION_VIEW) | manual |
 | `daily` | 2 | `{days}` | `List<{date,app,reels,ms,unknown}>` | `T-CH-03` |
 | `seenItems` | 2 | `{date}` | `List<{app,fp,firstSeen,dwellMs,author,caption}>` | `T-CH-03` |
 | `debugState` | 2 | — | `List<{k,v,ts}>` | `T-CH-03` |
@@ -212,3 +226,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.2.0: implemented the Phase 2 CH-COUNTER methods, plus `openNotificationSettings` (the plugin has no activity to ask for `POST_NOTIFICATIONS` itself). |
 | 2026-11-06 | v0.3.0: `setAutoSave` and `status.autoSave` for the experimental auto-Save. |
 | 2026-11-06 | v0.4.0: WM-DIGEST implemented; `setPendingStatus` takes `title`; `markOpened` added. |
+| 2026-11-06 | v0.5.0: GEM-GENERATE uses `gemini-3.6-flash` (3.5 Flash now routes there), YouTube as a `watch?v=` URL with no mimeType, `videoMetadata.fps` 0.5, `thinkingLevel` minimal and low media resolution on the first attempt. New: OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT, `videoFrames`, `openUrl` (feedback). |

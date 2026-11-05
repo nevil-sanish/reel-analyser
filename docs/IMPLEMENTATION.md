@@ -104,7 +104,7 @@ CREATE TABLE pending_items (
 
 A transparent activity (no Flutter) for `ACTION_SEND` `text/plain`.
 1. Extract the first `instagram.com/(reel|reels|p|tv)/…` or `youtube.com/shorts/…` / `youtu.be/…` URL. None → toast "Not a reel link", `finish()`.
-2. If the newest `pending_items` row has no URL and is under 10 s old (a bubble Save from Phase 3), fill in its URL; otherwise insert a new row.
+2. If the newest `pending_items` row has no URL and is under 2 min old (a bubble Save from Phase 3; 10 s before v0.5.0, which was too short to share by hand), fill in its URL; otherwise insert a new row.
 3. Toast "Saved ✓" and `finish()`, so you stay in Instagram/YouTube.
 
 *Not in v0.1.0:* `res/xml/shortcuts.xml` + `ShortcutManagerCompat.pushDynamicShortcut` for the Direct Share row. Reel Bot shows in the normal share list; add the shortcut if it's hard to find.
@@ -469,6 +469,14 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 - The share button is found by guessed ids (`clips_share_button`, `direct_share_button`, `row_feed_button_share` / `reel_dyn_share`, `share_button`, `reel_share_button`), then by its "Share" / "Send" description. Replace the ids from a capture, as for §3.2.
 - The system share sheet (`com.android.intentresolver`, `com.google.android.intentresolver`, `android`) is on the tracker's ignored list, so opening it doesn't end the session.
 - The switch is in Settings (`setAutoSave`); attempts are counted in `debug_state` (`autosave_tries`, `autosave_ok`, `autosave_last`).
+
+## 6b. v0.5.0: providers, chat, privacy, look
+
+- **Keys:** several Gemini keys (one per line in secure storage). The runner starts each reel on the next key (`gemini_turn`); a 429 or bad key moves that reel to the following key. OpenAI and Claude keys make notes from 6 frames when no Gemini key can; Groq is chat only.
+- **Tokens:** first Gemini attempt sends `thinkingLevel: minimal`, `mediaResolution: LOW` and video at 0.5 fps; a 400 retries without them. Shorter prompt, 1–2 sentence summary.
+- **Chat** (`ui/chat_screen.dart`) replaces *Ask your library*: any provider with a key, all notes in the system prompt, last 10 turns.
+- **Privacy:** watched reels are counted by fingerprint only (§3.3). Feedback is the only thing sent on purpose, as a GitHub issue the user submits.
+- **Look:** `ui/theme.dart` (violet→coral brand, rounded cards), first-run `ui/intro_screen.dart`, library cards with the short summary.
 
 ## 7. Phase 4: daily digest
 

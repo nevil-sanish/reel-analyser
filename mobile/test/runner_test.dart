@@ -34,6 +34,10 @@ class FakeBridge implements CounterBridge {
   @override
   Future<IgFetch> fetchInstagram(String url) async => fetch(url);
   @override
+  Future<List<List<int>>> videoFrames(String path, {int count = 6}) async => [
+        [1, 2, 3],
+      ];
+  @override
   Future<void> saveDownload(String name, String text) async {}
 }
 
@@ -69,7 +73,7 @@ void main() {
   });
 
   Runner runner(FakeBridge b, Future<http.Response> Function(http.Request) handler,
-          {String? gemini = 'KEY', String? apify}) =>
+          {List<String> gemini = const ['KEY'], String? apify, String? openai}) =>
       Runner(
         bridge: b,
         library: db,
@@ -77,7 +81,7 @@ void main() {
           requests.add(r);
           return handler(r);
         }),
-        geminiKey: () async => gemini,
+        keys: () async => AnalysisKeys(gemini: gemini, openai: openai),
         apifyKey: () async => apify,
         makeGemini: (k) => Gemini(
             MockClient((r) {
@@ -99,7 +103,9 @@ void main() {
     final b = FakeBridge([yt]);
     await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
     final part = body(requests.single)['contents'][0]['parts'][0];
-    expect(part['fileData']['fileUri'], yt.url);
+    expect(part['fileData']['fileUri'], 'https://www.youtube.com/watch?v=abcdefg');
+    expect(part['videoMetadata']['fps'], 0.5); // token saver: half Gemini's default frame rate
+    expect(body(requests.single)['generationConfig']['thinkingConfig']['thinkingLevel'], 'minimal');
     expect(requests.single.headers['x-goog-api-key'], 'KEY');
     expect(b.statuses[1], 'done');
     expect((await db.reels()).single.title, 'Rice');
@@ -188,7 +194,7 @@ void main() {
 
   test('T-PIPE-08 no Gemini key leaves everything queued', () async {
     final b = FakeBridge([yt, ig]);
-    expect(await runner(b, (r) async => http.Response(_gemOk(), 200), gemini: null).processQueue(), 0);
+    expect(await runner(b, (r) async => http.Response(_gemOk(), 200), gemini: []).processQueue(), 0);
     expect(b.statuses, isEmpty);
     expect(requests, isEmpty);
   });
@@ -206,6 +212,32 @@ void main() {
     await r.processQueue();
     expect(b.statuses, isEmpty);
     expect(r.lastProblem, contains('Instagram'));
+  });
+
+  test('T-PIPE-11 Gemini keys take turns, one reel each; a 429 moves the reel to the next key', () async {
+    final b = FakeBridge([yt, const PendingItem(id: 3, url: 'https://www.youtube.com/shorts/zzzzzzz', app: 'youtube', createdAt: 7)]);
+    await runner(b, (r) async => http.Response(_gemOk(), 200), gemini: ['K1', 'K2']).processQueue();
+    expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']), ['K1', 'K2']);
+
+    requests.clear();
+    final b2 = FakeBridge([const PendingItem(id: 4, url: 'https://www.youtube.com/shorts/yyyyyyy', app: 'youtube', createdAt: 8)]);
+    await runner(b2, (r) async => r.headers['x-goog-api-key'] == 'K1' ? http.Response('busy', 429) : http.Response(_gemOk(), 200),
+        gemini: ['K1', 'K2']).processQueue();
+    expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']), ['K1', 'K2']);
+    expect(b2.statuses[4], 'done');
+  });
+
+  test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {
+    final f = File('${tmp.path}/v.mp4')..writeAsBytesSync([0]);
+    final b = FakeBridge([ig], fetch: (_) => IgFetch(step: 1, videoPath: f.path));
+    await runner(b, (r) async => http.Response(jsonEncode({'choices': [{'message': {'content': '```json\n${jsonEncode(_note)}\n```'}}]}), 200),
+        gemini: [], openai: 'OK').processQueue();
+    final r = requests.single;
+    expect(r.url.host, 'api.openai.com');
+    expect(r.headers['Authorization'], 'Bearer OK');
+    expect(jsonEncode(body(r)), contains('image_url'));
+    expect(b.statuses[2], 'done');
+    expect((await db.reels()).single.title, 'Rice');
   });
 
   test('T-PIPE-10 the lock lets only one runner through', () async {

@@ -130,7 +130,7 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         })
     }
 
-    /** Bubble Save: a URL-less row the next shared link attaches to within 10 s (SHARE-IN). */
+    /** Bubble Save: a URL-less row the next shared link attaches to within 2 min (SHARE-IN). */
     fun addBubbleSave(app: String, item: ItemText?, onScreenText: String, now: Long) {
         writableDatabase.insert("pending_items", null, ContentValues().apply {
             put("app", app); put("author", item?.author ?: ""); put("caption", item?.caption?.ifBlank { item.title } ?: "")

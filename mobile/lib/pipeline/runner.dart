@@ -9,6 +9,18 @@ import '../data/library_db.dart';
 import '../native/counter_bridge.dart';
 import 'apify.dart';
 import 'gemini.dart';
+import 'providers.dart';
+
+/// The keys that can make notes: Gemini (several, taken in turn) for video, OpenAI and Claude from frames.
+class AnalysisKeys {
+  final List<String> gemini;
+  final String? openai;
+  final String? claude;
+  const AnalysisKeys({this.gemini = const [], this.openai, this.claude});
+  bool get isEmpty => gemini.isEmpty && openai == null && claude == null;
+}
+
+class _NoGemini implements Exception {}
 
 /// Leave the item queued for the next run (network, 429/5xx, Instagram pause, bad key).
 class _RetryLater implements Exception {
@@ -22,8 +34,10 @@ class Runner {
   final CounterBridge bridge;
   final LibraryDb library;
   final http.Client client;
-  final Future<String?> Function() geminiKey;
+  final Future<AnalysisKeys> Function() keys;
   final Future<String?> Function() apifyKey;
+  final Future<int> Function() readTurn;
+  final Future<void> Function(int) saveTurn;
   final Gemini Function(String key) makeGemini;
   final Directory tempDir;
   final int Function() now;
@@ -34,35 +48,48 @@ class Runner {
   /// Title of the note the current item produced, passed to Kotlin for the digest.
   String _title = '';
 
+  late AnalysisKeys _keys;
+  int _turn = 0;
+  int _itemTurn = 0;
+  final _badKeys = <String>{};
+
   Runner({
     required this.bridge,
     required this.library,
     required this.client,
-    required this.geminiKey,
+    required this.keys,
     required this.apifyKey,
+    Future<int> Function()? readTurn,
+    Future<void> Function(int)? saveTurn,
     Gemini Function(String key)? makeGemini,
     Directory? tempDir,
     int Function()? now,
-  })  : makeGemini = makeGemini ?? ((k) => Gemini(client, k)),
+  })  : readTurn = readTurn ?? (() async => 0),
+        saveTurn = saveTurn ?? ((_) async {}),
+        makeGemini = makeGemini ?? ((k) => Gemini(client, k)),
         tempDir = tempDir ?? Directory.systemTemp,
         now = now ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   /// Returns how many items were finished this run.
   Future<int> processQueue() async {
-    final key = await geminiKey();
-    if (key == null) return 0; // Items stay queued; the library shows "Add your Gemini key".
+    _keys = await keys();
+    if (_keys.isEmpty) return 0; // Items stay queued; the library asks for a key.
     if (!await library.tryLock(now())) {
       lastProblem = 'Another analysis run is in progress (it holds the queue for up to 5 min).';
       return 0;
     }
     var finished = 0;
     lastProblem = null;
+    _badKeys.clear();
+    _turn = await readTurn();
     try {
-      final gemini = makeGemini(key);
       for (final item in await bridge.pendingItems(status: 'queued')) {
+        // A bubble Save waits for its link (SHARE-IN attaches one shared within 2 min) before going text-only.
+        if (item.url.isEmpty && now() - item.createdAt < 120000) continue;
         try {
           _title = '';
-          final status = await _process(item, gemini);
+          _itemTurn = _turn++; // one reel per key: the next reel starts on the next key
+          final status = await _process(item);
           await bridge.setPendingStatus(item.id, status, title: _title);
           finished++;
         } on _RetryLater catch (e) {
@@ -75,18 +102,84 @@ class Runner {
         }
       }
     } finally {
+      await saveTurn(_turn);
       await library.unlock();
     }
     return finished;
   }
 
-  Future<String> _process(PendingItem item, Gemini gemini) async {
-    if (item.url.isEmpty) return item.author.isEmpty && item.caption.isEmpty ? 'failed' : await _textOnly(item, gemini);
+  /// Runs [f] with this reel's Gemini key; on a rate limit or a bad key, the next key gets a go.
+  Future<T> _gemini<T>(Future<T> Function(Gemini g) f) async {
+    final ks = _keys.gemini;
+    GeminiException? last;
+    for (var i = 0; i < ks.length; i++) {
+      final k = ks[(_itemTurn + i) % ks.length];
+      if (_badKeys.contains(k)) continue;
+      try {
+        return await f(makeGemini(k));
+      } on GeminiException catch (e) {
+        if (e.kind == GeminiFailure.rejected) rethrow;
+        if (e.kind == GeminiFailure.badKey) _badKeys.add(k);
+        last = e;
+      }
+    }
+    throw last ?? _NoGemini();
+  }
+
+  List<ChatModel> get _others => [
+        if (_keys.openai != null) ChatModel('openai', _keys.openai!, client),
+        if (_keys.claude != null) ChatModel('claude', _keys.claude!, client),
+      ];
+
+  /// OpenAI / Claude, in that order, for when Gemini can't (no key, all keys limited).
+  Future<Analysis> _viaOthers(String context, List<List<int>> images, Object? geminiError) async {
+    Object? last = geminiError;
+    for (final m in _others) {
+      try {
+        return await m.analyse(context, images);
+      } on GeminiException catch (e) {
+        if (e.kind == GeminiFailure.rejected) rethrow;
+        last = e;
+      }
+    }
+    if (last is GeminiException) throw last;
+    throw GeminiException(GeminiFailure.retryLater, 'no provider could take this reel');
+  }
+
+  Future<Analysis> _video(File f, String context) async {
+    Object? err;
+    try {
+      return await _gemini((g) => g.video(f, context: context));
+    } on _NoGemini {
+      // fall through to frames
+    } on GeminiException catch (e) {
+      if (e.kind == GeminiFailure.rejected || _others.isEmpty) rethrow;
+      err = e;
+    }
+    // ponytail: 6 frames, no audio; Gemini stays the only provider that hears the reel.
+    return _viaOthers(context, await bridge.videoFrames(f.path), err);
+  }
+
+  Future<Analysis> _captionAndThumbnail(String text, List<int>? jpeg) async {
+    Object? err;
+    try {
+      return await _gemini((g) => g.captionAndThumbnail(text: text, jpeg: jpeg));
+    } on _NoGemini {
+      // fall through
+    } on GeminiException catch (e) {
+      if (e.kind == GeminiFailure.rejected || _others.isEmpty) rethrow;
+      err = e;
+    }
+    return _viaOthers('Caption and thumbnail only (no video available).\n$text', [?jpeg], err);
+  }
+
+  Future<String> _process(PendingItem item) async {
+    if (item.url.isEmpty) return item.author.isEmpty && item.caption.isEmpty && item.onScreenText.isEmpty ? 'failed' : await _textOnly(item);
     if (await library.has(item.url)) return 'done'; // shared twice
     try {
-      return item.app == 'youtube' ? await _youtube(item, gemini) : await _instagram(item, gemini);
+      return item.app == 'youtube' ? await _youtube(item) : await _instagram(item);
     } on GeminiException catch (e) {
-      if (e.kind == GeminiFailure.badKey) throw _RetryLater('Gemini rejected your key. Check it in Settings.', stopAll: true);
+      if (e.kind == GeminiFailure.badKey) throw _RetryLater('Your key was rejected (${e.message.split(':').first}). Check it in Settings.', stopAll: true);
       if (e.kind == GeminiFailure.retryLater) throw _RetryLater(e.toString());
       rethrow;
     } on RateLimited {
@@ -98,25 +191,26 @@ class Runner {
     }
   }
 
-  Future<String> _youtube(PendingItem item, Gemini gemini) async {
+  Future<String> _youtube(PendingItem item) async {
     try {
-      await _save(item, await gemini.youtube(item.url), 'done', 0);
+      await _save(item, await _gemini((g) => g.youtube(item.url)), 'done', 0);
       return 'done';
+    } on _NoGemini {
+      // only Gemini can watch a YouTube link; the others get the title and thumbnail
     } on GeminiException catch (e) {
-      if (e.kind != GeminiFailure.rejected) rethrow;
+      if (e.kind != GeminiFailure.rejected) rethrow; // limited: wait for Gemini rather than settle for a thumbnail
     }
     // YT-OEMBED: Gemini refused the URL (private, unlisted, or the free daily cap).
     final r = await client.get(Uri.parse('https://www.youtube.com/oembed?url=${Uri.encodeComponent(item.url)}&format=json'));
     if (r.statusCode != 200) return 'failed';
     final o = jsonDecode(utf8.decode(r.bodyBytes)) as Map;
     final author = '${o['author_name'] ?? ''}';
-    final a = await gemini.captionAndThumbnail(
-        text: 'Channel: $author\nTitle: ${o['title'] ?? ''}', jpeg: await _bytes('${o['thumbnail_url'] ?? ''}'));
+    final a = await _captionAndThumbnail('Channel: $author\nTitle: ${o['title'] ?? ''}', await _bytes('${o['thumbnail_url'] ?? ''}'));
     await _save(item, a, 'caption+thumbnail', 0, author: author, caption: '${o['title'] ?? ''}');
     return 'caption+thumbnail';
   }
 
-  Future<String> _instagram(PendingItem item, Gemini gemini) async {
+  Future<String> _instagram(PendingItem item) async {
     IgFetch f;
     try {
       f = await bridge.fetchInstagram(item.url);
@@ -156,7 +250,7 @@ class Runner {
     if (videoPath != null) {
       final file = File(videoPath);
       try {
-        await _save(item, await gemini.video(file, context: context), 'done', step, author: author, caption: caption);
+        await _save(item, await _video(file, context), 'done', step, author: author, caption: caption);
         return 'done';
       } on GeminiException catch (e) {
         if (e.kind != GeminiFailure.rejected) rethrow;
@@ -165,18 +259,19 @@ class Runner {
       }
     }
     if (caption.isNotEmpty || thumb.isNotEmpty) {
-      final a = await gemini.captionAndThumbnail(text: context, jpeg: await _bytes(thumb));
+      final a = await _captionAndThumbnail(context, await _bytes(thumb));
       await _save(item, a, 'caption+thumbnail', step, author: author, caption: caption);
       return 'caption+thumbnail';
     }
-    if (author.isNotEmpty || item.onScreenText.isNotEmpty) return _textOnly(item, gemini);
+    if (author.isNotEmpty || item.onScreenText.isNotEmpty) return _textOnly(item, author: author, step: step);
     return 'failed';
   }
 
-  Future<String> _textOnly(PendingItem item, Gemini gemini) async {
-    final a = await gemini.captionAndThumbnail(
-        text: 'Author: @${item.author}\nCaption: ${item.caption}\nOn screen: ${item.onScreenText}');
-    await _save(item, a, 'text-only', 0, author: item.author, caption: item.caption);
+  /// Bubble Saves never shared, and Instagram posts where only the author could be found.
+  Future<String> _textOnly(PendingItem item, {String? author, int step = 0}) async {
+    final who = author ?? item.author;
+    final a = await _captionAndThumbnail('Author: @$who\nCaption: ${item.caption}\nOn screen: ${item.onScreenText}', null);
+    await _save(item, a, 'text-only', step, author: who, caption: item.caption);
     return 'text-only';
   }
 

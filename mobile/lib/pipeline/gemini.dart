@@ -36,11 +36,14 @@ class Analysis {
 /// GEM-GENERATE, GEM-UPLOAD / GEM-FILE-GET / GEM-FILE-DELETE (ENDPOINTS §3).
 class Gemini {
   static const base = 'https://generativelanguage.googleapis.com';
-  static const models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+  // gemini-3.5-flash now routes to 3.6 Flash (Gemini deprecations page); Flash-Lite is the cheaper fallback.
+  static const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite'];
   static const inlineLimit = 20 * 1024 * 1024;
 
-  /// Thinking levels to try per model, best first; null = send no thinking config.
-  static const _levels = <String?>['low', null];
+  /// Attempts per model, cheapest first: minimal thinking, low media resolution and video at 0.5 fps
+  /// (Gemini 3 bills 70 tokens a frame plus 25 a second of audio). If a model rejects those settings,
+  /// the second attempt sends none of them.
+  static const _attempts = [true, false];
 
   /// Learnt per process: the first level index each model accepted.
   static final _acceptedLevel = <String, int>{};
@@ -50,11 +53,24 @@ class Gemini {
   final Duration pollEvery;
   Gemini(this.client, this.key, {this.pollEvery = const Duration(seconds: 2)});
 
-  static const _prompt = '''You turn a short social video (an Instagram Reel or YouTube Short) into a study note.
-Watch and listen to all of it, including on-screen text. Write in the video's language.
-Return JSON: title (a short descriptive title, not clickbait), summary (2–4 sentences on what it actually teaches or shows),
-keyPoints (3–8 concrete takeaways: steps, numbers, names, recipes, claims), tags (3–6 lowercase single-word topics).
-If it is a caption and thumbnail only, say so in the summary and work from what is there.''';
+  static const prompt = '''Turn this short video (Instagram Reel / YouTube Short) into a study note, in the video's language.
+Use speech and on-screen text. JSON: title (short, descriptive), summary (1-2 sentences: what it teaches or shows),
+keyPoints (3-6 concrete takeaways: steps, numbers, names), tags (3-5 lowercase single words).
+If you only have a caption, a thumbnail or frames, work from those and say so in the summary.''';
+
+  /// The note from a model's JSON reply; tolerates text or a code fence around the object.
+  static Analysis parseAnalysis(String out) {
+    final start = out.indexOf('{'), end = out.lastIndexOf('}');
+    if (start < 0 || end <= start) throw GeminiException(GeminiFailure.rejected, 'no JSON in the reply');
+    final Map<String, Object?> j;
+    try {
+      j = jsonDecode(out.substring(start, end + 1)) as Map<String, Object?>;
+    } on FormatException catch (e) {
+      throw GeminiException(GeminiFailure.rejected, 'bad JSON: ${e.message}');
+    }
+    List<String> list(Object? v) => v is List ? v.map((e) => '$e').toList() : [];
+    return Analysis('${j['title'] ?? ''}', '${j['summary'] ?? ''}', list(j['keyPoints']), list(j['tags']));
+  }
 
   static final _schema = {
     'type': 'OBJECT',
@@ -69,8 +85,9 @@ If it is a caption and thumbnail only, say so in the summary and work from what 
 
   Map<String, String> get _headers => {'x-goog-api-key': key, 'Content-Type': 'application/json'};
 
+  /// The docs pass YouTube as a plain watch URL with no mimeType.
   Future<Analysis> youtube(String shortsUrl) =>
-      _analyse([{'fileData': {'fileUri': shortsUrl, 'mimeType': 'video/*'}}]);
+      _analyse([{'fileData': {'fileUri': shortsUrl.replaceFirst('youtube.com/shorts/', 'youtube.com/watch?v=')}}]);
 
   Future<Analysis> video(File f, {String context = ''}) async {
     final ctx = [if (context.isNotEmpty) {'text': context}];
@@ -92,35 +109,38 @@ If it is a caption and thumbnail only, say so in the summary and work from what 
         {'text': 'Caption and thumbnail only (no video available).\n$text'},
       ]);
 
-  /// Free-form text answer, for "Ask your library".
-  Future<String> ask(String prompt) async {
-    final j = await _generate(models.first, {'contents': [{'parts': [{'text': prompt}]}]});
-    return _text(j);
-  }
-
   Future<Analysis> _analyse(List<Map<String, Object?>> parts) async {
     GeminiException? last;
     for (final model in models) {
-      for (var i = _acceptedLevel[model] ?? 0; i < _levels.length; i++) {
-        final level = _levels[i];
+      for (var i = _acceptedLevel[model] ?? 0; i < _attempts.length; i++) {
+        final lean = _attempts[i];
         final body = {
-          'contents': [{'parts': [...parts, {'text': _prompt}]}],
+          'contents': [
+            {
+              'parts': [
+                for (final p in parts)
+                  if (lean && (p.containsKey('fileData') || '${(p['inlineData'] as Map?)?['mimeType']}'.startsWith('video')))
+                    {...p, 'videoMetadata': {'fps': 0.5}}
+                  else
+                    p,
+                {'text': prompt},
+              ],
+            },
+          ],
           'generationConfig': {
             'responseMimeType': 'application/json',
             'responseSchema': _schema,
-            if (level != null) 'thinkingConfig': {'thinkingLevel': level},
+            if (lean) 'thinkingConfig': {'thinkingLevel': 'minimal'},
+            if (lean) 'mediaResolution': 'MEDIA_RESOLUTION_LOW',
           },
         };
         try {
-          final j = jsonDecode(_text(await _generate(model, body))) as Map<String, Object?>;
+          final a = parseAnalysis(_text(await _generate(model, body)));
           _acceptedLevel[model] = i;
-          List<String> list(Object? v) => v is List ? v.map((e) => '$e').toList() : [];
-          return Analysis('${j['title'] ?? ''}', '${j['summary'] ?? ''}', list(j['keyPoints']), list(j['tags']));
+          return a;
         } on GeminiException catch (e) {
           if (e.kind != GeminiFailure.rejected) rethrow;
-          last = e; // 400: try the next thinking level, then the next model.
-        } on FormatException catch (e) {
-          last = GeminiException(GeminiFailure.rejected, 'bad JSON: ${e.message}');
+          last = e; // 400: try without the token savers, then the next model.
         }
       }
     }

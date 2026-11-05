@@ -4,6 +4,7 @@ import 'data/key_store.dart';
 import 'data/library_db.dart';
 import 'native/counter_bridge.dart';
 import 'pipeline/gemini.dart';
+import 'pipeline/providers.dart';
 import 'pipeline/runner.dart';
 
 /// Everything the UI and the background task share. One per engine.
@@ -15,23 +16,59 @@ class AppServices {
   final Runner runner;
 
   AppServices._(this.keys, this.library, this.bridge, this.client)
-      : runner = Runner(bridge: bridge, library: library, client: client, geminiKey: () => keys.gemini, apifyKey: () => keys.apify);
+      : runner = Runner(
+          bridge: bridge,
+          library: library,
+          client: client,
+          keys: () async => AnalysisKeys(gemini: await keys.geminiKeys, openai: await keys.openai, claude: await keys.claude),
+          apifyKey: () => keys.apify,
+          readTurn: () => keys.geminiTurn,
+          saveTurn: keys.setGeminiTurn,
+        );
 
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  /// Answers from the user's own notes, with their own key.
-  Future<String> ask(String question) async {
-    final key = await keys.gemini;
-    if (key == null) return 'Add your Gemini API key in Settings first.';
-    final words = question.toLowerCase().split(RegExp(r'\W+')).where((w) => w.length > 3);
+  static const version = '0.5.0';
+
+  /// Providers the user has a key for, in the order the chat offers them.
+  Future<List<String>> chatProviders() async => [
+        if ((await keys.geminiKeys).isNotEmpty) 'gemini',
+        if (await keys.openai != null) 'openai',
+        if (await keys.claude != null) 'claude',
+        if (await keys.groq != null) 'groq',
+      ];
+
+  /// Every saved note, compact, so the chat can answer from all of them.
+  Future<String> notesContext() async {
     final all = await library.reels();
-    // ponytail: keyword overlap picks the notes; switch to embeddings if libraries get big.
-    int score(r) => words.where((w) => '${r.title} ${r.summary} ${r.keyPoints} ${r.tags}'.toLowerCase().contains(w)).length;
-    final ranked = [...all]..sort((a, b) => score(b).compareTo(score(a)));
-    final notes = ranked.take(40).map((r) => '- ${r.title} (${r.url}): ${r.summary} ${r.keyPoints.join('; ')}').join('\n');
+    // ponytail: the whole library goes in each question; fine for hundreds of notes, retrieval if it grows to thousands.
+    return all
+        .map((r) => '- ${r.title} [${r.tags.join(', ')}] (${r.url}): ${r.summary} ${r.keyPoints.join('; ')}')
+        .join('\n');
+  }
+
+  /// One chat turn from the user's saved notes. Gemini tries each saved key in turn on a rate limit.
+  Future<String> chat(String provider, List<String> turns) async {
+    final notes = await notesContext();
     if (notes.isEmpty) return 'Your library is empty. Share a reel to Reel Bot first.';
-    return Gemini(client, key).ask('Answer the question using only these saved notes. '
-        'Cite the note titles you used. If the notes do not cover it, say so.\n\nNotes:\n$notes\n\nQuestion: $question');
+    final system = 'You are Reel Bot. Answer from the user\'s saved reel notes below. Cite note titles you used. '
+        'If the notes do not cover it, say so briefly. Keep answers short.\n\nSaved notes:\n$notes';
+    final ks = switch (provider) {
+      'gemini' => await keys.geminiKeys,
+      'openai' => [?await keys.openai],
+      'claude' => [?await keys.claude],
+      _ => [?await keys.groq],
+    };
+    GeminiException? last;
+    for (final k in ks) {
+      try {
+        return await ChatModel(provider, k, client).complete(system, turns);
+      } on GeminiException catch (e) {
+        if (e.kind == GeminiFailure.rejected) rethrow;
+        last = e;
+      }
+    }
+    throw last ?? GeminiException(GeminiFailure.badKey, 'Add a ${ChatModel.labels[provider]} key in Settings');
   }
 }
