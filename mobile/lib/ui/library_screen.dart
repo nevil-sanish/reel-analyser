@@ -76,7 +76,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
         title: const Text('Reel Bot'),
         actions: [
           IconButton(tooltip: 'Ask your library', icon: const Icon(Icons.forum_outlined), onPressed: () => _open(AskScreen(s))),
-          IconButton(tooltip: 'Your AI keys', icon: const Icon(Icons.key_outlined), onPressed: () => _open(SettingsScreen(s))),
+          IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined), onPressed: () => _open(SettingsScreen(s))),
         ],
       ),
       body: RefreshIndicator(

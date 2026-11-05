@@ -17,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _gemini = TextEditingController();
   final _apify = TextEditingController();
+  bool _autoSave = false;
 
   @override
   void initState() {
@@ -24,6 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     () async {
       _gemini.text = await widget.services.keys.gemini ?? '';
       _apify.text = await widget.services.keys.apify ?? '';
+      final s = await widget.services.bridge.status();
+      if (mounted) setState(() => _autoSave = s.autoSave);
     }();
   }
 
@@ -59,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your AI keys')),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -92,6 +95,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: _export, icon: const Icon(Icons.download), label: const Text('Export to Downloads/ReelBot')),
           OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.upload), label: const Text('Import library.json')),
+          const Divider(height: 40),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Auto-Save (experimental)'),
+            subtitle: const Text('The bubble\'s Save presses Share → Reel Bot for you. If it misses, it goes back and asks '
+                'you to share by hand. Off: Save only asks you to share.'),
+            value: _autoSave,
+            onChanged: (v) async {
+              await widget.services.bridge.setAutoSave(v);
+              setState(() => _autoSave = v);
+            },
+          ),
         ],
       ),
     );

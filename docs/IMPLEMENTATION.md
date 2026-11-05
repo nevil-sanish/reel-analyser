@@ -463,6 +463,12 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 
 **Never** automate anything else: no scrolling, likes, follows or opening profiles.
 
+**v0.3.0 as built:**
+- Step 3 runs for both apps: if "Reel Bot" isn't in the sheet, it presses "Share to…" / "More" once (YouTube's own sheet can need it too), then scrolls once.
+- The share button is found by guessed ids (`clips_share_button`, `direct_share_button`, `row_feed_button_share` / `reel_dyn_share`, `share_button`, `reel_share_button`), then by its "Share" / "Send" description. Replace the ids from a capture, as for §3.2.
+- The system share sheet (`com.android.intentresolver`, `com.google.android.intentresolver`, `android`) is on the tracker's ignored list, so opening it doesn't end the session.
+- The switch is in Settings (`setAutoSave`); attempts are counted in `debug_state` (`autosave_tries`, `autosave_ok`, `autosave_last`).
+
 ## 7. Phase 4: daily digest
 
 `DigestWorker.kt` (Kotlin `WorkManager`, periodic, aimed at about 21:30). If the app's `last_opened` is before today, post one notification: "N reels · M min · K saved: titles…". Titles come from items already analysed in the background (status `done` / `caption+thumbnail` / `text-only`); if none are analysed yet, show "N reels · M min · K saved" without titles. Tapping it opens the app.

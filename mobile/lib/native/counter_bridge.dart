@@ -117,6 +117,7 @@ class CounterStatus {
   final int sdkInt;
   final String manufacturer;
   final bool capture;
+  final bool autoSave;
 
   CounterStatus.fromMap(Map m)
       : serviceEnabled = m['serviceEnabled'] == true,
@@ -125,7 +126,8 @@ class CounterStatus {
         notificationsAllowed = m['notificationsAllowed'] == true,
         sdkInt = (m['sdkInt'] as num?)?.toInt() ?? 0,
         manufacturer = m['manufacturer'] as String? ?? '',
-        capture = m['capture'] == true;
+        capture = m['capture'] == true,
+        autoSave = m['autoSave'] == true;
 
   /// Phones whose battery managers kill background services unless Autostart is allowed.
   bool get needsAutostart => const ['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'oneplus', 'vivo', 'iqoo', 'huawei', 'honor']
@@ -171,6 +173,9 @@ class CounterBridge {
       {for (final r in await _ch.invokeListMethod<Map>('debugState') ?? []) r['k'] as String: r['v'] as String};
 
   Future<void> setCapture(bool on) => _ch.invokeMethod('setCapture', {'on': on});
+
+  /// Experimental: the bubble's Save presses Share → Reel Bot itself.
+  Future<void> setAutoSave(bool on) => _ch.invokeMethod('setAutoSave', {'on': on});
 
   Future<CounterStatus> status() async => CounterStatus.fromMap((await _ch.invokeMapMethod('status'))!);
 

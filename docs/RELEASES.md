@@ -77,3 +77,4 @@ Release checklist:
 | 2026-11-05 | v0.1.0 | Phase 1: Share → summary. First APK (pre-release). Live and manual checks not yet run. |
 | 2026-11-05 | v0.1.1 | The library shows why queued items are waiting (Gemini HTTP status, network, Instagram pause, held lock); uncaught errors now mark an item failed instead of leaving it queued. |
 | 2026-11-06 | v0.2.0 | Phase 2: counter. Accessibility service, Today/History, setup checklist, debug screen with capture, unknown alert. Detection ids are the docs' starting guesses until captured from a phone. |
+| 2026-11-06 | v0.3.0 | Phase 3: bubble with Today count and Save; experimental auto-Save (off by default) with its success rate on the debug screen. Not yet measured against the 90% bar. |
