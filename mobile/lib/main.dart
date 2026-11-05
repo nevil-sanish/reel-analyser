@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'app_services.dart';
 import 'pipeline/background.dart';
+import 'ui/intro_screen.dart';
 import 'ui/library_screen.dart';
+import 'ui/theme.dart';
 import 'ui/today_screen.dart';
 
 Future<void> main() async {
@@ -10,19 +12,36 @@ Future<void> main() async {
   final services = await AppServices.create();
   await scheduleBackgroundAnalysis();
   await services.bridge.markOpened();
-  runApp(ReelBotApp(services));
+  runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
 }
 
-class ReelBotApp extends StatelessWidget {
+class ReelBotApp extends StatefulWidget {
   final AppServices services;
-  const ReelBotApp(this.services, {super.key});
+  final bool showIntro;
+  const ReelBotApp(this.services, {required this.showIntro, super.key});
+
+  @override
+  State<ReelBotApp> createState() => _ReelBotAppState();
+}
+
+class _ReelBotAppState extends State<ReelBotApp> {
+  late var _intro = widget.showIntro;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Reel Bot',
-        theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
-        darkTheme: ThemeData(colorSchemeSeed: Colors.deepPurple, brightness: Brightness.dark, useMaterial3: true),
-        home: HomeScreen(services),
+        debugShowCheckedModeBanner: false,
+        theme: Brand.theme(Brightness.light),
+        darkTheme: Brand.theme(Brightness.dark),
+        home: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          child: _intro
+              ? IntroScreen(onDone: () {
+                  widget.services.keys.setIntroSeen();
+                  setState(() => _intro = false);
+                })
+              : HomeScreen(widget.services),
+        ),
       );
 }
 

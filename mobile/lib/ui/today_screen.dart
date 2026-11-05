@@ -6,6 +6,7 @@ import '../app_services.dart';
 import '../native/counter_bridge.dart';
 import 'debug_screen.dart';
 import 'setup_screen.dart';
+import 'theme.dart';
 
 class TodayScreen extends StatefulWidget {
   final AppServices services;
@@ -63,7 +64,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final most = _days.fold(1, (m, d) => d.reels > m ? d.reels : m);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Today'),
+        title: const Text('Today', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           IconButton(tooltip: 'Debug', icon: const Icon(Icons.bug_report_outlined), onPressed: () => _open(DebugScreen(widget.services))),
         ],
@@ -92,17 +93,26 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                   trailing: TextButton(onPressed: () => _open(DebugScreen(widget.services)), child: const Text('Debug')),
                 ),
               ),
-            const SizedBox(height: 24),
-            Center(child: Text('${today.reels}', style: theme.textTheme.displayLarge)),
-            Center(child: Text('reels and shorts today · ${(today.ms / 60000).round()} min', style: theme.textTheme.titleMedium)),
-            const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              children: [
-                Chip(label: Text('Instagram ${today.reelsByApp['instagram'] ?? 0}')),
-                Chip(label: Text('YouTube ${today.reelsByApp['youtube'] ?? 0}')),
-              ],
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(28)),
+              child: Column(children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: today.reels.toDouble()),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, v, _) => Text('${v.round()}',
+                      style: theme.textTheme.displayLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                ),
+                Text('reels and shorts today', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+                const SizedBox(height: 16),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                  _Stat('${(today.ms / 60000).round()} min', 'watching'),
+                  _Stat('${today.reelsByApp['instagram'] ?? 0}', 'Instagram'),
+                  _Stat('${today.reelsByApp['youtube'] ?? 0}', 'YouTube'),
+                ]),
+              ]),
             ),
             const SizedBox(height: 24),
             Text('Last 14 days', style: theme.textTheme.titleSmall),
@@ -112,7 +122,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                 child: Row(
                   children: [
                     SizedBox(width: 90, child: Text(d.date.substring(5))),
-                    Expanded(child: LinearProgressIndicator(value: d.reels / most, minHeight: 10)),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(value: d.reels / most, minHeight: 10),
+                      ),
+                    ),
                     SizedBox(width: 90, child: Text('${d.reels} · ${(d.ms / 60000).round()}m', textAlign: TextAlign.end)),
                   ],
                 ),
@@ -122,4 +137,16 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+class _Stat extends StatelessWidget {
+  final String value;
+  final String label;
+  const _Stat(this.value, this.label);
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+      ]);
 }

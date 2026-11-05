@@ -47,18 +47,25 @@ class ReelScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          SelectableText(reel.title, style: t.headlineSmall),
+          SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app].join(' · '), style: t.bodySmall),
           if (reel.analysis != 'done') ...[
             const SizedBox(height: 8),
             Chip(
               avatar: const Icon(Icons.info_outline, size: 16),
-              label: Text(reel.analysis == 'text-only' ? 'Summary from saved text only' : 'Summary from caption + thumbnail'),
+              label: Text(reel.analysis == 'text-only'
+                  ? 'From saved text only: the link never arrived or the reel couldn\'t be fetched'
+                  : reel.app == 'instagram'
+                      ? 'From caption + thumbnail: Instagram didn\'t hand over the video (best step ${reel.step})'
+                      : 'From title + thumbnail: Gemini couldn\'t watch this video'),
             ),
           ],
           const SizedBox(height: 16),
-          SelectableText(reel.summary, style: t.bodyLarge),
+          Card(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: Padding(padding: const EdgeInsets.all(16), child: SelectableText(reel.summary, style: t.bodyLarge)),
+          ),
           if (reel.keyPoints.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Key points', style: t.titleMedium),
