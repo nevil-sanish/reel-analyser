@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'app_services.dart';
 import 'pipeline/background.dart';
 import 'ui/chat_screen.dart';
 import 'ui/intro_screen.dart';
 import 'ui/library_screen.dart';
+import 'ui/liquid.dart';
 import 'ui/theme.dart';
 import 'ui/today_screen.dart';
 
@@ -78,18 +78,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: IndexedStack(
-            index: _tab, children: [ChatScreen(widget.services), TodayScreen(widget.services), LibraryScreen(widget.services)]),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: (i) {
-            HapticFeedback.selectionClick();
-            setState(() => _tab = i);
-          },
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Ask'),
-            NavigationDestination(icon: Icon(Icons.today_outlined), label: 'Today'),
-            NavigationDestination(icon: Icon(Icons.video_library_outlined), label: 'Library'),
+        // The liquid background is drawn once here, behind all three tabs; the tab bar floats over it.
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: Stack(children: [
+          const Positioned.fill(child: LiquidBackground()),
+          IndexedStack(index: _tab, children: [ChatScreen(widget.services), TodayScreen(widget.services), LibraryScreen(widget.services)]),
+        ]),
+        bottomNavigationBar: GlassTabBar(
+          index: _tab,
+          onTap: (i) => setState(() => _tab = i),
+          tabs: const [
+            (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Ask'),
+            (Icons.insights_outlined, Icons.insights, 'Today'),
+            (Icons.video_library_outlined, Icons.video_library, 'Library'),
           ],
         ),
       );

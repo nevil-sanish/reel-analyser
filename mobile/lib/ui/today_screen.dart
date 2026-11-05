@@ -7,6 +7,7 @@ import '../native/counter_bridge.dart';
 import 'debug_screen.dart';
 import 'setup_screen.dart';
 import 'theme.dart';
+import 'liquid.dart';
 
 class TodayScreen extends StatefulWidget {
   final AppServices services;
@@ -62,7 +63,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
     final today = _days.where((d) => d.date == localDate()).firstOrNull ?? DayTotal(localDate(), const {}, 0, 0);
     final most = _days.fold(1, (m, d) => d.reels > m ? d.reels : m);
-    return Scaffold(
+    return LiquidScaffold(
+      background: false,
       appBar: AppBar(
         title: const Text('Today', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
@@ -72,7 +74,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120), // clear of the floating tab bar
           children: [
             if (_status != null && !_status!.serviceEnabled)
               Card(

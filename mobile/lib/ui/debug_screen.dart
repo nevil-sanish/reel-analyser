@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../native/counter_bridge.dart';
+import 'liquid.dart';
 
 /// What the counter sees, and the screen-structure capture used to fix DetectionRules.kt (IMPLEMENTATION §3.0).
 class DebugScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _DebugScreenState extends State<DebugScreen> {
   Widget build(BuildContext context) {
     final mono = Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace');
     final now = _state['now'];
-    return Scaffold(
+    return LiquidScaffold(
       appBar: AppBar(title: const Text('Counter debug'), actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _load)]),
       body: ListView(
         padding: const EdgeInsets.all(16),

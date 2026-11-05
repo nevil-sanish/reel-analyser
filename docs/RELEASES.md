@@ -83,3 +83,4 @@ Release checklist:
 | 2026-11-06 | v0.6.0 | Chat is the home tab with a provider + model picker; cheaper models first and smaller chat context; Reels-gradient theme and slide-to-unlock intro; seen dot and 3-day archive; note-ready notification and 9 pm nudge. |
 | 2026-11-06 | v0.6.1 | Shorter notes (1 sentence, up to 3 points and tags) for fewer tokens and a cleaner note screen; haptic feedback across the app. |
 | 2026-11-06 | v0.6.2 | Instagram embed-player step against "text only" notes, with one-time retry and a Try again button; swipe to delete or archive; saved time on notes. |
+| 2026-11-06 | v0.7.0 | Liquid-glass look: drifting gradient background, frosted cards and floating tab bar, iOS-style transitions; chat opens on one big ask bar that glides into the conversation. |

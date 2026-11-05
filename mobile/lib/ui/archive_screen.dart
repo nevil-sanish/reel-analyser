@@ -4,6 +4,7 @@ import '../app_services.dart';
 import '../core/models.dart';
 import 'library_screen.dart';
 import 'reel_screen.dart';
+import 'liquid.dart';
 
 /// Seen notes older than 3 days. Still searchable, still used by the chat; restore one from its note.
 class ArchiveScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return Scaffold(
+    return LiquidScaffold(
       appBar: AppBar(title: const Text('Archive')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),

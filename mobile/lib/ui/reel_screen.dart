@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
+import 'liquid.dart';
 
 class ReelScreen extends StatefulWidget {
   final AppServices services;
@@ -26,7 +27,7 @@ class _ReelScreenState extends State<ReelScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return Scaffold(
+    return LiquidScaffold(
       appBar: AppBar(
         actions: [
           IconButton(
@@ -107,7 +108,6 @@ class _ReelScreenState extends State<ReelScreen> {
             ),
           const SizedBox(height: 16),
           Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
             child: Padding(padding: const EdgeInsets.all(16), child: SelectableText(reel.summary, style: t.bodyLarge)),
           ),
           // Just the gist: older notes may hold more points, the screen shows three.

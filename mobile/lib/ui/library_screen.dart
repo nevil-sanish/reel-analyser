@@ -7,6 +7,7 @@ import 'archive_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
+import 'liquid.dart';
 
 class LibraryScreen extends StatefulWidget {
   final AppServices services;
@@ -75,7 +76,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return Scaffold(
+    return LiquidScaffold(
+      background: false,
       appBar: AppBar(
         title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
@@ -86,7 +88,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       body: RefreshIndicator(
         onRefresh: _process,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120), // clear of the floating tab bar
           children: [
             SearchBar(
               hintText: 'Search your notes',
@@ -147,7 +149,6 @@ class _Banner extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Card(
-          color: Theme.of(context).colorScheme.secondaryContainer,
           child: ListTile(
             leading: icon == null ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(icon),
             title: Text(text),

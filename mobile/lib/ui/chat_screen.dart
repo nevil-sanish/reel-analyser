@@ -5,6 +5,7 @@ import '../app_services.dart';
 import '../pipeline/providers.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
+import 'liquid.dart';
 
 /// The home tab: chat over saved notes, with the provider and model the user picks.
 class ChatScreen extends StatefulWidget {
@@ -126,15 +127,29 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       });
 
+  String get _modelLabel => _provider == null
+      ? ''
+      : '${ChatModel.labels[_provider]} · ${ChatModel.models[_provider]![_model ?? ChatModel.models[_provider]!.keys.first]}';
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return Scaffold(
+    final chatting = _turns.isNotEmpty;
+    const slide = Duration(milliseconds: 600);
+    return LiquidScaffold(
+      background: false,
       appBar: AppBar(
-        title: const Text('Ask your reels', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: AnimatedOpacity(opacity: chatting ? 1 : 0, duration: slide, child: const Text('Ask your reels')),
         actions: [
-          if (_turns.isNotEmpty)
-            IconButton(tooltip: 'New chat', icon: const Icon(Icons.add_comment_outlined), onPressed: () => setState(_turns.clear)),
+          if (chatting)
+            IconButton(
+              tooltip: 'New chat',
+              icon: const Icon(Icons.add_comment_outlined),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                setState(_turns.clear);
+              },
+            ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
@@ -144,76 +159,125 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             },
           ),
         ],
-        bottom: _provider == null
-            ? null
-            : PreferredSize(
-                preferredSize: const Size.fromHeight(44),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ActionChip(
-                    avatar: const Icon(Icons.auto_awesome, size: 18),
-                    label: Text('${ChatModel.labels[_provider]} · ${ChatModel.models[_provider]![_model ?? ChatModel.models[_provider]!.keys.first]}'),
-                    onPressed: _pick,
-                  ),
-                ),
-              ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: _turns.isEmpty
-                ? ListView(
-                    padding: const EdgeInsets.all(24),
-                    children: [
-                      const SizedBox(height: 24),
-                      const Center(child: BrandMark(size: 72)),
+          // Landing: a big title over the ask bar; it fades away once the first question is sent.
+          IgnorePointer(
+            ignoring: chatting,
+            child: AnimatedOpacity(
+              opacity: chatting ? 0 : 1,
+              duration: slide,
+              child: AnimatedSlide(
+                offset: chatting ? const Offset(0, -0.1) : Offset.zero,
+                duration: slide,
+                curve: Curves.easeOutCubic,
+                child: Align(
+                  alignment: const Alignment(0, -0.6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const BrandMark(size: 64),
                       const SizedBox(height: 20),
+                      ShaderMask(
+                        shaderCallback: (r) => Brand.gradient.createShader(r),
+                        child: Text('What did you\nlearn today?',
+                            textAlign: TextAlign.center,
+                            style: t.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -1)),
+                      ),
+                      const SizedBox(height: 10),
                       Text(
                         _providers.isEmpty
                             ? 'Add a Gemini, OpenAI, Claude or Groq key in Settings to chat with your saved reels.'
-                            : 'Ask anything about the reels you\'ve saved. Answers come only from your notes.',
+                            : 'Ask anything. Answers come only from the reels you saved.',
                         textAlign: TextAlign.center,
                         style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant),
                       ),
-                      const SizedBox(height: 20),
-                      if (_providers.isNotEmpty)
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [for (final i in _ideas) ActionChip(label: Text(i), onPressed: () => _send(i))],
-                        ),
-                    ],
-                  )
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _turns.length + (_busy ? 1 : 0),
-                    itemBuilder: (_, i) => i == _turns.length
-                        ? const Align(alignment: Alignment.centerLeft, child: _Typing())
-                        : _Bubble(_turns[i], mine: i.isEven),
+                    ]),
                   ),
+                ),
+              ),
+            ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      enabled: _providers.isNotEmpty,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(hintText: 'Ask your saved reels…'),
+          if (chatting)
+            Positioned.fill(
+              child: ListView.builder(
+                controller: _scroll,
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 120 + MediaQuery.paddingOf(context).bottom),
+                itemCount: _turns.length + (_busy ? 1 : 0),
+                itemBuilder: (_, i) => i == _turns.length
+                    ? const Align(alignment: Alignment.centerLeft, child: _Typing())
+                    : _Bubble(_turns[i], mine: i.isEven),
+              ),
+            ),
+          // The ask bar: mid-screen and large at first, then it glides to the bottom and the chat takes over.
+          AnimatedAlign(
+            alignment: chatting ? Alignment.bottomCenter : const Alignment(0, 0.25),
+            duration: slide,
+            curve: Curves.easeOutCubic,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  if (_provider != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: ActionChip(
+                        avatar: const Icon(Icons.auto_awesome, size: 16),
+                        label: Text(_modelLabel, style: const TextStyle(fontSize: 12)),
+                        onPressed: _pick,
+                      ),
                     ),
+                  Glass(
+                    radius: 32,
+                    padding: EdgeInsets.fromLTRB(20, chatting ? 4 : 12, 6, chatting ? 4 : 12),
+                    child: Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _input,
+                          enabled: _providers.isNotEmpty,
+                          minLines: 1,
+                          maxLines: chatting ? 4 : 6,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          style: TextStyle(fontSize: chatting ? 16 : 18),
+                          decoration: const InputDecoration(
+                            hintText: 'Ask your saved reels…',
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _busy ? null : _send,
+                        child: AnimatedOpacity(
+                          opacity: _busy ? 0.4 : 1,
+                          duration: const Duration(milliseconds: 200),
+                          child: Container(
+                            width: 46,
+                            height: 46,
+                            decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
+                            child: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ]),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(onPressed: _busy ? null : _send, icon: const Icon(Icons.arrow_upward_rounded)),
-                ],
+                  if (!chatting && _providers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [for (final i in _ideas) ActionChip(label: Text(i), onPressed: () => _send(i))],
+                      ),
+                    ),
+                ]),
               ),
             ),
           ),
@@ -243,8 +307,9 @@ class _Bubble extends StatelessWidget {
           constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.8),
           decoration: BoxDecoration(
             gradient: mine ? Brand.gradient : null,
-            color: mine ? null : c.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(18),
+            color: mine ? null : Brand.glass(Theme.of(context).brightness),
+            border: mine ? null : Border.all(color: Brand.glassEdge(Theme.of(context).brightness)),
+            borderRadius: BorderRadius.circular(22),
           ),
           child: SelectableText(text, style: TextStyle(color: mine ? Colors.white : c.onSurface)),
         ),
@@ -260,7 +325,7 @@ class _Typing extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHigh, borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(color: Brand.glass(Theme.of(context).brightness), borderRadius: BorderRadius.circular(22)),
         child: const SizedBox(width: 24, height: 12, child: LinearProgressIndicator()),
       );
 }

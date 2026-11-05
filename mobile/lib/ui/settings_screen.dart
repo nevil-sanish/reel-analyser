@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
+import 'liquid.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppServices services;
@@ -123,13 +124,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LiquidScaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
             child: const ListTile(
               leading: Icon(Icons.lock_rounded),
               title: Text('Everything stays on this phone'),

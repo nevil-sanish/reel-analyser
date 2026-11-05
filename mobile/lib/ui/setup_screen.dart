@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../native/counter_bridge.dart';
+import 'liquid.dart';
 
 /// The permissions the counter needs, re-checked whenever you come back from a system screen.
 class SetupScreen extends StatefulWidget {
@@ -50,7 +51,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final s = _s;
-    return Scaffold(
+    return LiquidScaffold(
       appBar: AppBar(title: const Text('Set up counting')),
       body: s == null
           ? const Center(child: CircularProgressIndicator())
