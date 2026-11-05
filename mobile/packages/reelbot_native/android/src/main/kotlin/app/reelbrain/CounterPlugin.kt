@@ -55,6 +55,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 mapOf(
                     "step" to r.step, "author" to r.media.author, "caption" to r.media.caption,
                     "thumbnailUrl" to r.media.thumbnailUrl, "videoPath" to r.videoPath,
+                    "images" to r.media.images.take(10),
                 )
             }
             "videoFrames" -> offMain(result) { videoFrames(call.argument<String>("path")!!, call.argument<Int>("count") ?: 6) }

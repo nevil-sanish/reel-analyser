@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -224,6 +226,7 @@ class ReelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final yt = reel.app == 'youtube';
+    final photo = reel.app == 'photo';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -242,11 +245,12 @@ class ReelCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(10)),
-                    child: Icon(yt ? Icons.smart_display_rounded : Icons.movie_rounded, size: 16, color: Colors.white),
+                    child: Icon(photo ? Icons.photo_rounded : yt ? Icons.smart_display_rounded : Icons.movie_rounded,
+                        size: 16, color: Colors.white),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(reel.author.isEmpty ? (yt ? 'YouTube' : 'Instagram') : '@${reel.author}',
+                    child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : 'Instagram') : '@${reel.author}',
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),
@@ -273,6 +277,15 @@ class ReelCard extends StatelessWidget {
                       ),
                     ),
                 ]),
+                if (photo) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(File(reel.url.substring('photo:'.length)),
+                        height: 140, width: double.infinity, fit: BoxFit.cover, cacheWidth: 600,
+                        errorBuilder: (_, _, _) => const SizedBox()),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Text(reel.title,
                     style: t.textTheme.titleMedium?.copyWith(fontWeight: reel.seenAt == 0 ? FontWeight.w700 : FontWeight.w500),

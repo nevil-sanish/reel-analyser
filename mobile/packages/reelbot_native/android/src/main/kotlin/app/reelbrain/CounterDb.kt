@@ -130,6 +130,13 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         })
     }
 
+    /** v0.8: a shared photo, already copied into app storage; the runner sends it to the AI as an image. */
+    fun addPhoto(path: String, caption: String, now: Long) {
+        writableDatabase.insert("pending_items", null, ContentValues().apply {
+            put("url", "photo:$path"); put("app", "photo"); put("caption", caption); put("created_at", now)
+        })
+    }
+
     /** Bubble Save: a URL-less row the next shared link attaches to within 2 min (SHARE-IN). */
     fun addBubbleSave(app: String, item: ItemText?, onScreenText: String, now: Long) {
         writableDatabase.insert("pending_items", null, ContentValues().apply {

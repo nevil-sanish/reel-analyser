@@ -129,4 +129,22 @@ class IgParseTest {
         assertEquals("https://scontent.cdninstagram.com/p.jpg", m.thumbnailUrl)
         assertEquals(null, IgParse.player("", "", "", "", ""))
     }
+
+    // T-IG-F13
+    @Test fun carouselPostListsEveryPicture() {
+        val sc = org.json.JSONObject("""{"display_url":"https://cdn/1.jpg","owner":{"username":"a"},
+          "edge_sidecar_to_children":{"edges":[
+            {"node":{"display_url":"https://cdn/1.jpg","is_video":false}},
+            {"node":{"display_url":"https://cdn/v.jpg","is_video":true,"video_url":"https://cdn/v.mp4"}},
+            {"node":{"display_url":"https://cdn/2.jpg","is_video":false}}]}}""")
+        assertEquals(listOf("https://cdn/1.jpg", "https://cdn/2.jpg"), IgParse.shortcodeMedia(sc).images)
+        val single = org.json.JSONObject("""{"display_url":"https://cdn/only.jpg","is_video":false}""")
+        assertEquals(listOf("https://cdn/only.jpg"), IgParse.shortcodeMedia(single).images)
+        val polaris = org.json.JSONObject("""{"carousel_media":[
+            {"image_versions2":{"candidates":[{"url":"https://cdn/p1.jpg"}]}},
+            {"image_versions2":{"candidates":[{"url":"https://cdn/p2.jpg"}]},"video_versions":[{"url":"https://cdn/x.mp4","width":720}]},
+            {"image_versions2":{"candidates":[{"url":"https://cdn/p3.jpg"}]}}]}""")
+        assertEquals(listOf("https://cdn/p1.jpg", "https://cdn/p3.jpg"), IgParse.polarisItem(polaris).images)
+        assertEquals(listOf("x"), IgMedia().fill(IgMedia(images = listOf("x"))).images)
+    }
 }

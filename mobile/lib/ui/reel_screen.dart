@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,14 +32,15 @@ class _ReelScreenState extends State<ReelScreen> {
     return LiquidScaffold(
       appBar: AppBar(
         actions: [
-          IconButton(
-            tooltip: 'Copy link',
-            icon: const Icon(Icons.link),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: reel.url));
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied')));
-            },
-          ),
+          if (reel.app != 'photo')
+            IconButton(
+              tooltip: 'Copy link',
+              icon: const Icon(Icons.link),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: reel.url));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied')));
+              },
+            ),
           IconButton(
             tooltip: reel.archived ? 'Move back to library' : 'Archive',
             icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
@@ -72,6 +75,14 @@ class _ReelScreenState extends State<ReelScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (reel.app == 'photo') ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.file(File(reel.url.substring('photo:'.length)),
+                  width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox()),
+            ),
+            const SizedBox(height: 16),
+          ],
           SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app, savedOn(reel.savedAt)].join(' · '), style: t.bodySmall),

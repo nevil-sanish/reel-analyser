@@ -173,6 +173,7 @@ Rules for every `IG-*` call:
 - **Phase** 1 · owner `ShareReceiverActivity.kt`
 - `Intent.ACTION_SEND`, `type text/plain`, `EXTRA_TEXT` contains the URL (Instagram adds text around it; YouTube sends `https://youtube.com/shorts/{id}?si=…`).
 - Accepted URLs: `instagram.com/(reel|reels|p|tv)/{code}`, `youtube.com/shorts/{id}`, `youtu.be/{id}`. Tracking params (`igsh`, `si`) stripped.
+- v0.8.0: also `ACTION_SEND` with `image/*` (`EXTRA_STREAM`): copied into app storage and queued as `photo:<path>`.
 - **Tests:** `T-SHARE-01`…`T-SHARE-04`
 
 ### IG-EMBED-PLAYER: cascade step 2 (v0.6.2)
@@ -200,7 +201,7 @@ Rules for every `IG-*` call:
 | `pendingItems` | 1 | `{status}` | `List<{id,url,app,author,caption,onScreenText,createdAt,status}>` | `T-CH-01` |
 | `setPendingStatus` | 1 | `{id, status, title}` (`title` from v0.4.0, for the digest) | `null` | `T-CH-01` |
 | `markOpened` | 4 | — | `null` (writes `last_opened`) | `T-DIG-02` |
-| `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath}`; error `rate_limited` | `T-CH-02` |
+| `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath, images}` (`images` from v0.8.0); error `rate_limited` | `T-CH-02` |
 | `saveDownload` | 1 | `{name, text}` | `null` (writes `Downloads/ReelBot/<name>`) | manual `T-MAN-01` |
 | `videoFrames` | 5 | `{path, count}` | `List<Uint8List>` 512 px JPEGs, evenly spaced | `T-PIPE-12` (faked) |
 | `openUrl` | 5 | `{url}` | `null` (ACTION_VIEW) | manual |
@@ -235,3 +236,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.5.0: GEM-GENERATE uses `gemini-3.6-flash` (3.5 Flash now routes there), YouTube as a `watch?v=` URL with no mimeType, `videoMetadata.fps` 0.5, `thinkingLevel` minimal and low media resolution on the first attempt. New: OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT, `videoFrames`, `openUrl` (feedback). |
 | 2026-11-06 | v0.6.0: cheaper models first to save tokens: Gemini `gemini-3.5-flash-lite` then `gemini-3.6-flash`; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`; Groq `openai/gpt-oss-20b`. Chat sends only matching notes. Chat picks provider and model (cheapest default, one stronger option each: `gemini-3.6-flash`, `gpt-6.1-terra`, `claude-sonnet-5-5`, `openai/gpt-oss-120b`). `notifyNotes` added. |
 | 2026-11-06 | v0.6.2: IG-EMBED-PLAYER added as cascade step 2; later steps renumbered (Apify now 7). |
+| 2026-11-06 | v0.8.0: SHARE-IN takes images; `fetchInstagram` returns `images` (post and carousel stills). |

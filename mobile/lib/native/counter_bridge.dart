@@ -42,7 +42,10 @@ class IgFetch {
   final String thumbnailUrl;
   final String? videoPath;
 
-  const IgFetch({this.step = 0, this.author = '', this.caption = '', this.thumbnailUrl = '', this.videoPath});
+  /// Every picture of a photo post or carousel (up to 10).
+  final List<String> images;
+
+  const IgFetch({this.step = 0, this.author = '', this.caption = '', this.thumbnailUrl = '', this.videoPath, this.images = const []});
 
   factory IgFetch.fromMap(Map m) => IgFetch(
         step: (m['step'] as num?)?.toInt() ?? 0,
@@ -50,6 +53,7 @@ class IgFetch {
         caption: m['caption'] as String? ?? '',
         thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
         videoPath: m['videoPath'] as String?,
+        images: [for (final u in m['images'] as List? ?? const []) '$u'],
       );
 }
 

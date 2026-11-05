@@ -84,3 +84,4 @@ Release checklist:
 | 2026-11-06 | v0.6.1 | Shorter notes (1 sentence, up to 3 points and tags) for fewer tokens and a cleaner note screen; haptic feedback across the app. |
 | 2026-11-06 | v0.6.2 | Instagram embed-player step against "text only" notes, with one-time retry and a Try again button; swipe to delete or archive; saved time on notes. |
 | 2026-11-06 | v0.7.0 | Liquid-glass look: drifting gradient background, frosted cards and floating tab bar, iOS-style transitions; chat opens on one big ask bar that glides into the conversation. |
+| 2026-11-06 | v0.8.0 | Share photos and screenshots to Reel Bot; Instagram photo posts and carousels analysed from all their images. |

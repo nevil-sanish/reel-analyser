@@ -299,6 +299,29 @@ void main() {
     expect((await db.reels()).single.step, 2);
   });
 
+  test('T-PIPE-14 a shared photo goes to Gemini as an image and is saved as a note', () async {
+    final f = File('${tmp.path}/p.jpg')..writeAsBytesSync([0xFF, 0xD8, 1, 2]);
+    final b = FakeBridge([PendingItem(id: 9, url: 'photo:${f.path}', app: 'photo', caption: 'from my gallery', createdAt: 5)]);
+    await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
+    final parts = body(requests.single)['contents'][0]['parts'] as List;
+    expect(parts.first['inlineData']['mimeType'], 'image/jpeg');
+    expect(jsonEncode(parts), contains('not a video'));
+    expect(b.statuses[9], 'done');
+    final r = (await db.reels()).single;
+    expect((r.app, r.url, r.title), ('photo', 'photo:${f.path}', 'Rice'));
+  });
+
+  test('T-PIPE-15 an Instagram carousel post sends every picture in one request', () async {
+    final b = FakeBridge([const PendingItem(id: 10, url: 'https://www.instagram.com/p/Cpost123/', app: 'instagram', createdAt: 5)],
+        fetch: (_) => const IgFetch(step: 1, author: 'a', caption: 'tips', images: ['https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg']));
+    await runner(b, (r) async => r.url.host == 'cdn' ? http.Response.bytes([1, 2, 3], 200) : http.Response(_gemOk(), 200)).processQueue();
+    final gen = requests.where(isGenerate).single;
+    final parts = body(gen)['contents'][0]['parts'] as List;
+    expect(parts.where((p) => p['inlineData'] != null).length, 3);
+    expect(jsonEncode(parts), contains('3 images of one post'));
+    expect(b.statuses[10], 'done');
+  });
+
   test('search matches tags and summary', () async {
     await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'Rice', summary: 'boil', tags: ['food'], savedAt: 1));
     await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Squats', summary: 'legs', savedAt: 2));

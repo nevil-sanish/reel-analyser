@@ -103,6 +103,13 @@ If you only have a caption, a thumbnail or frames, work from those and say so in
     }
   }
 
+  /// v0.8: pictures, not a video: a photo the user shared, or every image of an Instagram post, in order.
+  Future<Analysis> images(List<List<int>> jpegs, {String context = ''}) => _analyse([
+        for (final j in jpegs) {'inlineData': {'mimeType': 'image/jpeg', 'data': base64Encode(j)}},
+        {'text': '${jpegs.length == 1 ? 'This is a photo or screenshot' : 'These are the ${jpegs.length} images of one post, in order'}, '
+            'not a video. Note what it shows or teaches.\n$context'},
+      ]);
+
   /// Caption + thumbnail: used when no video could be fetched.
   Future<Analysis> captionAndThumbnail({required String text, List<int>? jpeg}) => _analyse([
         if (jpeg != null) {'inlineData': {'mimeType': 'image/jpeg', 'data': base64Encode(jpeg)}},

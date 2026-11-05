@@ -182,7 +182,11 @@ class Runner {
     if (item.url.isEmpty) return item.author.isEmpty && item.caption.isEmpty && item.onScreenText.isEmpty ? 'failed' : await _textOnly(item);
     if (await library.has(item.url)) return 'done'; // shared twice
     try {
-      return item.app == 'youtube' ? await _youtube(item) : await _instagram(item);
+      return switch (item.app) {
+        'youtube' => await _youtube(item),
+        'photo' => await _photo(item),
+        _ => await _instagram(item),
+      };
     } on GeminiException catch (e) {
       if (e.kind == GeminiFailure.badKey) throw _RetryLater('Your key was rejected (${e.message.split(':').first}). Check it in Settings.', stopAll: true);
       if (e.kind == GeminiFailure.retryLater) throw _RetryLater(e.toString());
@@ -194,6 +198,29 @@ class Runner {
     } on http.ClientException catch (e) {
       throw _RetryLater('network error ($e)');
     }
+  }
+
+  /// v0.8: shared photos. The image stays in app storage, so the note can show it.
+  Future<String> _photo(PendingItem item) async {
+    final f = File(item.url.substring('photo:'.length));
+    if (!await f.exists()) return 'failed';
+    final context = item.caption.isEmpty ? '' : 'Shared with: ${item.caption}';
+    await _save(item, await _pictures([await f.readAsBytes()], context), 'done', 0, caption: item.caption);
+    return 'done';
+  }
+
+  /// Gemini for pictures, else OpenAI / Claude (they take images too).
+  Future<Analysis> _pictures(List<List<int>> jpegs, String context) async {
+    Object? err;
+    try {
+      return await _gemini((g) => g.images(jpegs, context: context));
+    } on _NoGemini {
+      // fall through
+    } on GeminiException catch (e) {
+      if (e.kind == GeminiFailure.rejected || _others.isEmpty) rethrow;
+      err = e;
+    }
+    return _viaOthers('Pictures, not a video (${jpegs.length}). $context', jpegs, err);
   }
 
   Future<String> _youtube(PendingItem item) async {
@@ -261,6 +288,14 @@ class Runner {
         if (e.kind != GeminiFailure.rejected) rethrow;
       } finally {
         if (await file.exists()) await file.delete(); // only text is kept
+      }
+    }
+    // v0.8: a photo post or carousel: every picture, so the note covers the whole post, not just its cover.
+    if (videoPath == null && f.images.isNotEmpty) {
+      final pics = [for (final u in f.images.take(10)) ?await _bytes(u)];
+      if (pics.isNotEmpty) {
+        await _save(item, await _pictures(pics, context), 'done', step, author: author, caption: caption);
+        return 'done';
       }
     }
     if (caption.isNotEmpty || thumb.isNotEmpty) {

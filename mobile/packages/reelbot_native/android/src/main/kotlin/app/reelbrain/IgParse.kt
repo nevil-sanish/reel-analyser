@@ -10,9 +10,11 @@ data class IgMedia(
     val thumbnailUrl: String = "",
     val caption: String = "",
     val author: String = "",
+    /** v0.8: every picture of a photo post or carousel, in order (videos in a carousel are left out). */
+    val images: List<String> = emptyList(),
 ) {
     val hasVideo get() = videoUrl.isNotEmpty()
-    val hasMeta get() = thumbnailUrl.isNotEmpty() || caption.isNotEmpty() || author.isNotEmpty()
+    val hasMeta get() = thumbnailUrl.isNotEmpty() || caption.isNotEmpty() || author.isNotEmpty() || images.isNotEmpty()
 
     /** Keeps this media's fields and fills the blanks from [other]. */
     fun fill(other: IgMedia) = IgMedia(
@@ -20,6 +22,7 @@ data class IgMedia(
         thumbnailUrl.ifEmpty { other.thumbnailUrl },
         caption.ifEmpty { other.caption },
         author.ifEmpty { other.author },
+        images.ifEmpty { other.images },
     )
 }
 
@@ -73,11 +76,17 @@ object IgParse {
         }
         val caption = m.optJSONObject("edge_media_to_caption")?.optJSONArray("edges")
             ?.optJSONObject(0)?.optJSONObject("node")?.optString("text").orEmpty()
+        val kids = m.optJSONObject("edge_sidecar_to_children")?.optJSONArray("edges")
+        val pics = if (kids != null) {
+            (0 until kids.length()).mapNotNull { kids.optJSONObject(it)?.optJSONObject("node") }
+                .filter { !it.optBoolean("is_video") }.map { it.optString("display_url") }.filter { it.isNotEmpty() }
+        } else listOfNotNull(m.optString("display_url").takeIf { it.isNotEmpty() && !m.optBoolean("is_video") })
         return IgMedia(
             videoUrl = video,
             thumbnailUrl = m.optString("display_url"),
             caption = caption,
             author = m.optJSONObject("owner")?.optString("username").orEmpty(),
+            images = pics,
         )
     }
 
@@ -91,11 +100,16 @@ object IgParse {
         if (thumb.isEmpty()) thumb = firstOf(carousel) {
             it.optJSONObject("image_versions2")?.optJSONArray("candidates")?.optJSONObject(0)?.optString("url").orEmpty()
         }
+        fun still(o: JSONObject) = if (o.optJSONArray("video_versions")?.length() ?: 0 > 0) null
+            else o.optJSONObject("image_versions2")?.optJSONArray("candidates")?.optJSONObject(0)?.optString("url")?.takeIf { it.isNotEmpty() }
+        val pics = if (carousel != null) (0 until carousel.length()).mapNotNull { carousel.optJSONObject(it)?.let(::still) }
+            else listOfNotNull(still(item))
         return IgMedia(
             videoUrl = video,
             thumbnailUrl = thumb,
             caption = item.optJSONObject("caption")?.optString("text").orEmpty(),
             author = item.optJSONObject("user")?.optString("username").orEmpty(),
+            images = pics,
         )
     }
 
