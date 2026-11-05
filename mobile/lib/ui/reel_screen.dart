@@ -73,7 +73,7 @@ class _ReelScreenState extends State<ReelScreen> {
         children: [
           SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app].join(' · '), style: t.bodySmall),
+          Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app, savedOn(reel.savedAt)].join(' · '), style: t.bodySmall),
           if (reel.analysis != 'done') ...[
             const SizedBox(height: 8),
             // Short label; the long reason is a tooltip, for when a fallback needs reporting.
@@ -89,6 +89,22 @@ class _ReelScreenState extends State<ReelScreen> {
               ),
             ),
           ],
+          if (reel.analysis != 'done' && !reel.url.startsWith('local:'))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try again with the video'),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  final ok = await services.retry(reel);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share the reel to Reel Bot again to retry.')));
+                  if (ok) Navigator.pop(context);
+                },
+              ),
+            ),
           const SizedBox(height: 16),
           Card(
             color: Theme.of(context).colorScheme.primaryContainer,

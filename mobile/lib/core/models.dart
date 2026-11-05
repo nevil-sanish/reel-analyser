@@ -89,3 +89,24 @@ class Reel {
 
   static List<String> _strings(Object? v) => v is List ? v.map((e) => '$e').toList() : const [];
 }
+
+const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// Card label for when a note was saved: "just now", "5m ago", "3h ago", "yesterday", "3 Nov", "3 Nov 2025".
+String savedAgo(int ms, DateTime now) {
+  final t = DateTime.fromMillisecondsSinceEpoch(ms);
+  final d = now.difference(t);
+  if (d.inMinutes < 1) return 'just now';
+  if (d.inHours < 1) return '${d.inMinutes}m ago';
+  final today = DateTime(now.year, now.month, now.day);
+  if (!t.isBefore(today)) return '${d.inHours}h ago';
+  if (!t.isBefore(today.subtract(const Duration(days: 1)))) return 'yesterday';
+  return '${t.day} ${_months[t.month - 1]}${t.year == now.year ? '' : ' ${t.year}'}';
+}
+
+/// Note screen: "Saved 6 Nov 2026, 14:05".
+String savedOn(int ms) {
+  final t = DateTime.fromMillisecondsSinceEpoch(ms);
+  String two(int n) => n.toString().padLeft(2, '0');
+  return 'Saved ${t.day} ${_months[t.month - 1]} ${t.year}, ${two(t.hour)}:${two(t.minute)}';
+}

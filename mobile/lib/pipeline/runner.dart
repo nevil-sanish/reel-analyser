@@ -242,7 +242,7 @@ class Runner {
         if (caption.isEmpty) caption = a.caption;
         if (thumb.isEmpty) thumb = a.thumbnailUrl;
         if (a.videoUrl.isNotEmpty) videoPath = await _download(a.videoUrl, code);
-        if (videoPath != null || step == 0) step = 6;
+        if (videoPath != null || step == 0) step = 7; // Apify, after the six Kotlin steps
       }
     }
 

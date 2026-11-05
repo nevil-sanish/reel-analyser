@@ -175,6 +175,11 @@ Rules for every `IG-*` call:
 - Accepted URLs: `instagram.com/(reel|reels|p|tv)/{code}`, `youtube.com/shorts/{id}`, `youtu.be/{id}`. Tracking params (`igsh`, `si`) stripped.
 - **Tests:** `T-SHARE-01`…`T-SHARE-04`
 
+### IG-EMBED-PLAYER: cascade step 2 (v0.6.2)
+- Owner `InstagramFetcher.playerStep`. Loads `https://www.instagram.com/reel/{code}/embed/captioned/` in a hidden WebView with autoplay allowed, presses play, and waits up to 8 s for the `<video>` element's https src. Any `.mp4` request to `cdninstagram.com` / `fbcdn.net` seen by `shouldInterceptRequest` is the backup, with `bytestart`/`byteend` stripped to get the whole file. Also reads the poster, `.UsernameText` and `.Caption` (username prefix and "View all … comments" removed).
+- From v0.6.2 the cascade is: 1 embed HTML, **2 embed player**, 3 post page, 4 GraphQL logged-out, 5 GraphQL web, 6 oEmbed, 7 Apify (Dart).
+- **Tests:** `T-IG-F12`
+
 ### OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT: other AI providers (v0.5.0)
 - Owner `lib/pipeline/providers.dart` (`ChatModel`). Raw HTTP; keys from Settings.
 - **OpenAI** `POST https://api.openai.com/v1/chat/completions`, `gpt-6-luna` (v0.6.0; was `gpt-6.1-terra`), `reasoning_effort: none`, images as `image_url` data URLs with `detail: low`.
@@ -229,3 +234,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.4.0: WM-DIGEST implemented; `setPendingStatus` takes `title`; `markOpened` added. |
 | 2026-11-06 | v0.5.0: GEM-GENERATE uses `gemini-3.6-flash` (3.5 Flash now routes there), YouTube as a `watch?v=` URL with no mimeType, `videoMetadata.fps` 0.5, `thinkingLevel` minimal and low media resolution on the first attempt. New: OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT, `videoFrames`, `openUrl` (feedback). |
 | 2026-11-06 | v0.6.0: cheaper models first to save tokens: Gemini `gemini-3.5-flash-lite` then `gemini-3.6-flash`; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`; Groq `openai/gpt-oss-20b`. Chat sends only matching notes. Chat picks provider and model (cheapest default, one stronger option each: `gemini-3.6-flash`, `gpt-6.1-terra`, `claude-sonnet-5-5`, `openai/gpt-oss-120b`). `notifyNotes` added. |
+| 2026-11-06 | v0.6.2: IG-EMBED-PLAYER added as cascade step 2; later steps renumbered (Apify now 7). |

@@ -159,7 +159,7 @@ void main() {
     expect(a.headers['Authorization'], 'Bearer APIFYSECRET');
     expect(a.url.toString(), isNot(contains('APIFYSECRET')));
     expect(b.statuses[2], 'done');
-    expect((await db.reels()).single.step, 6);
+    expect((await db.reels()).single.step, 7); // Apify is step 7 since the embed player became step 2
   });
 
   test('T-PIPE-06 429 keeps the item queued; 400 tries next level then next model', () async {
@@ -283,6 +283,20 @@ void main() {
     expect((await db.reels(archived: false)).firstWhere((r) => r.url == 'b').seenAt, 0);
     await db.setArchived('a', false);
     expect((await db.reels(archived: true)), isEmpty);
+  });
+
+  test('T-PIPE-13 a retried note goes back through the queue instead of being skipped as saved', () async {
+    final b = FakeBridge([ig], fetch: (_) => const IgFetch(step: 1, author: 'chef'));
+    final run = runner(b, (r) async => http.Response(_gemOk(), 200));
+    await run.processQueue();
+    expect(b.statuses[2], 'text-only');
+    // What AppServices.retry does: re-queue the row, drop the note.
+    b.statuses.remove(2);
+    await db.delete(ig.url);
+    b.fetch = (_) => IgFetch(step: 2, videoPath: (File('${tmp.path}/v.mp4')..writeAsBytesSync([0])).path);
+    await run.processQueue();
+    expect(b.statuses[2], 'done');
+    expect((await db.reels()).single.step, 2);
   });
 
   test('search matches tags and summary', () async {

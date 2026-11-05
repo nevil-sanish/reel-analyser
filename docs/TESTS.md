@@ -43,6 +43,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-IG-F08 | fixture | IG-OEMBED | oEmbed JSON → title, author, thumbnail | passing |
 | T-IG-F09 | fixture | IG-JS-BUNDLE | Saved bundle → `docId` for both query names; missing → keeps bundled id | passing |
 | T-IG-F10 | fixture | carousels | Carousel in each format (embed, page, GraphQL) → first video, else images | passing |
+| T-IG-F12 | fixture | IG-EMBED-PLAYER | Range params stripped from a CDN .mp4; blob src → intercepted mp4; caption loses the username and "View all" tail | passing |
 | T-IG-F11 | fixture | IG-POST-PAGE | Rendered page: `<video>` src (not blob:) or `"video_url"` in HTML, plus og:image / og:description → video, thumbnail, author, caption | passing |
 
 ## 2. Pipeline and analysis (Phase 1)
@@ -62,6 +63,8 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-PIPE-12 | integration | OPENAI-CHAT | No Gemini key, OpenAI key, Instagram video → 6 frames sent as images; fenced JSON reply parsed | passing |
 | T-UI-01 | widget | intro | Next ×2 reaches *Slide to unlock*; a short drag springs back; a full drag unlocks once with a heavy haptic (`test/intro_test.dart`) | passing |
 | T-LIB-01 | integration | library DB | Seen notes saved > 3 days ago archive; unseen stay; `reels()` without a filter still sees all; restore works | passing |
+| T-PIPE-13 | integration | runner | A re-queued text-only Instagram item with its note removed is analysed again, now from video | passing |
+| T-UI-02 | unit | saved label | just now / 30m ago / 12h ago / yesterday / 3 Nov / 31 Dec 2025; full "Saved 6 Nov 2026, 09:05" | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
 | T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
@@ -158,6 +161,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.6.2: T-IG-F12, T-PIPE-13 and T-UI-02 added and passing; the Apify test expects step 7. |
 | 2026-11-06 | v0.6.1: T-UI-01 also checks the unlock haptic. |
 | 2026-11-06 | v0.6.0: T-UI-01 and T-LIB-01 added and passing; T-PIPE-01 checks the note-ready titles; T-DIG-02 checks the empty-day nudge. |
 | 2026-11-06 | v0.5.0: T-PIPE-11/12 and T-IG-F11 added and passing; T-PIPE-01 also checks the watch URL, fps 0.5 and minimal thinking; T-SHARE-04 now 2 min. |

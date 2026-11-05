@@ -54,7 +54,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                   textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
             ),
           for (final r in _reels)
-            ReelCard(r, onTap: () async {
+            SwipeNote(widget.services, r, onChanged: _load, onTap: () async {
               await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(widget.services, r)));
               _load();
             }),

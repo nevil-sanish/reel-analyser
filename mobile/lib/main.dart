@@ -14,6 +14,7 @@ Future<void> main() async {
   final services = await AppServices.create();
   await scheduleBackgroundAnalysis();
   await services.bridge.markOpened();
+  await services.retryTextOnlyOnce();
   runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
 }
 

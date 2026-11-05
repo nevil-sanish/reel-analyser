@@ -115,4 +115,18 @@ class IgParseTest {
         assertEquals("https://cdn/v.mp4", IgParse.rendered("https://cdn/v.mp4", "", "", "")!!.videoUrl)
         assertEquals(null, IgParse.rendered("blob:x", "", "", ""))
     }
+
+    // T-IG-F12
+    @Test fun playerStepGivesVideoAndCleanCaption() {
+        assertEquals("https://scontent.cdninstagram.com/o1/v/t2/f2/m86/abc.mp4?efg=xyz",
+            IgParse.progressiveMp4("https://scontent.cdninstagram.com/o1/v/t2/f2/m86/abc.mp4?bytestart=0&byteend=9999&efg=xyz"))
+        assertEquals(null, IgParse.progressiveMp4("https://static.cdninstagram.com/rsrc.php/x.js"))
+        val m = IgParse.player("blob:https://www.instagram.com/1", "https://video.fbcdn.net/v.mp4", "https://scontent.cdninstagram.com/p.jpg",
+            "chef.anna", "chef.anna Five minute pasta with three things\nView all 12 comments")!!
+        assertEquals("https://video.fbcdn.net/v.mp4", m.videoUrl)
+        assertEquals("Five minute pasta with three things", m.caption)
+        assertEquals("chef.anna", m.author)
+        assertEquals("https://scontent.cdninstagram.com/p.jpg", m.thumbnailUrl)
+        assertEquals(null, IgParse.player("", "", "", "", ""))
+    }
 }

@@ -23,8 +23,12 @@ class KeyStore {
   Future<int> get geminiTurn async => int.tryParse(await _read('gemini_turn') ?? '') ?? 0;
   Future<void> setGeminiTurn(int v) => _write('gemini_turn', '$v');
 
-  Future<bool> get introSeen async => await _read('intro_seen') != null;
-  Future<void> setIntroSeen() => _write('intro_seen', '1');
+  Future<bool> get introSeen => flag('intro_seen');
+  Future<void> setIntroSeen() => setFlag('intro_seen');
+
+  /// One-time markers (intro shown, a migration done).
+  Future<bool> flag(String k) async => await _read(k) != null;
+  Future<void> setFlag(String k) => _write(k, '1');
 
   Future<String?> _read(String k) async {
     final v = (await _s.read(key: k))?.trim();

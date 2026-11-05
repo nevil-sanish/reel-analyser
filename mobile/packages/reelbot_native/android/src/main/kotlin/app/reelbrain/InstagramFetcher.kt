@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -24,10 +26,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 /**
- * Runs Instagram cascade steps 1–5 (PLAN §3.2, ENDPOINTS §2) and downloads the video in the same call.
- * Steps 2–4 run in a hidden WebView: it is real Chrome, so the logged-out endpoints answer it
+ * Runs Instagram cascade steps 1–6 (PLAN §3.2, ENDPOINTS §2) and downloads the video in the same call.
+ * v0.6.2 added step 2 (the embed player), so the post page is 3, the GraphQL calls 4–5 and oEmbed 6.
+ * Steps 2–5 run in a hidden WebView: it is real Chrome, so the logged-out endpoints answer it
  * without faking a TLS fingerprint, and its cookie jar is separate from the Instagram app's.
- * Step 6 (Apify) is in Dart. Never logs in.
+ * Step 7 (Apify) is in Dart. Never logs in.
  */
 class InstagramFetcher private constructor(private val ctx: Context) {
     companion object {
@@ -39,7 +42,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         fun get(ctx: Context): InstagramFetcher =
             instance ?: synchronized(this) { instance ?: InstagramFetcher(ctx.applicationContext).also { instance = it } }
 
-        // Collects what steps 2–4 need from the loaded post page.
+        // Collects what steps 3–5 need from the loaded post page.
         private const val COLLECT_JS = """(function(){
   var s=[];document.querySelectorAll('script[data-sjs],script[type="application/json"]').forEach(function(e){s.push(e.textContent)});
   var m=document.documentElement.innerHTML.match(/\["LSD",\[\],\{"token":"([^"]+)"/);
@@ -49,6 +52,20 @@ class InstagramFetcher private constructor(private val ctx: Context) {
   return JSON.stringify({path:location.pathname,scripts:s,lsd:m?m[1]:"",bundles:b,
     video:v?(v.currentSrc||v.src||""):"",videoUrl:vu?vu[1]:"",ogImage:og("image"),ogDescription:og("description")});
 })()"""
+
+        // Step 2: press play in the embed player, then wait up to 8 s for a real (non-blob) video link.
+        private fun playerJs(id: String) = """(function(){
+  function txt(s){var e=document.querySelector(s);return e?e.innerText.trim():""}
+  var tries=0;function poll(){
+    var v=document.querySelector('video');
+    if(!v){var b=document.querySelector('.EmbedVideo,.VideoPlayButton,[aria-label*="Play"],.EmbeddedMedia');if(b)b.click();}
+    var src=v?(v.currentSrc||v.src||""):"";
+    if((src.indexOf("https://")===0)||++tries>16){
+      var img=document.querySelector('img.EmbeddedMediaImage');
+      ReelBot.done("$id",200,JSON.stringify({video:src,poster:(v&&v.poster)||(img?img.src:""),
+        author:txt('.UsernameText')||txt('.Username'),caption:txt('.Caption')}));
+    }else setTimeout(poll,500);
+  }poll();})()"""
     }
 
     data class Result(val step: Int, val media: IgMedia, val videoPath: String?)
@@ -93,6 +110,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         var page: Page? = null
         return listOf(
             { _ -> embedStep(code) },
+            { _ -> playerStep(code) },
             { _ ->
                 val p = loadPage(code)
                 page = p
@@ -135,7 +153,45 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         }
     }
 
-    // --- step 5: IG-OEMBED --------------------------------------------------------------
+    // --- step 2: IG-EMBED-PLAYER --------------------------------------------------------
+
+    /**
+     * The embed page in a hidden WebView with autoplay allowed. Logged out, the embed player is the one
+     * Instagram page that reliably plays the reel, so its `<video>` src (or any .mp4 it requests) is the file.
+     */
+    @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
+    private fun playerStep(code: String): StepResult {
+        cascade.throttle()
+        val id = UUID.randomUUID().toString()
+        val fut = CompletableFuture<Pair<Int, String>>()
+        jsResults[id] = fut
+        val seenMp4 = java.util.concurrent.atomic.AtomicReference("")
+        main.post {
+            webView?.destroy()
+            val wv = WebView(ctx)
+            webView = wv
+            wv.settings.javaScriptEnabled = true
+            wv.settings.mediaPlaybackRequiresUserGesture = false
+            wv.settings.blockNetworkImage = false
+            wv.addJavascriptInterface(JsBridge(), "ReelBot")
+            wv.webViewClient = object : WebViewClient() {
+                override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
+                    IgParse.progressiveMp4(req.url.toString())?.let { seenMp4.compareAndSet("", it) }
+                    return null
+                }
+                override fun onPageFinished(view: WebView, url: String) { view.evaluateJavascript(playerJs(id), null) }
+            }
+            wv.loadUrl("https://www.instagram.com/reel/$code/embed/captioned/")
+        }
+        val (_, body) = try { fut.get(TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS) } catch (_: TimeoutException) {
+            jsResults.remove(id); return StepResult.Empty
+        }
+        val o = runCatching { JSONObject(body) }.getOrNull() ?: return StepResult.Empty
+        val media = IgParse.player(o.optString("video"), seenMp4.get(), o.optString("poster"), o.optString("author"), o.optString("caption"))
+        return media?.let { StepResult.Media(it) } ?: StepResult.Empty
+    }
+
+    // --- step 6: IG-OEMBED --------------------------------------------------------------
 
     private fun oembedStep(code: String): StepResult {
         val target = URLEncoder.encode("https://www.instagram.com/reel/$code/", "UTF-8")
@@ -147,13 +203,14 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         }
     }
 
-    // --- step 2: IG-POST-PAGE -----------------------------------------------------------
+    // --- step 3: IG-POST-PAGE -----------------------------------------------------------
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun loadPage(code: String): Page? {
         cascade.throttle()
         val done = CompletableFuture<String>()
         main.post {
+            webView?.destroy() // step 2's player
             val wv = WebView(ctx)
             webView = wv
             wv.settings.javaScriptEnabled = true
@@ -185,7 +242,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         main.post { webView?.destroy(); webView = null }
     }
 
-    // --- steps 3–4: IG-GQL-LOGGEDOUT / IG-GQL-WEB, plus IG-JS-BUNDLE ---------------------
+    // --- steps 4–5: IG-GQL-LOGGEDOUT / IG-GQL-WEB, plus IG-JS-BUNDLE ---------------------
 
     private fun gqlStep(page: Page, key: String, variables: String, web: Boolean): StepResult {
         var rediscovered = false

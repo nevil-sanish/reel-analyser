@@ -108,6 +108,24 @@ object IgParse {
     }
 
     /** IG-POST-PAGE: walks each `data-sjs` script's JSON for the item whose `pk`/`id` is [mediaId]. */
+    private val mp4 = Regex("""^https://[^/]*(cdninstagram\.com|fbcdn\.net)/.*\.mp4""")
+    private val rangeParams = Regex("""[&?](bytestart|byteend)=\d+""")
+
+    /**
+     * A video request seen by the player WebView, as a whole-file link: Instagram fetches ranges
+     * (`bytestart`/`byteend`), and the same URL without them returns the full file.
+     */
+    fun progressiveMp4(url: String): String? =
+        url.takeIf { mp4.containsMatchIn(it) }?.replace(rangeParams, "")?.replace(".mp4&", ".mp4?")
+
+    /** Step 2: what the embed player showed. The caption block starts with the username; that is dropped. */
+    fun player(videoSrc: String, interceptedMp4: String, poster: String, author: String, caption: String): IgMedia? {
+        val video = videoSrc.takeIf { it.startsWith("https://") } ?: interceptedMp4
+        val a = author.trim().removePrefix("@")
+        val c = caption.trim().removePrefix(a).trim().substringBefore("\nView all").trim()
+        return IgMedia(video, poster, c, a).takeIf { it.hasVideo || it.hasMeta }
+    }
+
     private val ogDesc = Regex("""- ([\w.]+) on [^:]*: ["“](.*)["”]\.?$""", RegexOption.DOT_MATCHES_ALL)
 
     /**

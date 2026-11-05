@@ -125,10 +125,10 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
             if (_reels.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text('Seen notes move to the archive after 3 days.',
+                child: Text('Swipe left to delete, right to archive. Seen notes archive themselves after 3 days.',
                     style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ),
-            for (final r in _reels) ReelCard(r, onTap: () => _open(ReelScreen(s, r))),
+            for (final r in _reels) SwipeNote(s, r, onTap: () => _open(ReelScreen(s, r)), onChanged: _reload),
           ],
         ),
       ),
@@ -158,11 +158,66 @@ class _Banner extends StatelessWidget {
       );
 }
 
+/// A note card you can swipe: left deletes (with Undo), right archives it, or restores it in the archive.
+class SwipeNote extends StatelessWidget {
+  final AppServices services;
+  final Reel reel;
+  final VoidCallback onTap;
+  final VoidCallback onChanged;
+  const SwipeNote(this.services, this.reel, {required this.onTap, required this.onChanged, super.key});
+
+  Future<void> _delete(BuildContext context) async {
+    HapticFeedback.heavyImpact();
+    await services.library.delete(reel.url);
+    onChanged();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: const Text('Note deleted'),
+        action: SnackBarAction(label: 'Undo', onPressed: () async {
+          await services.library.saveReel(reel);
+          onChanged();
+        }),
+      ));
+  }
+
+  Widget _bg(BuildContext context, Alignment a, IconData icon, String label, Color color) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        alignment: a,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: Colors.white),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ]),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return Dismissible(
+      key: ValueKey(reel.url),
+      background: _bg(context, Alignment.centerLeft, reel.archived ? Icons.unarchive_rounded : Icons.archive_rounded,
+          reel.archived ? 'Restore' : 'Archive', Brand.violet),
+      secondaryBackground: _bg(context, Alignment.centerRight, Icons.delete_rounded, 'Delete', c.error),
+      onDismissed: (dir) async {
+        if (dir == DismissDirection.endToStart) return _delete(context);
+        HapticFeedback.mediumImpact();
+        await services.library.setArchived(reel.url, !reel.archived);
+        onChanged();
+      },
+      child: ReelCard(reel, onTap: onTap, onDelete: () => _delete(context)),
+    );
+  }
+}
+
 /// A note in a list; a gradient dot marks one you haven't opened yet.
 class ReelCard extends StatelessWidget {
   final Reel reel;
   final VoidCallback onTap;
-  const ReelCard(this.reel, {required this.onTap, super.key});
+  final VoidCallback? onDelete;
+  const ReelCard(this.reel, {required this.onTap, this.onDelete, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +248,7 @@ class ReelCard extends StatelessWidget {
                     child: Text(reel.author.isEmpty ? (yt ? 'YouTube' : 'Instagram') : '@${reel.author}',
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
+                  Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),
                   if (reel.analysis != 'done') Icon(Icons.text_snippet_outlined, size: 16, color: t.colorScheme.outline),
                   if (reel.seenAt == 0)
                     Semantics(
@@ -202,6 +258,17 @@ class ReelCard extends StatelessWidget {
                         width: 10,
                         height: 10,
                         decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
+                      ),
+                    ),
+                  if (onDelete != null)
+                    SizedBox.square(
+                      dimension: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Delete',
+                        iconSize: 18,
+                        icon: Icon(Icons.delete_outline, color: t.colorScheme.outline),
+                        onPressed: onDelete,
                       ),
                     ),
                 ]),
