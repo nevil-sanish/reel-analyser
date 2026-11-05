@@ -20,8 +20,9 @@ object Digest {
     /** After 21:00, once a day, and only if you didn't open the app today. */
     fun shouldPost(openedToday: Boolean, postedToday: Boolean, hour: Int) = !openedToday && !postedToday && hour >= 21
 
-    /** "37 reels · 52 min · 3 saved: A, B, C"; without titles when nothing has been analysed yet. */
+    /** "37 reels · 52 min · 3 saved: A, B, C"; without titles when nothing has been analysed yet; a nudge on an empty day. */
     fun text(reels: Long, ms: Long, saved: Int, titles: List<String>): String {
+        if (reels == 0L && saved == 0) return "Nothing saved today. Saw a reel worth keeping? Share it to Reel Bot for the key points."
         val counts = "$reels reels · ${ms / 60000} min · $saved saved"
         return if (titles.isEmpty()) counts else "$counts: ${titles.take(3).joinToString(", ")}"
     }
@@ -34,6 +35,21 @@ object Digest {
 class DigestWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
     companion object {
         private const val CHANNEL = "reelbot_digest"
+
+        /** Notifications that open the app when tapped: the digest, and "note ready" after a background run. */
+        fun post(ctx: Context, id: Int, channel: String, channelName: String, title: String, text: String) {
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(NotificationChannel(channel, channelName, NotificationManager.IMPORTANCE_DEFAULT))
+            val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+            nm.notify(id, Notification.Builder(ctx, channel)
+                .setSmallIcon(ctx.applicationInfo.icon)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(text))
+                .setContentIntent(open?.let { PendingIntent.getActivity(ctx, 0, it, PendingIntent.FLAG_IMMUTABLE) })
+                .setAutoCancel(true)
+                .build())
+        }
 
         fun schedule(ctx: Context) {
             WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
@@ -55,18 +71,8 @@ class DigestWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params)
         val db = CounterDb.get(ctx)
         val day = db.daily(1, today)
         val (saved, titles) = db.savedToday(now)
-        val nm = ctx.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Daily digest", NotificationManager.IMPORTANCE_DEFAULT))
         val text = Digest.text(day.sumOf { it["reels"] as Long }, day.sumOf { it["ms"] as Long }, saved, titles)
-        val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
-        nm.notify(2, Notification.Builder(ctx, CHANNEL)
-            .setSmallIcon(ctx.applicationInfo.icon)
-            .setContentTitle("Today on Reels and Shorts")
-            .setContentText(text)
-            .setStyle(Notification.BigTextStyle().bigText(text))
-            .setContentIntent(open?.let { PendingIntent.getActivity(ctx, 0, it, PendingIntent.FLAG_IMMUTABLE) })
-            .setAutoCancel(true)
-            .build())
+        post(ctx, 2, CHANNEL, "Daily digest", "Today on Reels and Shorts", text)
         prefs.edit().putString(Digest.POSTED, today).apply()
         return Result.success()
     }

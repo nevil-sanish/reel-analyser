@@ -48,6 +48,9 @@ class Runner {
   /// Title of the note the current item produced, passed to Kotlin for the digest.
   String _title = '';
 
+  /// Notes made by the last run, for the "note ready" notification.
+  final finishedTitles = <String>[];
+
   late AnalysisKeys _keys;
   int _turn = 0;
   int _itemTurn = 0;
@@ -80,6 +83,7 @@ class Runner {
     }
     var finished = 0;
     lastProblem = null;
+    finishedTitles.clear();
     _badKeys.clear();
     _turn = await readTurn();
     try {
@@ -91,6 +95,7 @@ class Runner {
           _itemTurn = _turn++; // one reel per key: the next reel starts on the next key
           final status = await _process(item);
           await bridge.setPendingStatus(item.id, status, title: _title);
+          if (_title.isNotEmpty) finishedTitles.add(_title);
           finished++;
         } on _RetryLater catch (e) {
           lastProblem = 'Will retry: ${e.reason}';

@@ -101,7 +101,9 @@ void main() {
 
   test('T-PIPE-01 Shorts URL goes to Gemini as fileData', () async {
     final b = FakeBridge([yt]);
-    await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
+    final run = runner(b, (r) async => http.Response(_gemOk(), 200));
+    expect(await run.processQueue(), 1);
+    expect(run.finishedTitles, ['Rice']); // for the "note ready" notification
     final part = body(requests.single)['contents'][0]['parts'][0];
     expect(part['fileData']['fileUri'], 'https://www.youtube.com/watch?v=abcdefg');
     expect(part['videoMetadata']['fps'], 0.5); // token saver: half Gemini's default frame rate

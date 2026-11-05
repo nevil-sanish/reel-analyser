@@ -75,6 +75,11 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 prefs().edit().putBoolean(ReelCounterService.AUTO_SAVE, call.argument<Boolean>("on") == true).apply()
                 result.success(null)
             }
+            "notifyNotes" -> {
+                DigestWorker.post(ctx, 3, "reelbot_notes", "Notes ready",
+                    call.argument<String>("title")!!, call.argument<String>("text")!!)
+                result.success(null)
+            }
             "markOpened" -> {
                 prefs().edit().putLong(Digest.LAST_OPENED, System.currentTimeMillis()).apply()
                 result.success(null)

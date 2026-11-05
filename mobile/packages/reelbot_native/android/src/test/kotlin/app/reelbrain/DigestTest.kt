@@ -16,6 +16,7 @@ class DigestTest {
     // T-DIG-02 (rule and text)
     @Test fun countsOnlyAndWhenNotToPost() {
         assertEquals("5 reels · 2 min · 1 saved", Digest.text(5, 120000, 1, emptyList()))
+        assertTrue(Digest.text(0, 0, 0, emptyList()).startsWith("Nothing saved today"))
         assertFalse(Digest.shouldPost(openedToday = true, postedToday = false, hour = 22))
         assertFalse(Digest.shouldPost(openedToday = false, postedToday = true, hour = 22))
         assertFalse(Digest.shouldPost(openedToday = false, postedToday = false, hour = 20))

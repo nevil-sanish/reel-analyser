@@ -156,6 +156,9 @@ class CounterBridge {
   /// Opens a web page in the browser (feedback goes to the project's GitHub issues this way).
   Future<void> openUrl(String url) => _ch.invokeMethod('openUrl', {'url': url});
 
+  /// "Note ready" notification after a background run; tapping it opens the app.
+  Future<void> notifyNotes(String title, String text) => _ch.invokeMethod('notifyNotes', {'title': title, 'text': text});
+
   /// The digest is skipped on days the app was opened.
   Future<void> markOpened() => _ch.invokeMethod('markOpened');
 

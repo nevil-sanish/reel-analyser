@@ -10,7 +10,14 @@ void callbackDispatcher() {
     WidgetsFlutterBinding.ensureInitialized();
     final s = await AppServices.create();
     try {
-      await s.runner.processQueue();
+      if (await s.runner.processQueue() > 0) {
+        // Only from the background: with the app open, the library already shows the new notes.
+        final t = s.runner.finishedTitles;
+        await s.bridge.notifyNotes(
+          t.length == 1 ? 'Note ready' : '${t.length} notes ready',
+          t.length == 1 ? t.single : t.take(3).join(' · '),
+        );
+      }
     } finally {
       await s.library.close();
     }
