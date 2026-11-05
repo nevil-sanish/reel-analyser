@@ -59,6 +59,82 @@ class RateLimited implements Exception {
   String toString() => 'Instagram is rate-limiting; will retry later';
 }
 
+/// One row of Kotlin's `daily_counts` view.
+class DayCount {
+  final String date;
+  final String app;
+  final int reels;
+  final int ms;
+  final int unknown;
+  const DayCount(this.date, this.app, {this.reels = 0, this.ms = 0, this.unknown = 0});
+
+  factory DayCount.fromMap(Map m) => DayCount(m['date'] as String, m['app'] as String,
+      reels: (m['reels'] as num).toInt(), ms: (m['ms'] as num).toInt(), unknown: (m['unknown'] as num).toInt());
+}
+
+/// A day's rows summed over both apps.
+class DayTotal {
+  final String date;
+  final Map<String, int> reelsByApp;
+  final int ms;
+  final int unknown;
+  const DayTotal(this.date, this.reelsByApp, this.ms, this.unknown);
+
+  int get reels => reelsByApp.values.fold(0, (a, b) => a + b);
+
+  /// Same rule as the Kotlin alert: at least 5 unreadable and 30% of what was seen.
+  bool get detectionLooksBroken => unknown >= 5 && unknown * 10 >= (reels + unknown) * 3;
+
+  /// Groups `daily` rows by date, keeping their newest-first order.
+  static List<DayTotal> group(List<DayCount> rows) {
+    final out = <String, DayTotal>{};
+    for (final r in rows) {
+      final t = out[r.date];
+      out[r.date] = DayTotal(r.date, {...?t?.reelsByApp, r.app: r.reels}, (t?.ms ?? 0) + r.ms, (t?.unknown ?? 0) + r.unknown);
+    }
+    return out.values.toList();
+  }
+}
+
+class SeenItem {
+  final String app;
+  final String fp;
+  final int firstSeen;
+  final int dwellMs;
+  final String author;
+  final String caption;
+  const SeenItem(this.app, this.fp, this.firstSeen, this.dwellMs, this.author, this.caption);
+
+  factory SeenItem.fromMap(Map m) => SeenItem(m['app'] as String, m['fp'] as String, (m['firstSeen'] as num).toInt(),
+      (m['dwellMs'] as num).toInt(), m['author'] as String? ?? '', m['caption'] as String? ?? '');
+}
+
+class CounterStatus {
+  final bool serviceEnabled;
+  final bool serviceRunning;
+  final bool batteryExempt;
+  final bool notificationsAllowed;
+  final int sdkInt;
+  final String manufacturer;
+  final bool capture;
+
+  CounterStatus.fromMap(Map m)
+      : serviceEnabled = m['serviceEnabled'] == true,
+        serviceRunning = m['serviceRunning'] == true,
+        batteryExempt = m['batteryExempt'] == true,
+        notificationsAllowed = m['notificationsAllowed'] == true,
+        sdkInt = (m['sdkInt'] as num?)?.toInt() ?? 0,
+        manufacturer = m['manufacturer'] as String? ?? '',
+        capture = m['capture'] == true;
+
+  /// Phones whose battery managers kill background services unless Autostart is allowed.
+  bool get needsAutostart => const ['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'oneplus', 'vivo', 'iqoo', 'huawei', 'honor']
+      .contains(manufacturer.toLowerCase());
+}
+
+/// The phone's local date as Kotlin writes it, `yyyy-MM-dd`.
+String localDate([DateTime? t]) => (t ?? DateTime.now()).toIso8601String().substring(0, 10);
+
 class CounterBridge {
   static const _ch = MethodChannel('reelbot/counter');
 
@@ -81,4 +157,24 @@ class CounterBridge {
 
   Future<void> saveDownload(String name, String text) =>
       _ch.invokeMethod('saveDownload', {'name': name, 'text': text});
+
+  Future<List<DayTotal>> history({int days = 14}) async {
+    final rows = await _ch.invokeListMethod<Map>('daily', {'days': days}) ?? [];
+    return DayTotal.group(rows.map(DayCount.fromMap).toList());
+  }
+
+  Future<List<SeenItem>> seenItems(String date) async =>
+      (await _ch.invokeListMethod<Map>('seenItems', {'date': date}) ?? []).map(SeenItem.fromMap).toList();
+
+  /// `debug_state` as key → value.
+  Future<Map<String, String>> debugState() async =>
+      {for (final r in await _ch.invokeListMethod<Map>('debugState') ?? []) r['k'] as String: r['v'] as String};
+
+  Future<void> setCapture(bool on) => _ch.invokeMethod('setCapture', {'on': on});
+
+  Future<CounterStatus> status() async => CounterStatus.fromMap((await _ch.invokeMapMethod('status'))!);
+
+  /// Opens a system screen: `openAccessibilitySettings`, `openAppInfo`, `openNotificationSettings`,
+  /// `requestBatteryExemption` or `openAutostart`.
+  Future<void> open(String screen) => _ch.invokeMethod(screen);
 }

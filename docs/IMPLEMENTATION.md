@@ -189,6 +189,8 @@ Why Kotlin + WebView: the logged-out endpoints only answer a real browser (yt-dl
 
 Before writing `DetectionRules.kt`, ship `ReelCounterService` (§3.4) with a rules stub whose `inReels` is "package is Instagram/YouTube", and the debug screen (§4.3). On your phone, turn on capture, open Reels and Shorts (include a caption-less reel and a reel mid-swipe), and copy `tree_instagram` / `tree_youtube`. Fill the id lists in §3.2 from those trees. The lists below are only starting points.
 
+**v0.2.0 status:** built without a phone, so `DetectionRules.kt` ships the starting-point ids below (likes ids guessed: `like_count`, `clips_like_count`, `likes_count` / `like_button`, `reel_like_button`) plus the fallback. The capture step is still to do: paste the trees, then replace the lists and add the T-RULE-06 fixtures.
+
 ### 3.1 `ReelTracker.kt`: pure logic, JVM-testable
 
 **`ItemText(author, caption, audio, title, likes)`** is what could be read for the reel on screen. `likes` is the raw like-count label (`""` if none). `isBlank()` is true when author, caption, audio and title are blank (`likes` alone doesn't identify a reel).
@@ -328,7 +330,7 @@ CREATE VIEW daily_counts AS
    - every 3 s, write `debug_state["tree_<app>"]` (up to 400 lines of `V/- id Class [l,t,r,b] label`).
 
 **Unknown alert**
-- After each `addUnknown`, read today's totals for that app. If `unknown ≥ 5` and `unknown ≥ 30%` of `reels + unknown`, and no alert was posted today (`debug_state["alerted_<date>"]`), post a notification: "Reel Bot can't read Instagram/YouTube any more. An app update probably changed the screen. Open the debug screen." Tapping it opens the debug screen.
+- After each `addUnknown`, read today's totals for that app. If `unknown ≥ 5` and `unknown ≥ 30%` of `reels + unknown`, and no alert was posted today (`debug_state["alerted_<date>"]`), post a notification: "Reel Bot can't read Instagram/YouTube any more. An app update probably changed the screen. Open the debug screen." Tapping it opens the app (v0.2.0: the plugin can't route to a screen, so the Today screen's warning card links to the debug screen).
 - Needs `POST_NOTIFICATIONS` (asked for in the setup checklist).
 
 **Rules**
@@ -345,6 +347,7 @@ CREATE VIEW daily_counts AS
 | `setCapture {on}` | sets the debug flag |
 | `status` | `{serviceEnabled, serviceRunning, batteryExempt, notificationsAllowed, sdkInt, manufacturer, capture}` |
 | `openAccessibilitySettings` | `Settings.ACTION_ACCESSIBILITY_SETTINGS` |
+| `openNotificationSettings` | `ACTION_APP_NOTIFICATION_SETTINGS`. The plugin has no activity, so it can't show the runtime `POST_NOTIFICATIONS` prompt; the setup screen sends you to the switch instead. |
 | `openAppInfo` | `ACTION_APPLICATION_DETAILS_SETTINGS` (where "Allow restricted settings" lives) |
 | `requestBatteryExemption` | `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, falling back to the battery optimisation list |
 | `openAutostart` | tries the OEM screens below, then App info |
@@ -367,7 +370,7 @@ CREATE VIEW daily_counts AS
 
 **`AndroidManifest.xml`**
 - Add `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` and `POST_NOTIFICATIONS`.
-- Set `android:label="@string/app_name"`.
+- v0.2.0: these live in the `reelbot_native` plugin's manifest (IMPLEMENTATION §0.1), with the label written as "Reel Bot".
 - Add the service:
 
 ```xml
@@ -387,7 +390,7 @@ CREATE VIEW daily_counts AS
 - **No `packageNames` filter.** The service must notice when you leave Instagram/YouTube, and Phase 3 reads the system share sheet.
 
 **`res/values/strings.xml`**
-- `app_name` = "Reel Bot".
+- v0.2.0: the strings are `reelbot_service_summary` / `reelbot_service_description` in the plugin, so they can't clash with the app's.
 - A summary and description that say it reads the Reels/Shorts screens to count them, keeps everything on the phone, and never taps, types or scrolls (until you turn on auto-Save in Phase 3).
 
 **`app/build.gradle.kts`**: `testImplementation("junit:junit:4.13.2")`.

@@ -2,7 +2,7 @@
 
 Android app that turns the Instagram Reels and YouTube Shorts you share to it into searchable AI notes, using your own Gemini key. Everything stays on the phone; there's no server.
 
-**v0.1.x = Phase 1** (Share → summary). The reel/short counter, the floating bubble and the daily digest come later ([PLAN.md](docs/PLAN.md) §6).
+**v0.2.x = Phase 2**: Share → summary, plus a counter of the reels and shorts you watch. The floating bubble and the daily digest come later ([PLAN.md](docs/PLAN.md) §6).
 
 ## Install
 
@@ -10,6 +10,7 @@ Android app that turns the Instagram Reels and YouTube Shorts you share to it in
 2. Open Reel Bot → key icon → paste a free Gemini API key from [aistudio.google.com](https://aistudio.google.com/apikey) → *Save keys*.
 3. In Instagram or YouTube, tap **Share** on a reel or short → **Reel Bot** (on Instagram: Share → *Share to…* first). You'll see "Saved ✓" and stay where you were.
 4. Notes appear in the Library within about 15 minutes, or immediately when you open the app.
+5. To count what you watch: Today → *Set up counting*, then follow the checklist (restricted settings, Accessibility, notifications, battery, Autostart on Xiaomi/Realme/Oppo/Vivo).
 
 Uninstalling deletes the library: use Settings → *Export* now and then.
 

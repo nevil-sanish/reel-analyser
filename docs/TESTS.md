@@ -101,7 +101,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-RULE-05 | unit | DetectionRules | Invisible nodes ignored | passing |
 | T-RULE-06 | fixture | DetectionRules | Captured `tree_instagram` / `tree_youtube` dumps from a real phone → expected `Observation` | planned |
 | T-ALERT-01 | unit | unknown alert | Fires at 5 unknown and ≥ 30%; not at 4; not twice a day | passing |
-| T-CH-03 | integration | CH-COUNTER | `daily`, `seenItems`, `debugState`, `setCapture` | planned |
+| T-CH-03 | integration | CH-COUNTER | `daily`, `seenItems`, `debugState`, `setCapture` | passing (Dart side; Kotlin side needs a device) |
 | T-CH-04 | integration | CH-COUNTER | `status` fields on API 29, 33, 35 | planned |
 
 ## 5. Bubble, auto-Save, digest, releases (Phases 3–4)
@@ -150,3 +150,4 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | First version: all tests planned, mapped to [ENDPOINTS.md](ENDPOINTS.md) and [PLAN.md](PLAN.md) phases. |
 | 2026-11-05 | v0.1.0: Phase 1 unit, fixture and integration tests written and passing (synthetic IG fixtures). T-IG-F04, T-CH-*, T-BG-*, live and manual checks still planned. |
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
+| 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |

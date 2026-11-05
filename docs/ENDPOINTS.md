@@ -189,7 +189,7 @@ Rules for every `IG-*` call:
 | `debugState` | 2 | — | `List<{k,v,ts}>` | `T-CH-03` |
 | `setCapture` | 2 | `{on}` | `null` | `T-CH-03` |
 | `status` | 2 | — | `{serviceEnabled,serviceRunning,batteryExempt,notificationsAllowed,sdkInt,manufacturer,capture}` | `T-CH-04` |
-| `openAccessibilitySettings`, `openAppInfo`, `requestBatteryExemption`, `openAutostart` | 2 | — | `null` (start an activity) | manual `T-MAN-04` |
+| `openAccessibilitySettings`, `openAppInfo`, `openNotificationSettings`, `requestBatteryExemption`, `openAutostart` | 2 | — | `null` (start an activity) | manual `T-MAN-04` |
 
 ### WM-ANALYSE: background analysis task
 - `workmanager` periodic task `analyse`, every 15 min, network required, `existingWorkPolicy: keep`. Entry `callbackDispatcher` in `lib/pipeline/background.dart`.
@@ -207,3 +207,4 @@ Rules for every `IG-*` call:
 |---|---|
 | 2026-11-05 | First version, from the open-source survey. |
 | 2026-11-05 | v0.1.0: implemented IG-EMBED…IG-CDN, APIFY-RUN, GEM-*, YT-OEMBED, SHARE-IN, CH-COUNTER (+ `saveDownload`), WM-ANALYSE. Kotlin moved to the `reelbot_native` plugin (IMPLEMENTATION §0.1). Not yet verified from a phone (`T-LIVE-*`). |
+| 2026-11-06 | v0.2.0: implemented the Phase 2 CH-COUNTER methods, plus `openNotificationSettings` (the plugin has no activity to ask for `POST_NOTIFICATIONS` itself). |

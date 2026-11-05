@@ -18,6 +18,10 @@ class FakeBridge implements CounterBridge {
   IgFetch Function(String url) fetch;
   FakeBridge(this.items, {IgFetch Function(String)? fetch}) : fetch = fetch ?? ((_) => const IgFetch());
 
+  // The runner never touches the counter methods.
+  @override
+  dynamic noSuchMethod(Invocation i) => throw UnimplementedError(i.memberName.toString());
+
   @override
   Future<List<PendingItem>> pendingItems({String? status}) async =>
       items.where((i) => !statuses.containsKey(i.id)).toList();
