@@ -103,4 +103,16 @@ class IgParseTest {
         assertEquals(1000, out.size())
         assertFalse(IgParse.copyCapped(ByteArray(1001).inputStream(), java.io.ByteArrayOutputStream(), 1000))
     }
+
+    // T-IG-F11
+    @Test fun renderedPageGivesVideoAndOgMeta() {
+        val m = IgParse.rendered("blob:https://www.instagram.com/x", "https://scontent.cdninstagram.com/v.mp4?a=1\\u0026b=2",
+            "https://scontent.cdninstagram.com/t.jpg", "12K likes, 40 comments - chef.anna on June 1, 2026: \"Five minute pasta\". ")!!
+        assertEquals("https://scontent.cdninstagram.com/v.mp4?a=1&b=2", m.videoUrl)
+        assertEquals("chef.anna", m.author)
+        assertEquals("Five minute pasta", m.caption)
+        assertEquals("https://scontent.cdninstagram.com/t.jpg", m.thumbnailUrl)
+        assertEquals("https://cdn/v.mp4", IgParse.rendered("https://cdn/v.mp4", "", "", "")!!.videoUrl)
+        assertEquals(null, IgParse.rendered("blob:x", "", "", ""))
+    }
 }

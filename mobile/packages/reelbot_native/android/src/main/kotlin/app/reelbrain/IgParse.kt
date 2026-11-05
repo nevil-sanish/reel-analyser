@@ -108,6 +108,20 @@ object IgParse {
     }
 
     /** IG-POST-PAGE: walks each `data-sjs` script's JSON for the item whose `pk`/`id` is [mediaId]. */
+    private val ogDesc = Regex("""- ([\w.]+) on [^:]*: ["“](.*)["”]\.?$""", RegexOption.DOT_MATCHES_ALL)
+
+    /**
+     * Step 2 fallback: what the page actually rendered. The `<video>` element's src (when it isn't a blob:),
+     * else a `"video_url"` left in the HTML, plus the og: tags for the caption and thumbnail.
+     */
+    fun rendered(videoSrc: String, videoUrlRaw: String, ogImage: String, ogDescription: String): IgMedia? {
+        val video = videoSrc.takeIf { it.startsWith("https://") }
+            ?: videoUrlRaw.replace("\\u0026", "&").replace("\\/", "/").takeIf { it.startsWith("https://") } ?: ""
+        val m = ogDesc.find(ogDescription.trim())
+        val media = IgMedia(video, ogImage, m?.groupValues?.get(2) ?: "", m?.groupValues?.get(1) ?: "")
+        return media.takeIf { it.hasVideo || it.hasMeta }
+    }
+
     fun postPage(scripts: List<String>, mediaId: String): IgMedia? {
         for (s in scripts) {
             val root = runCatching { JSONObject(s) }.getOrNull() ?: runCatching { JSONArray(s) }.getOrNull() ?: continue

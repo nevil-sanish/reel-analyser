@@ -43,6 +43,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-IG-F08 | fixture | IG-OEMBED | oEmbed JSON → title, author, thumbnail | passing |
 | T-IG-F09 | fixture | IG-JS-BUNDLE | Saved bundle → `docId` for both query names; missing → keeps bundled id | passing |
 | T-IG-F10 | fixture | carousels | Carousel in each format (embed, page, GraphQL) → first video, else images | passing |
+| T-IG-F11 | fixture | IG-POST-PAGE | Rendered page: `<video>` src (not blob:) or `"video_url"` in HTML, plus og:image / og:description → video, thumbnail, author, caption | passing |
 
 ## 2. Pipeline and analysis (Phase 1)
 

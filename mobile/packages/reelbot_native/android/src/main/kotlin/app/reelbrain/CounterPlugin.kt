@@ -57,6 +57,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     "thumbnailUrl" to r.media.thumbnailUrl, "videoPath" to r.videoPath,
                 )
             }
+            "videoFrames" -> offMain(result) { videoFrames(call.argument<String>("path")!!, call.argument<Int>("count") ?: 6) }
             "saveDownload" -> offMain(result) {
                 saveDownload(call.argument<String>("name")!!, call.argument<String>("text")!!)
                 null
@@ -99,6 +100,22 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             } catch (e: Exception) {
                 main.post { result.error("failed", e.toString(), null) }
             }
+        }
+    }
+
+    /** Evenly spaced 512 px JPEG frames, for providers that take images but not video (OpenAI, Claude). */
+    private fun videoFrames(path: String, count: Int): List<ByteArray> {
+        val r = android.media.MediaMetadataRetriever()
+        try {
+            r.setDataSource(path)
+            val durUs = (r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0) * 1000
+            return (0 until count).mapNotNull { i ->
+                val f = r.getScaledFrameAtTime(durUs * (2 * i + 1) / (2 * count),
+                    android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC, 512, 512) ?: return@mapNotNull null
+                java.io.ByteArrayOutputStream().also { f.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, it) }.toByteArray()
+            }
+        } finally {
+            r.release()
         }
     }
 
