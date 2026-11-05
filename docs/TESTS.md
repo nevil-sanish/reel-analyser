@@ -77,23 +77,23 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-TRK-01 | unit | ReelTracker | 20 reels × 3 s → count 20 | planned |
-| T-TRK-02 | unit | ReelTracker | Half-swipe (0.5 s) + swipe back + 0.75 s refresh flicker → count 1 | planned |
-| T-TRK-03 | unit | ReelTracker | Swipe back, rewatch later the same day → each reel once | planned |
-| T-TRK-04 | unit | ReelTracker | 2 s on one reel → counted while still on it | planned |
-| T-TRK-05 | unit | ReelTracker | Nothing readable for 3 s → 0 reels, 1 unknown | planned |
-| T-TRK-06 | unit | ReelTracker | 4 s on a reel → dwell ≈ 4 s | planned |
-| T-TRK-07 | unit | ReelTracker | 10 s, 60 s gap (asleep), 10 s → screen time ≈ 20 s | planned |
-| T-TRK-08 | unit | ReelTracker | Leave Reels for the feed → session ends | planned |
-| T-TRK-09 | unit | ReelTracker | Same reel on IG and YT → counted separately | planned |
-| T-FP-01 | unit | Fingerprint | Truncated "… more" vs expanded caption → same id | planned |
-| T-FP-02 | unit | Fingerprint | `normalize` strips "… more" / "...more" / "less", lowercases | planned |
-| T-FP-03 | unit | Fingerprint | Blank item → null | planned |
-| T-FP-04 | unit | Fingerprint | Different author or app → different id | planned |
-| T-FP-05 | unit | Fingerprint | Same author, no caption/audio/title, likes `12K` vs `340` → two reels | planned |
-| T-FP-06 | unit | Fingerprint | Caption-less reel, likes `12.3K` → `12.4K` mid-watch → one reel | planned |
-| T-FP-07 | unit | Fingerprint | Reel with caption, likes change → one reel | planned |
-| T-FP-08 | unit | Fingerprint | `likeBucket`: `523`→`520`, `12.3K`→`12000`, `1.2M`→`1200000`, junk→`""` | planned |
+| T-TRK-01 | unit | ReelTracker | 20 reels × 3 s → count 20 | passing |
+| T-TRK-02 | unit | ReelTracker | Half-swipe (0.5 s) + swipe back + 0.75 s refresh flicker → count 1 | passing |
+| T-TRK-03 | unit | ReelTracker | Swipe back, rewatch later the same day → each reel once | passing |
+| T-TRK-04 | unit | ReelTracker | 2 s on one reel → counted while still on it | passing |
+| T-TRK-05 | unit | ReelTracker | Nothing readable for 3 s → 0 reels, 1 unknown | passing |
+| T-TRK-06 | unit | ReelTracker | 4 s on a reel → dwell ≈ 4 s | passing |
+| T-TRK-07 | unit | ReelTracker | 10 s, 60 s gap (asleep), 10 s → screen time ≈ 20 s | passing |
+| T-TRK-08 | unit | ReelTracker | Leave Reels for the feed → session ends | passing |
+| T-TRK-09 | unit | ReelTracker | Same reel on IG and YT → counted separately | passing |
+| T-FP-01 | unit | Fingerprint | Truncated "… more" vs expanded caption → same id | passing |
+| T-FP-02 | unit | Fingerprint | `normalize` strips "… more" / "...more" / "less", lowercases | passing |
+| T-FP-03 | unit | Fingerprint | Blank item → null | passing |
+| T-FP-04 | unit | Fingerprint | Different author or app → different id | passing |
+| T-FP-05 | unit | Fingerprint | Same author, no caption/audio/title, likes `12K` vs `340` → two reels | passing |
+| T-FP-06 | unit | Fingerprint | Caption-less reel, likes `12.3K` → `12.4K` mid-watch → one reel | passing |
+| T-FP-07 | unit | Fingerprint | Reel with caption, likes change → one reel | passing |
+| T-FP-08 | unit | Fingerprint | `likeBucket`: `523`→`520`, `12.3K`→`12000`, `1.2M`→`1200000`, junk→`""` | passing |
 | T-RULE-01 | unit | DetectionRules | Not on Reels screen → `inReels = false` | planned |
 | T-RULE-02 | unit | DetectionRules | Known ids → author, caption, likes read | planned |
 | T-RULE-03 | unit | DetectionRules | Fallback: bottom-half text used; `12.3K`, `Subscribe` skipped | planned |
