@@ -205,6 +205,7 @@ Rules for every `IG-*` call:
 | `saveDownload` | 1 | `{name, text}` | `null` (writes `Downloads/ReelBot/<name>`) | manual `T-MAN-01` |
 | `videoFrames` | 5 | `{path, count}` | `List<Uint8List>` 512 px JPEGs, evenly spaced | `T-PIPE-12` (faked) |
 | `openUrl` | 5 | `{url}` | `null` (ACTION_VIEW) | manual |
+| `sweepPhotos` | 9 | `{keep}` | `null` (deletes `files/photos/*` not in `keep`) | manual |
 | `notifyNotes` | 6 | `{title, text}` | `null` ("note ready" notification after a background run) | manual |
 | `daily` | 2 | `{days}` | `List<{date,app,reels,ms,unknown}>` | `T-CH-03` |
 | `hourly` | 8 | `{days}` | `List<{hour, reels, ms}>` by local hour of `first_seen` | `T-UI-03` (helpers) |
@@ -239,3 +240,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.6.2: IG-EMBED-PLAYER added as cascade step 2; later steps renumbered (Apify now 7). |
 | 2026-11-06 | v0.8.0: SHARE-IN takes images; `fetchInstagram` returns `images` (post and carousel stills). |
 | 2026-11-06 | v0.8.1: `hourly` added for Insights. |
+| 2026-11-06 | v0.9.3: `sweepPhotos` added. |

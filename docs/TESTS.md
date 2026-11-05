@@ -74,6 +74,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-UI-04 | unit | Library kinds | Instagram /reel/ → reel, /p/ → post, YouTube → short, shared picture → photo | passing |
 | T-UI-05 | widget | FadingTabs | After switching tabs, the left tab's rendered opacity is 0 and the new one's 1 | passing |
 | T-UI-06 | widget | multi-select | Long-press calls select; a selected card shows a tick, an unselected one an empty circle | passing |
+| T-LIB-03 | integration | library search | A word found only in the overview or mentions finds the note | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
 | T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
@@ -170,6 +171,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.9.3: T-LIB-03 added and passing. Re-analyse-all and the photo sweep aren't unit-tested (they need the plugin); check them on a phone. |
 | 2026-11-06 | v0.9.2: T-PIPE-01 checks overview and mentions are requested and saved; T-UI-03 checks the time-of-day blocks. |
 | 2026-11-06 | v0.9.1: T-IG-U08 added and passing; the 30-min pause test now uses a 429. |
 | 2026-11-06 | v0.9.0: bubble and auto-Save removed, so T-SAVE-01…03 and T-SHARE-04 are retired; T-UI-06 added and passing. |

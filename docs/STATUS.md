@@ -1,6 +1,6 @@
 # Reel Bot: project status
 
-Written 2026-11-06, at **v0.9.2**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
+Written 2026-11-06, at **v0.9.2**; updated for **v0.9.3** (P1 items 12–15 done). This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
 
 - [1. Where things stand](#1-where-things-stand)
 - [2. What has been done](#2-what-has-been-done)
@@ -233,10 +233,10 @@ In priority order. Each item says what, why, and what "done" looks like.
 
 ### P1: product gaps (small, well understood)
 
-12. **Search doesn't look at the new fields.** `LibraryDb.reels(query:)` searches the title, summary, key points, tags, author and caption, but not `overview` or `mentions` (added in v0.9.2). Add both columns to the `LIKE` expression, plus a test.
-13. **Re-analyse all old notes at once.** Notes made before v0.9.2 have no overview or mentions; for now each has to be re-analysed by hand. Add Settings → *Re-analyse all notes*: for each note with an empty overview that still has a queue row, re-queue it and drop the note, like `AppServices.retry`. Warn that it costs tokens. Waiting on the user's decision.
-14. **Photo files left behind on delete.** Deleting a photo note doesn't delete its `files/photos/*.jpg`, because Undo needs it. Delete the file once the Undo snackbar has closed, or sweep orphan files on start.
-15. **"When you watch" uses counts, not minutes.** The `hourly` query already returns `ms` per hour. Show minutes next to the count, or let the user choose.
+12. ✅ **Done in v0.9.3.** **Search doesn't look at the new fields.** `LibraryDb.reels(query:)` searches the title, summary, key points, tags, author and caption, but not `overview` or `mentions` (added in v0.9.2). Add both columns to the `LIKE` expression, plus a test.
+13. ✅ **Done in v0.9.3** (Settings → Notes → *Re-analyse old notes*, with a token warning). **Re-analyse all old notes at once.** Notes made before v0.9.2 have no overview or mentions; for now each has to be re-analysed by hand. Add Settings → *Re-analyse all notes*: for each note with an empty overview that still has a queue row, re-queue it and drop the note, like `AppServices.retry`. Warn that it costs tokens. Waiting on the user's decision.
+14. ✅ **Done in v0.9.3** (orphan photos are deleted on each start, so Undo still works until then). **Photo files left behind on delete.** Deleting a photo note doesn't delete its `files/photos/*.jpg`, because Undo needs it. Delete the file once the Undo snackbar has closed, or sweep orphan files on start.
+15. ✅ **Done in v0.9.3** (the blocks and peak hour are ranked by minutes watched; counts are used until any time is recorded). **"When you watch" uses counts, not minutes.** The `hourly` query already returns `ms` per hour. Show minutes next to the count, or let the user choose.
 16. **Watch time looks low.** For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
 17. **Sharing several photos at once.** Only `ACTION_SEND` (one image) is handled. Add `ACTION_SEND_MULTIPLE` to queue each image, or one note for the set.
 18. **Export leaves out chats.** `library.json` has notes only. Add `chats` to the export and import.
@@ -299,4 +299,4 @@ cd mobile && flutter build apk --release
 
 **Where to start:**
 - **Correctness:** begin with **P0** (§4), especially items 1–3, because every other item assumes the fetch and counter work on a real phone.
-- **Small fixes:** items 12–15 are the cheapest wins.
+- **Small fixes:** items 12–15 are done in v0.9.3; 16–21 are next.
