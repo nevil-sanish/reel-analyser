@@ -1,0 +1,19 @@
+name: reelbot_native
+description: "Reel Bot's Kotlin side: share receiver, counter.db, Instagram fetcher and the reelbot/counter channel."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.7
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: app.reelbrain
+        pluginClass: CounterPlugin
