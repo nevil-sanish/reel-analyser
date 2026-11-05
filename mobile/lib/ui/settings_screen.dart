@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_services.dart';
 import '../data/export.dart';
 import 'liquid.dart';
+import 'theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppServices services;
@@ -159,6 +160,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _key(_groq, 'Groq key', helper: 'Optional. Chat only'),
             _key(_apify, 'Apify token', helper: 'Optional. Only when Instagram won\'t give the video (~\$0.002 per reel)'),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: const Text('Save keys'))),
+          ]),
+          _section('Appearance', [
+            ValueListenableBuilder(
+              valueListenable: Brand.mode,
+              builder: (_, mode, _) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.dark_mode_rounded),
+                title: const Text('Dark mode'),
+                subtitle: const Text('Light is the default.'),
+                value: mode == ThemeMode.dark,
+                onChanged: (v) => Brand.mode.value = v ? ThemeMode.dark : ThemeMode.light,
+              ),
+            ),
           ]),
           _section('Bubble', [
             SwitchListTile(

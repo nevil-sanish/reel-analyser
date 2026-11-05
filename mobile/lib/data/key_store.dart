@@ -29,6 +29,7 @@ class KeyStore {
   /// One-time markers (intro shown, a migration done).
   Future<bool> flag(String k) async => await _read(k) != null;
   Future<void> setFlag(String k) => _write(k, '1');
+  Future<void> setFlagTo(String k, bool on) => _write(k, on ? '1' : '');
 
   Future<String?> _read(String k) async {
     final v = (await _s.read(key: k))?.trim();

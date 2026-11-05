@@ -207,6 +207,7 @@ Rules for every `IG-*` call:
 | `openUrl` | 5 | `{url}` | `null` (ACTION_VIEW) | manual |
 | `notifyNotes` | 6 | `{title, text}` | `null` ("note ready" notification after a background run) | manual |
 | `daily` | 2 | `{days}` | `List<{date,app,reels,ms,unknown}>` | `T-CH-03` |
+| `hourly` | 8 | `{days}` | `List<{hour, reels, ms}>` by local hour of `first_seen` | `T-UI-03` (helpers) |
 | `seenItems` | 2 | `{date}` | `List<{app,fp,firstSeen,dwellMs,author,caption}>` | `T-CH-03` |
 | `debugState` | 2 | — | `List<{k,v,ts}>` | `T-CH-03` |
 | `setCapture` | 2 | `{on}` | `null` | `T-CH-03` |
@@ -237,3 +238,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.6.0: cheaper models first to save tokens: Gemini `gemini-3.5-flash-lite` then `gemini-3.6-flash`; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`; Groq `openai/gpt-oss-20b`. Chat sends only matching notes. Chat picks provider and model (cheapest default, one stronger option each: `gemini-3.6-flash`, `gpt-6.1-terra`, `claude-sonnet-5-5`, `openai/gpt-oss-120b`). `notifyNotes` added. |
 | 2026-11-06 | v0.6.2: IG-EMBED-PLAYER added as cascade step 2; later steps renumbered (Apify now 7). |
 | 2026-11-06 | v0.8.0: SHARE-IN takes images; `fetchInstagram` returns `images` (post and carousel stills). |
+| 2026-11-06 | v0.8.1: `hourly` added for Insights. |

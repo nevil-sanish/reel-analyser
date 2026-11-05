@@ -84,6 +84,13 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         arrayOf(today, "-$days days"),
     ) { mapOf("date" to it.getString(0), "app" to it.getString(1), "reels" to it.getLong(2), "ms" to it.getLong(3), "unknown" to it.getLong(4)) }
 
+    /** v0.8.1 Insights: reels and watch time by local hour of day over the last [days] days (from first-seen times). */
+    fun hourly(days: Int, today: String): List<Map<String, Any?>> = query(
+        """SELECT CAST(strftime('%H', first_seen / 1000, 'unixepoch', 'localtime') AS INTEGER) AS h, COUNT(*), SUM(dwell_ms)
+           FROM seen_items WHERE date > date(?, ?) GROUP BY h ORDER BY h""",
+        arrayOf(today, "-$days days"),
+    ) { mapOf("hour" to it.getLong(0), "reels" to it.getLong(1), "ms" to it.getLong(2)) }
+
     fun seenItems(date: String): List<Map<String, Any?>> = query(
         "SELECT app, fp, first_seen, dwell_ms, author, caption FROM seen_items WHERE date = ? ORDER BY first_seen DESC", arrayOf(date),
     ) {

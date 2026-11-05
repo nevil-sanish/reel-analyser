@@ -183,6 +183,15 @@ class CounterBridge {
     return DayTotal.group(rows.map(DayCount.fromMap).toList());
   }
 
+  /// Reels and watch time per hour of the day (0–23) over the last [days] days; hours with nothing are 0.
+  Future<List<(int reels, int ms)>> hourly({int days = 7}) async {
+    final out = List.filled(24, (0, 0));
+    for (final r in await _ch.invokeListMethod<Map>('hourly', {'days': days}) ?? []) {
+      out[(r['hour'] as num).toInt()] = ((r['reels'] as num).toInt(), (r['ms'] as num?)?.toInt() ?? 0);
+    }
+    return out;
+  }
+
   Future<List<SeenItem>> seenItems(String date) async =>
       (await _ch.invokeListMethod<Map>('seenItems', {'date': date}) ?? []).map(SeenItem.fromMap).toList();
 

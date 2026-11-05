@@ -19,6 +19,7 @@ class ReelScreen extends StatefulWidget {
 class _ReelScreenState extends State<ReelScreen> {
   AppServices get services => widget.services;
   Reel get reel => widget.reel;
+  bool _full = false;
 
   @override
   void initState() {
@@ -73,7 +74,7 @@ class _ReelScreenState extends State<ReelScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           if (reel.app == 'photo') ...[
             ClipRRect(
@@ -84,52 +85,65 @@ class _ReelScreenState extends State<ReelScreen> {
             const SizedBox(height: 16),
           ],
           SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app, savedOn(reel.savedAt)].join(' · '), style: t.bodySmall),
-          if (reel.analysis != 'done') ...[
-            const SizedBox(height: 8),
-            // Short label; the long reason is a tooltip, for when a fallback needs reporting.
-            Tooltip(
-              message: reel.analysis == 'text-only'
-                  ? 'The link never arrived or the reel couldn\'t be fetched'
-                  : reel.app == 'instagram'
-                      ? 'Instagram didn\'t hand over the video (best step ${reel.step})'
-                      : 'Gemini couldn\'t watch this video',
-              child: Chip(
-                avatar: const Icon(Icons.info_outline, size: 16),
-                label: Text(reel.analysis == 'text-only' ? 'From text only' : 'From caption + thumbnail'),
-              ),
-            ),
-          ],
-          if (reel.analysis != 'done' && !reel.url.startsWith('local:'))
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try again with the video'),
-                onPressed: () async {
-                  HapticFeedback.lightImpact();
-                  final ok = await services.retry(reel);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share the reel to Reel Bot again to retry.')));
-                  if (ok) Navigator.pop(context);
-                },
-              ),
-            ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          // The content first, nothing else: the rest sits behind "Show full analysis".
           Card(
-            child: Padding(padding: const EdgeInsets.all(16), child: SelectableText(reel.summary, style: t.bodyLarge)),
+            child: Padding(padding: const EdgeInsets.all(18), child: SelectableText(reel.summary, style: t.bodyLarge?.copyWith(height: 1.45))),
           ),
-          // Just the gist: older notes may hold more points, the screen shows three.
-          for (final k in reel.keyPoints.take(3))
-            Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText('•  $k', style: t.bodyLarge)),
-          if (reel.tags.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Wrap(spacing: 8, children: [
-              for (final tag in reel.tags.take(3)) Text('#$tag', style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
-            ]),
-          ],
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                setState(() => _full = !_full);
+              },
+              icon: AnimatedRotation(turns: _full ? 0.5 : 0, duration: const Duration(milliseconds: 300), child: const Icon(Icons.expand_more_rounded)),
+              label: Text(_full ? 'Hide full analysis' : 'Show full analysis'),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: !_full
+                ? const SizedBox(width: double.infinity)
+                : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    for (final k in reel.keyPoints)
+                      Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText('•  $k', style: t.bodyLarge)),
+                    if (reel.tags.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Wrap(spacing: 8, children: [
+                        for (final tag in reel.tags) Text('#$tag', style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                      ]),
+                    ],
+                    const SizedBox(height: 14),
+                    Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app, savedOn(reel.savedAt)].join(' · '), style: t.bodySmall),
+                    if (reel.analysis != 'done') ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        reel.analysis == 'text-only'
+                            ? 'Made from text only: the link never arrived or the reel couldn\'t be fetched.'
+                            : reel.app == 'instagram'
+                                ? 'Made from the caption and thumbnail: Instagram didn\'t hand over the video (best step ${reel.step}).'
+                                : 'Made from the title and thumbnail: Gemini couldn\'t watch this video.',
+                        style: t.bodySmall,
+                      ),
+                      if (!reel.url.startsWith('local:'))
+                        TextButton.icon(
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Try again with the video'),
+                          onPressed: () async {
+                            HapticFeedback.lightImpact();
+                            final ok = await services.retry(reel);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share the reel to Reel Bot again to retry.')));
+                            if (ok) Navigator.pop(context);
+                          },
+                        ),
+                    ],
+                  ]),
+          ),
         ],
       ),
     );

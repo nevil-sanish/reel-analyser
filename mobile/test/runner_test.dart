@@ -322,6 +322,18 @@ void main() {
     expect(b.statuses[10], 'done');
   });
 
+  test('T-LIB-02 chats are saved, updated, listed newest first and deleted', () async {
+    final a = await db.saveChat(null, ['q1', 'a1'], 1);
+    final b = await db.saveChat(null, ['q2', 'a2'], 2);
+    await db.saveChat(a, ['q1', 'a1', 'q3', 'a3'], 3);
+    final all = await db.chats();
+    expect(all.map((c) => c.$1), [a, b]);
+    expect(all.first.$4, ['q1', 'a1', 'q3', 'a3']);
+    expect(all.first.$2, 'q1');
+    await db.deleteChat(b);
+    expect((await db.chats()).length, 1);
+  });
+
   test('search matches tags and summary', () async {
     await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'Rice', summary: 'boil', tags: ['food'], savedAt: 1));
     await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Squats', summary: 'legs', savedAt: 2));

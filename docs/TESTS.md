@@ -68,6 +68,9 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-UI-02 | unit | saved label | just now / 30m ago / 12h ago / yesterday / 3 Nov / 31 Dec 2025; full "Saved 6 Nov 2026, 09:05" | passing |
 | T-PIPE-14 | integration | photos | A shared photo goes to Gemini as an image ("not a video") and is saved with app `photo` | passing |
 | T-PIPE-15 | integration | posts | An Instagram post with 3 images and no video sends all 3 in one request → `done` | passing |
+| T-LIB-02 | integration | chats | Saved chats: create, update, newest first, delete | passing |
+| T-UI-03 | unit | Insights | Missing days filled with zeros; weekday averages; hour labels | passing |
+| T-UI-04 | unit | Library kinds | Instagram /reel/ → reel, /p/ → post, YouTube → short, shared picture → photo | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
 | T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
@@ -164,6 +167,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.8.1: T-LIB-02, T-UI-03 and T-UI-04 added and passing. |
 | 2026-11-06 | v0.8.0: T-PIPE-14, T-PIPE-15 and T-IG-F13 added and passing. |
 | 2026-11-06 | v0.7.0: UI-only release; all existing tests pass unchanged. |
 | 2026-11-06 | v0.6.2: T-IG-F12, T-PIPE-13 and T-UI-02 added and passing; the Apify test expects step 7. |

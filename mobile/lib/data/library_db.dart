@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -13,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 2,
+        version: 3,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -23,9 +25,11 @@ class LibraryDb {
           await db.execute('CREATE TABLE meta (k TEXT PRIMARY KEY, v INTEGER NOT NULL)');
           await db.insert('meta', {'k': 'processing_until', 'v': 0});
           await _v2(db);
+          await _v3(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
+          if (from < 3) await _v3(db);
         },
       ),
     );
@@ -37,6 +41,26 @@ class LibraryDb {
     await db.execute('ALTER TABLE reels ADD COLUMN seenAt INTEGER NOT NULL DEFAULT 0');
     await db.execute('ALTER TABLE reels ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
   }
+
+  /// Version 3: saved chats. `turns` is a JSON list alternating question, answer.
+  static Future<void> _v3(Database db) => db.execute('''CREATE TABLE chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, updatedAt INTEGER NOT NULL, turns TEXT NOT NULL)''');
+
+  /// Creates the chat when [id] is null; returns its id.
+  Future<int> saveChat(int? id, List<String> turns, int now) async {
+    final row = {'title': turns.first, 'updatedAt': now, 'turns': jsonEncode(turns)};
+    if (id == null) return _db.insert('chats', row);
+    await _db.update('chats', row, where: 'id = ?', whereArgs: [id]);
+    return id;
+  }
+
+  /// Newest first: (id, title, updatedAt, turns).
+  Future<List<(int, String, int, List<String>)>> chats() async => [
+        for (final r in await _db.query('chats', orderBy: 'updatedAt DESC'))
+          (r['id'] as int, r['title'] as String, r['updatedAt'] as int, [for (final t in jsonDecode(r['turns'] as String) as List) '$t']),
+      ];
+
+  Future<void> deleteChat(int id) => _db.delete('chats', where: 'id = ?', whereArgs: [id]);
 
   Future<void> markSeen(String url, int now) =>
       _db.update('reels', {'seenAt': now}, where: 'url = ? AND seenAt = 0', whereArgs: [url]);

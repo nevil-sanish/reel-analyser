@@ -43,14 +43,14 @@ class _Blobs extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     canvas.drawRect(Offset.zero & s, Paint()..color = Brand.base(b));
-    final a = b == Brightness.dark ? 0.5 : 0.35;
+    final a = b == Brightness.dark ? 0.35 : 0.28;
     final w = 2 * math.pi * t;
     // (colour, centre x, centre y, radius as a share of the long side, phase)
     final blobs = [
-      (Brand.violet, 0.15, 0.15, 0.55, 0.0),
-      (Brand.pink, 0.9, 0.3, 0.5, 1.7),
-      (Brand.orange, 0.2, 0.85, 0.5, 3.1),
-      (Brand.yellow, 0.85, 0.95, 0.35, 4.4),
+      (Brand.emerald, 0.15, 0.12, 0.55, 0.0),
+      (Brand.mint, 0.9, 0.3, 0.5, 1.7),
+      (Brand.lime, 0.2, 0.85, 0.45, 3.1),
+      (Brand.green, 0.85, 0.95, 0.35, 4.4),
     ];
     for (final (color, x, y, r, phase) in blobs) {
       final c = Offset(s.width * (x + 0.12 * math.sin(w + phase)), s.height * (y + 0.08 * math.cos(w * 1.3 + phase)));
@@ -163,6 +163,47 @@ class GlassTabBar extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Sun / moon button that flips between the light (default) and dark themes, with a little spin.
+class ThemeToggle extends StatelessWidget {
+  const ThemeToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return IconButton(
+      tooltip: dark ? 'Light mode' : 'Dark mode',
+      onPressed: () {
+        HapticFeedback.lightImpact();
+        Brand.mode.value = dark ? ThemeMode.light : ThemeMode.dark;
+      },
+      icon: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, a) => RotationTransition(turns: Tween(begin: 0.5, end: 1.0).animate(a), child: FadeTransition(opacity: a, child: child)),
+        child: Icon(dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, key: ValueKey(dark)),
+      ),
+    );
+  }
+}
+
+/// "Liquid" page transition: the new page swells up from 92% with a fade while the old one sinks back.
+class LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
+  const LiquidPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
+      Animation<double> secondaryAnimation, Widget child) {
+    final inCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutQuint, reverseCurve: Curves.easeInCubic);
+    final out = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOutCubic);
+    return FadeTransition(
+      opacity: inCurve,
+      child: ScaleTransition(
+        scale: Tween(begin: 0.92, end: 1.0).animate(inCurve),
+        child: ScaleTransition(scale: Tween(begin: 1.0, end: 0.96).animate(out), child: child),
       ),
     );
   }

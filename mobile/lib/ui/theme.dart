@@ -1,26 +1,29 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
-/// Reel Bot's look: the purple → pink → orange → yellow sunset of Reels, on near-black or near-white surfaces.
-/// Colours only; Reel Bot keeps its own mark, never Instagram's logo.
+import 'liquid.dart';
+
+/// Reel Bot's look (v0.8.1): greens only, from deep emerald to fresh lime, on white by default or near-black.
 class Brand {
-  static const violet = Color(0xFF833AB4);
-  static const magenta = Color(0xFFC13584);
-  static const pink = Color(0xFFE1306C);
-  static const orange = Color(0xFFF77737);
-  static const yellow = Color(0xFFFCAF45);
-  static const coral = orange;
-  static const colors = [violet, magenta, pink, orange, yellow];
-  static const gradient = LinearGradient(colors: colors, begin: Alignment.bottomLeft, end: Alignment.topRight);
+  static const forest = Color(0xFF047857);
+  static const emerald = Color(0xFF10B981);
+  static const green = Color(0xFF22C55E);
+  static const mint = Color(0xFF6EE7B7);
+  static const lime = Color(0xFFA3E635);
+  static const colors = [forest, emerald, green, mint, lime];
+  static const gradient = LinearGradient(colors: [forest, emerald, green, lime], begin: Alignment.bottomLeft, end: Alignment.topRight);
+
+  /// Light by default; Settings and the sun/moon button switch it. Saved, so it sticks across launches.
+  static final mode = ValueNotifier(ThemeMode.light);
 
   /// The glass tint over the liquid background: clear in dark mode, milky in light.
-  static Color glass(Brightness b) => b == Brightness.dark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.55);
-  static Color glassEdge(Brightness b) => b == Brightness.dark ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.8);
-  static Color base(Brightness b) => b == Brightness.dark ? const Color(0xFF07060B) : const Color(0xFFF2F1F6);
+  static Color glass(Brightness b) => b == Brightness.dark ? Colors.white.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.7);
+  static Color glassEdge(Brightness b) =>
+      b == Brightness.dark ? Colors.white.withValues(alpha: 0.14) : emerald.withValues(alpha: 0.18);
+  static Color base(Brightness b) => b == Brightness.dark ? const Color(0xFF050B08) : const Color(0xFFF7FBF8);
 
   static ThemeData theme(Brightness b) {
     final dark = b == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(seedColor: pink, brightness: b, primary: dark ? const Color(0xFFFF5C8A) : pink, tertiary: orange)
+    final scheme = ColorScheme.fromSeed(seedColor: emerald, brightness: b, primary: dark ? mint : forest, tertiary: lime)
         .copyWith(surface: base(b));
     final glassShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: glassEdge(b)));
     final base0 = ThemeData(useMaterial3: true, colorScheme: scheme, brightness: b);
@@ -35,8 +38,8 @@ class Brand {
       textTheme: text,
       scaffoldBackgroundColor: base(b),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
-        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.android: LiquidPageTransitionsBuilder(),
+        TargetPlatform.iOS: LiquidPageTransitionsBuilder(),
       }),
       appBarTheme: AppBarTheme(
         centerTitle: false,
@@ -110,7 +113,7 @@ class _BrandMarkState extends State<BrandMark> with SingleTickerProviderStateMix
               decoration: BoxDecoration(
                 gradient: Brand.gradient,
                 borderRadius: BorderRadius.circular(widget.size * 0.3),
-                boxShadow: [BoxShadow(color: Brand.pink.withValues(alpha: 0.25 + 0.2 * t), blurRadius: 24 + 16 * t, offset: const Offset(0, 8))],
+                boxShadow: [BoxShadow(color: Brand.emerald.withValues(alpha: 0.25 + 0.2 * t), blurRadius: 24 + 16 * t, offset: const Offset(0, 8))],
               ),
               child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: widget.size * (0.55 + 0.06 * t)),
             ),

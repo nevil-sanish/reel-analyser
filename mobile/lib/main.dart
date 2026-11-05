@@ -7,7 +7,7 @@ import 'ui/intro_screen.dart';
 import 'ui/library_screen.dart';
 import 'ui/liquid.dart';
 import 'ui/theme.dart';
-import 'ui/today_screen.dart';
+import 'ui/insights_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +15,8 @@ Future<void> main() async {
   await scheduleBackgroundAnalysis();
   await services.bridge.markOpened();
   await services.retryTextOnlyOnce();
+  if (await services.keys.flag('dark')) Brand.mode.value = ThemeMode.dark;
+  Brand.mode.addListener(() => services.keys.setFlagTo('dark', Brand.mode.value == ThemeMode.dark));
   runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
 }
 
@@ -31,8 +33,11 @@ class _ReelBotAppState extends State<ReelBotApp> {
   late var _intro = widget.showIntro;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => ValueListenableBuilder(
+      valueListenable: Brand.mode,
+      builder: (_, mode, _) => MaterialApp(
         title: 'Reel Bot',
+        themeMode: mode,
         debugShowCheckedModeBanner: false,
         theme: Brand.theme(Brightness.light),
         darkTheme: Brand.theme(Brightness.dark),
@@ -45,7 +50,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
                 })
               : HomeScreen(widget.services),
         ),
-      );
+      ));
 }
 
 class HomeScreen extends StatefulWidget {
@@ -83,14 +88,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         extendBody: true,
         body: Stack(children: [
           const Positioned.fill(child: LiquidBackground()),
-          IndexedStack(index: _tab, children: [ChatScreen(widget.services), TodayScreen(widget.services), LibraryScreen(widget.services)]),
+          // All three stay alive (like IndexedStack) but cross-fade and settle, so switching tabs feels liquid.
+          for (final (i, page) in [ChatScreen(widget.services, onInsights: () => setState(() => _tab = 1)), InsightsScreen(widget.services), LibraryScreen(widget.services)].indexed)
+            IgnorePointer(
+              ignoring: i != _tab,
+              child: TickerMode(
+                enabled: i == _tab,
+                child: AnimatedOpacity(
+                  opacity: i == _tab ? 1 : 0,
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedScale(
+                    scale: i == _tab ? 1 : 0.97,
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutQuint,
+                    child: page,
+                  ),
+                ),
+              ),
+            ),
         ]),
         bottomNavigationBar: GlassTabBar(
           index: _tab,
           onTap: (i) => setState(() => _tab = i),
           tabs: const [
             (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Ask'),
-            (Icons.insights_outlined, Icons.insights, 'Today'),
+            (Icons.insights_outlined, Icons.insights, 'Insights'),
             (Icons.video_library_outlined, Icons.video_library, 'Library'),
           ],
         ),

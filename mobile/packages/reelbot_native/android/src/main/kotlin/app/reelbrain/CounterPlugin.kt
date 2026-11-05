@@ -64,6 +64,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 null
             }
             "daily" -> result.success(CounterDb.get(ctx).daily(call.argument<Int>("days") ?: 14, localDate(System.currentTimeMillis())))
+            "hourly" -> result.success(CounterDb.get(ctx).hourly(call.argument<Int>("days") ?: 7, localDate(System.currentTimeMillis())))
             "seenItems" -> result.success(CounterDb.get(ctx).seenItems(call.argument<String>("date")!!))
             "debugState" -> result.success(CounterDb.get(ctx).debugState())
             "setCapture" -> {

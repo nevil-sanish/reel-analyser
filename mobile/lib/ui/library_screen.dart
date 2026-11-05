@@ -22,6 +22,8 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserver {
   AppServices get s => widget.services;
   List<Reel> _reels = [];
+  String _kind = 'all';
+  static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
   int _waiting = 0;
   bool _hasKey = true;
   bool _busy = false;
@@ -83,6 +85,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       appBar: AppBar(
         title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
+          const ThemeToggle(),
           IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
           IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined), onPressed: () => _open(SettingsScreen(s))),
         ],
@@ -90,7 +93,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       body: RefreshIndicator(
         onRefresh: _process,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120), // clear of the floating tab bar
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 120), // clear of the floating tab bar
           children: [
             SearchBar(
               hintText: 'Search your notes',
@@ -100,6 +103,25 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 _query = q;
                 _reload();
               },
+            ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final k in _kinds.entries)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text('${k.value} ${k.key == 'all' ? _reels.length : _reels.where((r) => r.kind == k.key).length}'),
+                      selected: _kind == k.key,
+                      showCheckmark: false,
+                      onSelected: (_) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _kind = k.key);
+                      },
+                    ),
+                  ),
+              ]),
             ),
             const SizedBox(height: 12),
             if (!_hasKey)
@@ -132,7 +154,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 child: Text('Swipe left to delete, right to archive. Seen notes archive themselves after 3 days.',
                     style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ),
-            for (final r in _reels) SwipeNote(s, r, onTap: () => _open(ReelScreen(s, r)), onChanged: _reload),
+            for (final r in _reels.where((r) => _kind == 'all' || r.kind == _kind))
+              SwipeNote(s, r, onTap: () => _open(ReelScreen(s, r)), onChanged: _reload),
           ],
         ),
       ),
@@ -202,7 +225,7 @@ class SwipeNote extends StatelessWidget {
     return Dismissible(
       key: ValueKey(reel.url),
       background: _bg(context, Alignment.centerLeft, reel.archived ? Icons.unarchive_rounded : Icons.archive_rounded,
-          reel.archived ? 'Restore' : 'Archive', Brand.violet),
+          reel.archived ? 'Restore' : 'Archive', Brand.emerald),
       secondaryBackground: _bg(context, Alignment.centerRight, Icons.delete_rounded, 'Delete', c.error),
       onDismissed: (dir) async {
         if (dir == DismissDirection.endToStart) return _delete(context);
@@ -295,13 +318,6 @@ class ReelCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(reel.summary, maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                ],
-                if (reel.tags.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Wrap(spacing: 6, runSpacing: 6, children: [
-                    for (final tag in reel.tags.take(4))
-                      Text('#$tag', style: t.textTheme.labelMedium?.copyWith(color: t.colorScheme.primary)),
-                  ]),
                 ],
               ],
             ),

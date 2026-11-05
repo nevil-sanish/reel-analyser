@@ -15,6 +15,13 @@ class Reel {
   final int step;
   final int savedAt;
 
+  /// Library filter: `reel` (Instagram reel), `post` (Instagram photo post), `short` (YouTube), `photo` (shared picture).
+  String get kind => switch (app) {
+        'youtube' => 'short',
+        'photo' => 'photo',
+        _ => url.contains('instagram.com/p/') ? 'post' : 'reel',
+      };
+
   /// When the note was first opened; 0 = unseen (the library shows a dot).
   final int seenAt;
   final bool archived;

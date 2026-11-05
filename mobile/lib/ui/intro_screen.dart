@@ -47,7 +47,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     final last = _page == _slides.length - 1;
     final size = MediaQuery.sizeOf(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Brand.base(Theme.of(context).brightness),
       body: Stack(
         children: [
           SafeArea(
@@ -55,7 +55,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
               children: [
                 Align(
                   alignment: Alignment.topRight,
-                  child: TextButton(onPressed: _unlock, child: const Text('Skip', style: TextStyle(color: Colors.white70))),
+                  child: TextButton(onPressed: _unlock, child: Text('Skip', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
                 ),
                 const SizedBox(height: 8),
                 // The mark drops in, then sits inside a slowly turning gradient ring.
@@ -70,11 +70,11 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                         child: Container(
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: SweepGradient(colors: [...Brand.colors, Brand.violet]),
+                            gradient: SweepGradient(colors: [...Brand.colors, Brand.forest]),
                           ),
                         ),
                       ),
-                      Container(width: 138, height: 138, decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle)),
+                      Container(width: 138, height: 138, decoration: BoxDecoration(color: Brand.base(Theme.of(context).brightness), shape: BoxShape.circle)),
                       const BrandMark(size: 96),
                     ]),
                   ),
@@ -106,7 +106,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                         height: 8,
                         decoration: BoxDecoration(
                           gradient: i == _page ? Brand.gradient : null,
-                          color: i == _page ? null : Colors.white24,
+                          color: i == _page ? null : Theme.of(context).colorScheme.outlineVariant,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -124,8 +124,8 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                             height: 60,
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white24),
+                                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
                               onPressed: () {
@@ -196,7 +196,11 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
         final max = c.maxWidth - _h;
         return Container(
           height: _h,
-          decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(_h / 2)),
+          decoration: BoxDecoration(
+            color: Brand.glass(Theme.of(context).brightness),
+            border: Border.all(color: Brand.glassEdge(Theme.of(context).brightness)),
+            borderRadius: BorderRadius.circular(_h / 2),
+          ),
           child: Stack(alignment: Alignment.centerLeft, children: [
             // The label shimmers left to right, hinting which way to slide.
             Center(
@@ -204,7 +208,7 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
                 animation: _shimmer,
                 builder: (_, child) => ShaderMask(
                   shaderCallback: (r) => LinearGradient(
-                    colors: const [Colors.white24, Colors.white, Colors.white24],
+                    colors: [for (final a in [0.3, 1.0, 0.3]) Theme.of(context).colorScheme.onSurface.withValues(alpha: a)],
                     stops: [(_shimmer.value - 0.2).clamp(0, 1), _shimmer.value, (_shimmer.value + 0.2).clamp(0, 1)],
                   ).createShader(r),
                   child: child,
@@ -274,9 +278,9 @@ class _Slide extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(slide.$2,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700, height: 1.2)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 26, fontWeight: FontWeight.w700, height: 1.2)),
                 const SizedBox(height: 12),
-                Text(slide.$3, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.4)),
+                Text(slide.$3, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16, height: 1.4)),
               ],
             ),
           ),
