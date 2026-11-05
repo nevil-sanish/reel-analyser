@@ -6,13 +6,11 @@ How to build what [PLAN.md](PLAN.md) describes. Network calls: [ENDPOINTS.md](EN
 
 ## 0. Setup
 
-### 0.1 Recover the old app
+### 0.1 Built from scratch
 
-The repo was emptied in commit `750a905`. The old Flutter app is still in history:
+The old app (commit `5f0c001`) isn't in this repository's history, so v0.1.0 was written fresh with `flutter create`. §1 below describes the old app's cleanup and is kept for reference only; the new code never had the server parts.
 
-```bash
-git checkout 5f0c001 -- mobile/
-```
+**Layout:** all Kotlin lives in a local Flutter plugin, `mobile/packages/reelbot_native` (Kotlin package `app.reelbrain`, Android namespace `app.reelbrain.core`), added to `pubspec.yaml` as a path dependency. A channel set up in `MainActivity.configureFlutterEngine` would exist only in the UI engine. The background engine that `workmanager` starts registers only the plugins listed in `GeneratedPluginRegistrant`, so `reelbot/counter` has to be a pubspec plugin to reach `pending_items` from the background task. Kotlin paths below read `mobile/packages/reelbot_native/android/src/main/kotlin/app/reelbrain/`.
 
 ### 0.2 Root `.gitignore`
 
@@ -84,7 +82,7 @@ The old app had sign-in, credits, Play billing and a server. All of that goes.
 
 ## 2. Share → summary (Phase 1)
 
-Kotlin files go in `mobile/android/app/src/main/kotlin/app/reelbrain/`. The package stays `app.reelbrain`, so the application id doesn't change.
+Kotlin files go in `mobile/packages/reelbot_native/android/src/main/kotlin/app/reelbrain/` (see §0.1). The application id is `app.reelbrain`.
 
 ### 2.1 `CounterDb.kt`: `counter.db`, owned by Kotlin
 
@@ -109,17 +107,18 @@ A transparent activity (no Flutter) for `ACTION_SEND` `text/plain`.
 2. If the newest `pending_items` row has no URL and is under 10 s old (a bubble Save from Phase 3), fill in its URL; otherwise insert a new row.
 3. Toast "Saved ✓" and `finish()`, so you stay in Instagram/YouTube.
 
-Plus `res/xml/shortcuts.xml` and `ShortcutManagerCompat.pushDynamicShortcut`, so Reel Bot appears in the share sheet's Direct Share row.
+*Not in v0.1.0:* `res/xml/shortcuts.xml` + `ShortcutManagerCompat.pushDynamicShortcut` for the Direct Share row. Reel Bot shows in the normal share list; add the shortcut if it's hard to find.
 
 ### 2.3 `CounterPlugin.kt`: the `reelbot/counter` channel
 
-A small in-app `FlutterPlugin` (registered in `MainActivity.configureFlutterEngine`) rather than a channel set up only in `MainActivity`. Plugins are attached to **every** Flutter engine, including the one `workmanager` starts in the background, so the background task can reach `pending_items`.
+A `FlutterPlugin` in the local `reelbot_native` package (§0.1), so it is registered in **every** Flutter engine, including the one `workmanager` starts in the background.
 
 | Method | Returns / does |
 |---|---|
 | `pendingItems {status}` | `List<Map>` |
 | `setPendingStatus {id, status}` | updates one row |
-| `fetchInstagram {url}` | runs `InstagramFetcher` (§2.5) and returns `{step, author, caption, thumbnailUrl, videoPath}`; `videoPath` is a downloaded file in the app cache, or null |
+| `fetchInstagram {url}` | runs `InstagramFetcher` (§2.5) and returns `{step, author, caption, thumbnailUrl, videoPath}`; `videoPath` is a downloaded file in the app cache, or null. Error code `rate_limited` while Instagram is paused |
+| `saveDownload {name, text}` | writes `Downloads/ReelBot/<name>` through MediaStore (Export, §2.6), replacing an earlier file of the same name |
 
 Phase 2 adds the counter methods (§3.5). Activity-only methods (`openAccessibilitySettings` and the rest) start their intents with `FLAG_ACTIVITY_NEW_TASK` from the application context, so they also work without an activity.
 
@@ -138,7 +137,8 @@ For each `queued` item, in order:
   - `videoPath` set → send the video to Gemini (inline if small, otherwise the Files API). Status `done`.
   - No video, but caption or thumbnail → send caption + thumbnail (+ `on_screen_text` if a bubble Save captured it). Status `caption+thumbnail`.
   - Nothing → captured author/caption/on-screen text only, status `text-only`; nothing captured → `failed`.
-  - Store the winning `step` on the library item; the debug screen shows counts per step.
+  - Store the winning `step` on the library item (Phase 2's debug screen will show counts per step).
+- Steps 1–5 and the download are Kotlin (`InstagramFetcher.kt`, with the rules in the pure, JVM-tested `IgCascade.kt` and parsers in `IgParse.kt`). Step 6 (Apify) and its download are Dart (`pipeline/apify.dart`, `runner.dart`).
 - Delete the video after analysis; only text is kept.
 - Network error, Instagram 429/login redirect, or Gemini 429/5xx → leave `queued` for the next run.
 
@@ -163,7 +163,7 @@ Why Kotlin + WebView: the logged-out endpoints only answer a real browser (yt-dl
 
 ### 2.6 Export/Import
 
-`Downloads/ReelBot/library.json` plus one `.md` per reel; Import merges by URL.
+`Downloads/ReelBot/library.json` plus one `.md` per reel, written by Kotlin's `saveDownload` (MediaStore, so `minSdk` is 29 and no storage permission is needed). Import picks a `library.json` with `file_picker` and merges by URL (`lib/data/export.dart`).
 
 ### 2.7 Phase 1 manifest
 

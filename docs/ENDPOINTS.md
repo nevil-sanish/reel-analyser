@@ -15,7 +15,7 @@ Card format:
 
 ## 1. Instagram: cascade overview
 
-Order and rationale: [PLAN.md](PLAN.md) §3.2. Owner of all `IG-*` calls: `mobile/android/app/src/main/kotlin/app/reelbrain/InstagramFetcher.kt`.
+Order and rationale: [PLAN.md](PLAN.md) §3.2. Owner of all `IG-*` calls: `mobile/packages/reelbot_native/android/src/main/kotlin/app/reelbrain/InstagramFetcher.kt` (rules in `IgCascade.kt`, parsers in `IgParse.kt`).
 
 Shared values:
 - `code`: the shortcode from `instagram.com/(reel|reels|p|tv)/<code>`.
@@ -182,7 +182,8 @@ Rules for every `IG-*` call:
 |---|---|---|---|---|
 | `pendingItems` | 1 | `{status}` | `List<{id,url,app,author,caption,onScreenText,createdAt,status}>` | `T-CH-01` |
 | `setPendingStatus` | 1 | `{id, status}` | `null` | `T-CH-01` |
-| `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath}` | `T-CH-02` |
+| `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath}`; error `rate_limited` | `T-CH-02` |
+| `saveDownload` | 1 | `{name, text}` | `null` (writes `Downloads/ReelBot/<name>`) | manual `T-MAN-01` |
 | `daily` | 2 | `{days}` | `List<{date,app,reels,ms,unknown}>` | `T-CH-03` |
 | `seenItems` | 2 | `{date}` | `List<{app,fp,firstSeen,dwellMs,author,caption}>` | `T-CH-03` |
 | `debugState` | 2 | — | `List<{k,v,ts}>` | `T-CH-03` |
@@ -205,3 +206,4 @@ Rules for every `IG-*` call:
 | Date | Change |
 |---|---|
 | 2026-11-05 | First version, from the open-source survey. |
+| 2026-11-05 | v0.1.0: implemented IG-EMBED…IG-CDN, APIFY-RUN, GEM-*, YT-OEMBED, SHARE-IN, CH-COUNTER (+ `saveDownload`), WM-ANALYSE. Kotlin moved to the `reelbot_native` plugin (IMPLEMENTATION §0.1). Not yet verified from a phone (`T-LIVE-*`). |

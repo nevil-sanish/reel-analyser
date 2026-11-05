@@ -6,8 +6,8 @@ Every test the app must have, by ID. Code doesn't exist yet: all tests are **pla
 
 | Level | What | Where | Run with |
 |---|---|---|---|
-| **unit** | Pure logic, no Android, no network | Kotlin: `mobile/android/app/src/test/kotlin/app/reelbrain/` · Dart: `mobile/test/` | `cd mobile/android && ./gradlew :app:testDebugUnitTest` · `cd mobile && flutter test` |
-| **fixture** | Parsers fed saved real responses | Fixtures in `mobile/android/app/src/test/resources/ig/` and `mobile/test/fixtures/` | same as unit |
+| **unit** | Pure logic, no Android, no network | Kotlin: `mobile/packages/reelbot_native/android/src/test/kotlin/app/reelbrain/` · Dart: `mobile/test/` | `cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest` · `cd mobile && flutter test` |
+| **fixture** | Parsers fed saved real responses | Fixtures in `mobile/packages/reelbot_native/android/src/test/resources/ig/` | same as unit |
 | **integration** | Several parts with fakes for the network | `mobile/test/` (Dart), Robolectric for Kotlin if needed | same as unit |
 | **live** | Real calls to Instagram/YouTube/Gemini from a phone | Debug screen → "Run live checks" (no CI: needs a residential IP and keys) | manually, weekly and before each release |
 | **manual** | Steps a person does on a phone | this file | before each release; results go in the release notes |
@@ -15,6 +15,7 @@ Every test the app must have, by ID. Code doesn't exist yet: all tests are **pla
 Fixture rules:
 - Save fixtures from a **logged-out** browser or the app's own WebView; strip cookies and tokens.
 - Name: `{endpoint}-{case}-{yyyymmdd}.html|json`, e.g. `ig-embed-video-20261105.html`.
+- The v0.1.0 fixtures are `*-synthetic.*`: hand-built from the shapes in ENDPOINTS.md, not captured. Add a real capture beside each one at the first live check; keep both passing.
 - When a live test fails, save the new response as a fixture first, then fix the parser until both old and new fixtures pass.
 
 Status values: **planned** · **written** · **passing** · **retired** (keep the row, say why).
@@ -25,48 +26,48 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-IG-U01 | unit | shortcode → `mediaId` | Known pairs (from yt-dlp's test cases) decode correctly; invalid character → error | planned |
-| T-IG-U02 | unit | URL parsing | `/reel/`, `/reels/`, `/p/`, `/tv/`, with `?igsh=` and trailing text → same `code` | planned |
-| T-IG-U03 | unit | IG-CDN | `oe=` hex expiry parsed; expired URL not downloaded; > 100 MB stops | planned |
-| T-IG-U04 | unit | cascade order | Fake steps: step 1 returns video → steps 2–6 not called; steps 1–4 empty, 5 metadata → result has caption, no video, `step = 5` | planned |
-| T-IG-U05 | unit | rate limits | Two fetches 1 s apart → second waits ≥ 5 s; a 429 → no `IG-*` call for 30 min | planned |
-| T-IG-U06 | unit | negative cache | Private post → same `code` not fetched again within 1 h; other codes still fetched | planned |
-| T-IG-U07 | unit | single-flight | Two concurrent fetches of one `code` → one network fetch, both get the result | planned |
-| T-IG-F01 | fixture | IG-EMBED | Embed page with `contextJSON` + `video_url` → video URL, caption, author | planned |
-| T-IG-F02 | fixture | IG-EMBED | Embed page with `gql_data: null` → "no data", cascade continues | planned |
-| T-IG-F03 | fixture | IG-POST-PAGE | `data-sjs` scripts with `if_not_gated_logged_out` → item found by `pk`; ≥ 480 px rendition chosen | planned |
+| T-IG-U01 | unit | shortcode → `mediaId` | Known pairs (from yt-dlp's test cases) decode correctly; invalid character → error | passing |
+| T-IG-U02 | unit | URL parsing | `/reel/`, `/reels/`, `/p/`, `/tv/`, with `?igsh=` and trailing text → same `code` | passing |
+| T-IG-U03 | unit | IG-CDN | `oe=` hex expiry parsed; expired URL not downloaded; > 100 MB stops | passing |
+| T-IG-U04 | unit | cascade order | Fake steps: step 1 returns video → steps 2–6 not called; steps 1–4 empty, 5 metadata → result has caption, no video, `step = 5` | passing |
+| T-IG-U05 | unit | rate limits | Two fetches 1 s apart → second waits ≥ 5 s; a 429 → no `IG-*` call for 30 min | passing |
+| T-IG-U06 | unit | negative cache | Private post → same `code` not fetched again within 1 h; other codes still fetched | passing |
+| T-IG-U07 | unit | single-flight | Two concurrent fetches of one `code` → one network fetch, both get the result | passing |
+| T-IG-F01 | fixture | IG-EMBED | Embed page with `contextJSON` + `video_url` → video URL, caption, author | passing |
+| T-IG-F02 | fixture | IG-EMBED | Embed page with `gql_data: null` → "no data", cascade continues | passing |
+| T-IG-F03 | fixture | IG-POST-PAGE | `data-sjs` scripts with `if_not_gated_logged_out` → item found by `pk`; ≥ 480 px rendition chosen | passing |
 | T-IG-F04 | fixture | IG-POST-PAGE | Login-wall page → rate-limit rule triggered | planned |
-| T-IG-F05 | fixture | IG-GQL-LOGGEDOUT | Response with `xig_polaris_media.if_not_gated_logged_out` → video URL | planned |
-| T-IG-F06 | fixture | IG-GQL-LOGGEDOUT | Response without `data` → "stale query" → IG-JS-BUNDLE called once | planned |
-| T-IG-F07 | fixture | IG-GQL-WEB | Response with `xdt_shortcode_media.video_url` → video URL; null → next step | planned |
-| T-IG-F08 | fixture | IG-OEMBED | oEmbed JSON → title, author, thumbnail | planned |
-| T-IG-F09 | fixture | IG-JS-BUNDLE | Saved bundle → `docId` for both query names; missing → keeps bundled id | planned |
-| T-IG-F10 | fixture | carousels | Carousel in each format (embed, page, GraphQL) → first video, else images | planned |
+| T-IG-F05 | fixture | IG-GQL-LOGGEDOUT | Response with `xig_polaris_media.if_not_gated_logged_out` → video URL | passing |
+| T-IG-F06 | fixture | IG-GQL-LOGGEDOUT | Response without `data` → "stale query" → IG-JS-BUNDLE called once | passing |
+| T-IG-F07 | fixture | IG-GQL-WEB | Response with `xdt_shortcode_media.video_url` → video URL; null → next step | passing |
+| T-IG-F08 | fixture | IG-OEMBED | oEmbed JSON → title, author, thumbnail | passing |
+| T-IG-F09 | fixture | IG-JS-BUNDLE | Saved bundle → `docId` for both query names; missing → keeps bundled id | passing |
+| T-IG-F10 | fixture | carousels | Carousel in each format (embed, page, GraphQL) → first video, else images | passing |
 
 ## 2. Pipeline and analysis (Phase 1)
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-PIPE-01 | integration | GEM-GENERATE (YouTube) | Shorts URL → `fileData.fileUri` request; status `done` | planned |
-| T-PIPE-02 | integration | YT-OEMBED | Gemini rejects the URL → oEmbed used → status `caption+thumbnail` | planned |
-| T-PIPE-03 | integration | GEM-GENERATE (Instagram video) | `fetchInstagram` returns `videoPath` ≤ 20 MB → `inlineData`; status `done`; `step` stored; video file deleted | planned |
-| T-PIPE-04 | integration | caption+thumbnail | `fetchInstagram` returns caption + thumbnail only → status `caption+thumbnail` | planned |
-| T-PIPE-05 | integration | APIFY-RUN | Apify key set and steps 1–5 give no video → Apify called with `Authorization: Bearer`; key never in the URL | planned |
-| T-PIPE-06 | integration | GEM-GENERATE errors | 429 or 5xx → item stays `queued`; 400 → next thinking level, then next model | planned |
-| T-PIPE-07 | integration | GEM-UPLOAD | Video > 20 MB → resumable upload, poll until `ACTIVE`, generate, then `DELETE` | planned |
-| T-PIPE-08 | integration | no key | No Gemini key → item stays `queued`; library shows the "Add your Gemini key" banner | planned |
-| T-PIPE-09 | integration | nothing found | `fetchInstagram` empty and nothing captured → status `failed` | planned |
-| T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | planned |
-| T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | planned |
+| T-PIPE-01 | integration | GEM-GENERATE (YouTube) | Shorts URL → `fileData.fileUri` request; status `done` | passing |
+| T-PIPE-02 | integration | YT-OEMBED | Gemini rejects the URL → oEmbed used → status `caption+thumbnail` | passing |
+| T-PIPE-03 | integration | GEM-GENERATE (Instagram video) | `fetchInstagram` returns `videoPath` ≤ 20 MB → `inlineData`; status `done`; `step` stored; video file deleted | passing |
+| T-PIPE-04 | integration | caption+thumbnail | `fetchInstagram` returns caption + thumbnail only → status `caption+thumbnail` | passing |
+| T-PIPE-05 | integration | APIFY-RUN | Apify key set and steps 1–5 give no video → Apify called with `Authorization: Bearer`; key never in the URL | passing |
+| T-PIPE-06 | integration | GEM-GENERATE errors | 429 or 5xx → item stays `queued`; 400 → next thinking level, then next model | passing |
+| T-PIPE-07 | integration | GEM-UPLOAD | Video > 20 MB → resumable upload, poll until `ACTIVE`, generate, then `DELETE` | passing |
+| T-PIPE-08 | integration | no key | No Gemini key → item stays `queued`; library shows the "Add your Gemini key" banner | passing |
+| T-PIPE-09 | integration | nothing found | `fetchInstagram` empty and nothing captured → status `failed` | passing |
+| T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
+| T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
 ## 3. Share, channel, background (Phase 1)
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-SHARE-01 | unit | SHARE-IN | Instagram share text with words around the URL → URL extracted, `igsh` stripped | planned |
-| T-SHARE-02 | unit | SHARE-IN | `youtube.com/shorts/{id}?si=…` and `youtu.be/{id}` → canonical Shorts URL | planned |
-| T-SHARE-03 | unit | SHARE-IN | Non-reel text → "Not a reel link", no row | planned |
-| T-SHARE-04 | unit | SHARE-IN | URL-less row < 10 s old (bubble Save) → URL attached to it; older → new row | planned |
+| T-SHARE-01 | unit | SHARE-IN | Instagram share text with words around the URL → URL extracted, `igsh` stripped | passing |
+| T-SHARE-02 | unit | SHARE-IN | `youtube.com/shorts/{id}?si=…` and `youtu.be/{id}` → canonical Shorts URL | passing |
+| T-SHARE-03 | unit | SHARE-IN | Non-reel text → "Not a reel link", no row | passing |
+| T-SHARE-04 | unit | SHARE-IN | URL-less row < 10 s old (bubble Save) → URL attached to it; older → new row | passing |
 | T-CH-01 | integration | CH-COUNTER | `pendingItems` / `setPendingStatus` round-trip | planned |
 | T-CH-02 | integration | CH-COUNTER | `fetchInstagram` maps Kotlin result to Dart types; errors become typed exceptions | planned |
 | T-BG-01 | integration | WM-ANALYSE | `callbackDispatcher` initialises stores and processes the queue without the UI | planned |
