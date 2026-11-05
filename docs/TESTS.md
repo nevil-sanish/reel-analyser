@@ -148,3 +148,4 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | Date | Change |
 |---|---|
 | 2026-11-05 | First version: all tests planned, mapped to [ENDPOINTS.md](ENDPOINTS.md) and [PLAN.md](PLAN.md) phases. |
+| 2026-11-05 | v0.1.0: Phase 1 unit, fixture and integration tests written and passing (synthetic IG fixtures). T-IG-F04, T-CH-*, T-BG-*, live and manual checks still planned. |
