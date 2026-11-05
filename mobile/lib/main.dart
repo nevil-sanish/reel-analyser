@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_services.dart';
+import 'data/update_check.dart';
 import 'pipeline/background.dart';
 import 'ui/chat_screen.dart';
 import 'ui/intro_screen.dart';
@@ -71,6 +72,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _checkUpdate();
+  }
+
+  /// A banner when GitHub has a newer APK. Silent when offline or rate-limited.
+  Future<void> _checkUpdate() async {
+    final s = widget.services, now = DateTime.now().millisecondsSinceEpoch;
+    if (now - await s.keys.updateCheckedAt < const Duration(days: 1).inMilliseconds) return;
+    await s.keys.setUpdateCheckedAt(now);
+    final rel = await newerRelease(s.client, AppServices.version);
+    if (rel == null || !mounted) return;
+    final m = ScaffoldMessenger.of(context);
+    m.showMaterialBanner(MaterialBanner(
+      content: Text('Reel Bot ${rel.$1} is out'),
+      actions: [
+        TextButton(onPressed: m.hideCurrentMaterialBanner, child: const Text('Later')),
+        FilledButton(
+          onPressed: () {
+            m.hideCurrentMaterialBanner();
+            s.bridge.openUrl(rel.$2);
+          },
+          child: const Text('Download'),
+        ),
+      ],
+    ));
   }
 
   @override

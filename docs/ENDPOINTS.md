@@ -159,8 +159,8 @@ Rules for every `IG-*` call:
 - **Tests:** `T-PIPE-02`, `T-LIVE-09`
 
 ### GH-RELEASE-LATEST: update check
-- **Phase** "before friends" ([PLAN.md](PLAN.md) §6) · owner `lib/data/update_check.dart`
-- **Request:** `GET https://api.github.com/repos/nevil-sanish/reel-brain/releases/latest`, header `Accept: application/vnd.github+json`. No token. At most once a day.
+- **Phase** "before friends" ([PLAN.md](PLAN.md) §6) · owner `lib/data/update_check.dart` (v0.9.4)
+- **Request:** `GET https://api.github.com/repos/nevil-sanish/reel-brain/releases?per_page=1`, header `Accept: application/vnd.github+json`. No token. At most once a day (`KeyStore.updateCheckedAt`). Not `/releases/latest`: it skips pre-releases and every release so far is one (404).
 - **Use:** `tag_name` (compare with the app's `versionName`), `html_url`, the asset whose name ends in `.apk`.
 - **Fails when:** 403 rate limit (60/h per IP) or offline → silently skip.
 - **Tests:** `T-REL-01`
@@ -174,6 +174,7 @@ Rules for every `IG-*` call:
 - `Intent.ACTION_SEND`, `type text/plain`, `EXTRA_TEXT` contains the URL (Instagram adds text around it; YouTube sends `https://youtube.com/shorts/{id}?si=…`).
 - Accepted URLs: `instagram.com/(reel|reels|p|tv)/{code}`, `youtube.com/shorts/{id}`, `youtu.be/{id}`. Tracking params (`igsh`, `si`) stripped.
 - v0.8.0: also `ACTION_SEND` with `image/*` (`EXTRA_STREAM`): copied into app storage and queued as `photo:<path>`.
+- v0.9.4: also `ACTION_SEND_MULTIPLE` with `image/*`: each image becomes its own `photo:` item (file names `<time + n>.jpg`).
 - **Tests:** `T-SHARE-01`…`T-SHARE-04`
 
 ### IG-EMBED-PLAYER: cascade step 2 (v0.6.2)
@@ -241,3 +242,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.8.0: SHARE-IN takes images; `fetchInstagram` returns `images` (post and carousel stills). |
 | 2026-11-06 | v0.8.1: `hourly` added for Insights. |
 | 2026-11-06 | v0.9.3: `sweepPhotos` added. |
+| 2026-11-06 | v0.9.4: GH-RELEASE-LATEST implemented (via `/releases`, see above); SHARE-IN takes `ACTION_SEND_MULTIPLE`. |

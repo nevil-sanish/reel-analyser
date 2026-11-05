@@ -13,18 +13,36 @@ import java.io.File
 class ShareReceiverActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val i = intent?.takeIf { it.action == Intent.ACTION_SEND }
-        // The typed getParcelableExtra is Android 13+; minSdk is 29.
+        val i = intent?.takeIf { it.action == Intent.ACTION_SEND || it.action == Intent.ACTION_SEND_MULTIPLE }
+        // The typed getParcelable*Extra calls are Android 13+; minSdk is 29.
         @Suppress("DEPRECATION")
-        val image = if (i?.type?.startsWith("image/") == true) i.getParcelableExtra<Uri>(Intent.EXTRA_STREAM) else null
+        val images: List<Uri> = when {
+            i?.type?.startsWith("image/") != true -> emptyList()
+            i.action == Intent.ACTION_SEND_MULTIPLE -> i.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM).orEmpty()
+            else -> listOfNotNull(i.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+        }
         val text = i?.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         val now = System.currentTimeMillis()
-        val message = when {
-            image != null -> if (savePhoto(image, text, now)) "Saved ✓" else "Couldn't read that photo"
-            else -> ShareUrls.extract(text)?.let { CounterDb.get(this).addShared(it, now); "Saved ✓" } ?: "Not a reel link"
-        }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        finish()
+        // Decoding several photos can take seconds, so it runs off the main thread; we finish once it's done.
+        Thread {
+            val message = when {
+                images.isNotEmpty() -> {
+                    // One note per image; `now + n` keeps file names unique and the queue in share order.
+                    val saved = images.withIndex().count { (n, uri) -> savePhoto(uri, text, now + n) }
+                    when {
+                        saved == 0 -> "Couldn't read that photo"
+                        images.size == 1 -> "Saved ✓"
+                        saved == images.size -> "Saved $saved photos ✓"
+                        else -> "Saved $saved of ${images.size} photos"
+                    }
+                }
+                else -> ShareUrls.extract(text)?.let { CounterDb.get(this).addShared(it, now); "Saved ✓" } ?: "Not a reel link"
+            }
+            runOnUiThread {
+                Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }.start()
     }
 
     /**

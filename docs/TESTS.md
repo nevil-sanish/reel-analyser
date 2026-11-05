@@ -76,7 +76,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-UI-06 | widget | multi-select | Long-press calls select; a selected card shows a tick, an unselected one an empty circle | passing |
 | T-LIB-03 | integration | library search | A word found only in the overview or mentions finds the note | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
-| T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
+| T-EXP-01 | integration | Export/Import | Export → wipe → Import → same notes and chats; Import twice → no duplicates (notes by URL, chats by first question + time); a v1 file imports | passing |
 
 ## 3. Share, channel, background (Phase 1)
 
@@ -131,7 +131,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | removed (v0.9.0: no bubble) |
 | T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | passing (unit: rule and text; worker needs a device) |
 | T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | passing (unit: rule and text; worker needs a device) |
-| T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | planned |
+| T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | passing (v0.9.4) |
 
 ## 6. Live checks (debug screen, weekly and before each release)
 
@@ -171,6 +171,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.9.4: T-REL-01 added and passing; T-EXP-01 covers chats. Sharing several photos needs a phone. |
 | 2026-11-06 | v0.9.3: T-LIB-03 added and passing. Re-analyse-all and the photo sweep aren't unit-tested (they need the plugin); check them on a phone. |
 | 2026-11-06 | v0.9.2: T-PIPE-01 checks overview and mentions are requested and saved; T-UI-03 checks the time-of-day blocks. |
 | 2026-11-06 | v0.9.1: T-IG-U08 added and passing; the 30-min pause test now uses a 429. |

@@ -16,7 +16,7 @@ Instagram / YouTube / Gallery ──Share──▶ Reel Bot ──▶ "Saved ✓
 ```
 
 - **Reels, Shorts and Instagram posts:** tap **Share → Reel Bot**. On Instagram, use *Share → Share to…*. The link is cleaned of tracking codes and queued.
-- **Photos and screenshots:** share them from any app. The picture is copied into the app, shrunk to 1280 px, and queued.
+- **Photos and screenshots:** share one or several from any app. Each picture is copied into the app, shrunk to 1280 px, and queued as its own note.
 - That's the only way in: no floating button over the apps you watch.
 
 ### 2. Analyse: in the background, every 15 minutes and whenever you open the app
@@ -96,7 +96,7 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
 | Encrypted secure storage | Dart | API keys (several Gemini, OpenAI, Claude, Groq, Apify) and small flags (theme, intro seen). |
 | `files/photos/*.jpg` | Kotlin | Photos you shared, kept so their notes can show them. |
 | `cache/ig/*.mp4` | Kotlin | A downloaded reel, deleted right after analysis. |
-| `Downloads/ReelBot/` | you | Export: `library.json` plus one Markdown file per note. |
+| `Downloads/ReelBot/` | you | Export: `library.json` (notes and saved chats) plus one Markdown file per note. |
 
 ### Background jobs
 
@@ -154,6 +154,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 | `api.groq.com` | chat only | your question and the matching notes |
 | `api.apify.com` | optional last resort for Instagram | the post's link, plus your token |
 | `github.com` (browser) | feedback | only the text you type, after you review it |
+| `api.github.com` | update check, at most once a day | nothing but the request itself (no token) |
 
 ## Install
 
@@ -162,7 +163,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 3. Share a reel to Reel Bot. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
 4. To count what you watch, go to **Settings → Set up counting** and follow the checklist: on Android 13+, *Allow restricted settings* first, then Accessibility, notifications, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
 
-Uninstalling deletes your notes, so use **Settings → Export** now and then.
+Uninstalling deletes your notes, so use **Settings → Export** now and then. A banner tells you when a newer APK is out. The step-by-step guide for friends is [INSTALL.md](docs/INSTALL.md).
 
 ## Build
 
@@ -191,6 +192,7 @@ The release build needs `mobile/android/key.properties` (gitignored) pointing at
 | Doc | What's in it |
 |---|---|
 | [STATUS.md](docs/STATUS.md) | **Start here:** what's done, how it was checked, and every piece of work still to do |
+| [INSTALL.md](docs/INSTALL.md) | One-page install guide for friends |
 | [PLAN.md](docs/PLAN.md) | What we're building, decisions, risks, build order |
 | [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | File-by-file guide, with what changed in each version |
 | [ENDPOINTS.md](docs/ENDPOINTS.md) | Every network call and internal interface |

@@ -265,14 +265,20 @@ void main() {
     expect(await db.tryLock(t + const Duration(minutes: 6).inMilliseconds), isTrue, reason: 'stale lock expires');
   });
 
-  test('T-EXP-01 export, wipe, import; import twice adds nothing', () async {
+  test('T-EXP-01 export, wipe, import (notes and chats); import twice adds nothing', () async {
     await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'A', summary: 's', tags: ['x'], savedAt: 1));
     await db.saveReel(const Reel(url: 'u2', app: 'instagram', title: 'B', summary: 's', savedAt: 2));
-    final json = exportJson(await db.reels());
+    final chat = await db.saveChat(null, ['q?', 'a.'], 5);
+    final json = exportJson(await db.reels(), await db.chats());
     await db.delete('u1');
     await db.delete('u2');
-    expect(await importJson(db, json), 2);
-    expect(await importJson(db, json), 0);
+    await db.deleteChat(chat);
+    expect(await importJson(db, json), (2, 1));
+    expect(await importJson(db, json), (0, 0));
+    final (_, title, at, turns) = (await db.chats()).single;
+    expect((title, at), ('q?', 5));
+    expect(turns, ['q?', 'a.']);
+    expect(await importJson(db, '{"version":1,"reels":[]}'), (0, 0), reason: 'v1 files have no chats');
     final r = await db.reels();
     expect(r.map((e) => e.url), ['u2', 'u1']);
     expect(r.last.tags, ['x']);

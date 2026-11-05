@@ -23,6 +23,10 @@ class KeyStore {
   Future<int> get geminiTurn async => int.tryParse(await _read('gemini_turn') ?? '') ?? 0;
   Future<void> setGeminiTurn(int v) => _write('gemini_turn', '$v');
 
+  /// When the update check last ran (GH-RELEASE-LATEST: at most once a day).
+  Future<int> get updateCheckedAt async => int.tryParse(await _read('update_checked') ?? '') ?? 0;
+  Future<void> setUpdateCheckedAt(int v) => _write('update_checked', '$v');
+
   Future<bool> get introSeen => flag('intro_seen');
   Future<void> setIntroSeen() => setFlag('intro_seen');
 

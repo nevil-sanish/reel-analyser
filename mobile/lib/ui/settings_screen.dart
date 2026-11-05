@@ -55,19 +55,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _export() async {
     final reels = await s.library.reels();
-    await s.bridge.saveDownload('library.json', exportJson(reels));
+    final chats = await s.library.chats();
+    await s.bridge.saveDownload('library.json', exportJson(reels, chats));
     for (final r in reels) {
       await s.bridge.saveDownload(markdownName(r), r.toMarkdown());
     }
-    if (mounted) _say('Exported ${reels.length} notes to Downloads/ReelBot');
+    if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats to Downloads/ReelBot');
   }
 
   Future<void> _import() async {
     final f = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['json']);
     if (f == null) return;
     try {
-      final n = await importJson(s.library, utf8.decode(await f.readAsBytes()));
-      if (mounted) _say('Imported $n new notes');
+      final (notes, chats) = await importJson(s.library, utf8.decode(await f.readAsBytes()));
+      if (mounted) _say('Imported $notes new notes and $chats chats');
     } on FormatException catch (e) {
       if (mounted) _say('Could not import: ${e.message}');
     }
