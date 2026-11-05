@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 /** `counter.db`, owned by Kotlin; Dart reaches it only through `reelbot/counter` (PLAN §4.7). */
-class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 3), TrackerSink {
+class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 4), TrackerSink {
     companion object {
         @Volatile private var instance: CounterDb? = null
         fun get(ctx: Context): CounterDb =
@@ -33,6 +33,8 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         if (oldVersion < 2) createCounterTables(db)
         // Version 3: the analysed note's title, for the digest (Kotlin never opens Dart's reel_brain.db).
         if (oldVersion < 3) db.execSQL("ALTER TABLE pending_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+        // Version 4: watched reels are kept as anonymous fingerprints only; wipe the text earlier versions stored.
+        if (oldVersion < 4) db.execSQL("UPDATE seen_items SET author = '', caption = ''")
     }
 
     /** Version 2: the Phase 2 counter (IMPLEMENTATION §3.3). */
@@ -58,8 +60,8 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
 
     override fun commitItem(date: String, app: String, fp: String, firstSeen: Long, item: ItemText) {
         writableDatabase.insertWithOnConflict("seen_items", null, ContentValues().apply {
+            // Only the fingerprint (a hash) and the time: nothing about what the reel was.
             put("date", date); put("app", app); put("fp", fp); put("first_seen", firstSeen)
-            put("author", item.author); put("caption", item.caption.ifBlank { item.title })
         }, SQLiteDatabase.CONFLICT_IGNORE)
     }
 
@@ -91,6 +93,11 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
 
     fun debugState(): List<Map<String, Any?>> =
         query("SELECT k, v, ts FROM debug_state ORDER BY k", null) { mapOf("k" to it.getString(0), "v" to it.getString(1), "ts" to it.getLong(2)) }
+
+    /** Capture off: drop what it recorded about the screen (it can include captions). */
+    fun clearCapture() {
+        writableDatabase.delete("debug_state", "k = 'now' OR k LIKE 'tree_%'", null)
+    }
 
     fun debug(k: String): String? = query("SELECT v FROM debug_state WHERE k = ?", arrayOf(k)) { it.getString(0) }.firstOrNull()
 

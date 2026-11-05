@@ -298,6 +298,7 @@ CREATE VIEW daily_counts AS
 
 **Writes**
 - `commitItem`: `INSERT … ON CONFLICT IGNORE`. A rewatch doesn't add a row.
+- v0.5.0: `commitItem` stores only `fp` and times; `author` / `caption` stay empty (version 4 blanks rows from earlier versions). Watched reels are counted, never recorded. Turning capture off deletes `debug_state` `now` and `tree_*`.
 - `addDwell`: `UPDATE … dwell_ms = dwell_ms + ?`.
 - Counters (`addScreenTime`, `addUnknown`): `INSERT OR IGNORE`, then `UPDATE +?`. UPSERT needs Android 11, so it isn't used.
 

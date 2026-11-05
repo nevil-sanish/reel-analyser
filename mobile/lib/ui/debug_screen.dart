@@ -42,8 +42,6 @@ class _DebugScreenState extends State<DebugScreen> {
     });
   }
 
-  String _clock(int ms) => DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String().substring(11, 19);
-
   @override
   Widget build(BuildContext context) {
     final mono = Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace');
@@ -61,7 +59,8 @@ class _DebugScreenState extends State<DebugScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Capture screen structure'),
-            subtitle: const Text('Open Reels or Shorts with this on, then come back and copy the trees.'),
+            subtitle: const Text('Open Reels or Shorts with this on, then come back and copy the trees. '
+                'Turning it off deletes what it recorded.'),
             value: _capture,
             onChanged: (v) async {
               await b.setCapture(v);
@@ -83,15 +82,8 @@ class _DebugScreenState extends State<DebugScreen> {
             Text('Auto-Save: ${_state['autosave_ok'] ?? '0'} of $tries worked (keep it only above 90%) · '
                 'last: ${_state['autosave_last'] ?? ''}'),
           const Divider(),
-          Text('Seen today', style: Theme.of(context).textTheme.titleSmall),
-          for (final s in _seen)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text('${_clock(s.firstSeen)} · ${s.app} · @${s.author}'),
-              subtitle: Text(s.caption, maxLines: 2, overflow: TextOverflow.ellipsis),
-              trailing: Text('${(s.dwellMs / 1000).round()} s'),
-            ),
+          Text('Seen today: ${_seen.length} reels. Reel Bot keeps only an anonymous fingerprint of each, never what it was.',
+              style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

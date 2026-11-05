@@ -66,7 +66,9 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "seenItems" -> result.success(CounterDb.get(ctx).seenItems(call.argument<String>("date")!!))
             "debugState" -> result.success(CounterDb.get(ctx).debugState())
             "setCapture" -> {
-                prefs().edit().putBoolean(ReelCounterService.CAPTURE, call.argument<Boolean>("on") == true).apply()
+                val on = call.argument<Boolean>("on") == true
+                prefs().edit().putBoolean(ReelCounterService.CAPTURE, on).apply()
+                if (!on) CounterDb.get(ctx).clearCapture()
                 result.success(null)
             }
             "setAutoSave" -> {
