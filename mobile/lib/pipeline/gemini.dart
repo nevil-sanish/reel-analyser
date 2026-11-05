@@ -36,8 +36,8 @@ class Analysis {
 /// GEM-GENERATE, GEM-UPLOAD / GEM-FILE-GET / GEM-FILE-DELETE (ENDPOINTS §3).
 class Gemini {
   static const base = 'https://generativelanguage.googleapis.com';
-  // gemini-3.5-flash now routes to 3.6 Flash (Gemini deprecations page); Flash-Lite is the cheaper fallback.
-  static const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+  // Cheapest first: Flash-Lite watches video well enough for short notes; 3.6 Flash only if Lite refuses the input.
+  static const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
   static const inlineLimit = 20 * 1024 * 1024;
 
   /// Attempts per model, cheapest first: minimal thinking, low media resolution and video at 0.5 fps

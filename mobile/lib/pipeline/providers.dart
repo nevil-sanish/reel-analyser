@@ -23,9 +23,11 @@ class ChatModel {
     return switch (provider) {
       'gemini' => _gemini(system, turns, images),
       'claude' => _claude(system, turns, images),
-      'openai' => _openaiCompatible('https://api.openai.com/v1/chat/completions', 'gpt-6.1-terra', system, turns, images,
+      // Cheapest models that still read images well enough for short notes; the user put token cost first.
+      'openai' => _openaiCompatible('https://api.openai.com/v1/chat/completions', 'gpt-6-luna', system, turns, images,
           extra: {'reasoning_effort': 'none'}),
-      _ => _openaiCompatible('https://api.groq.com/openai/v1/chat/completions', 'llama-3.3-70b-versatile', system, turns, const []),
+      _ => _openaiCompatible('https://api.groq.com/openai/v1/chat/completions', 'openai/gpt-oss-20b', system, turns, const [],
+          extra: {'reasoning_effort': 'low'}),
     };
   }
 
@@ -54,14 +56,13 @@ class ChatModel {
     final r = await _post(Uri.parse('https://api.anthropic.com/v1/messages'), {
       'x-api-key': key,
       'anthropic-version': '2026-10-21',
-      // On a safety decline, the API re-runs the request on a model chosen for that category.
-      'anthropic-beta': 'server-side-fallback-2026-07-01',
     }, {
-      'model': 'claude-opus-5-5',
+      // Haiku at low effort with thinking off: the user asked for the cheapest setup that still writes good notes.
+      'model': 'claude-haiku-5-5',
       'max_tokens': 16000,
       'system': system,
-      'output_config': {'effort': 'low'}, // short notes and chat: low effort keeps tokens down
-      'fallbacks': 'default',
+      'thinking': {'type': 'disabled'},
+      'output_config': {'effort': 'low'},
       'messages': [
         for (var i = 0; i < turns.length; i++)
           {

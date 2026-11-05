@@ -172,7 +172,7 @@ void main() {
     await runner(b2, (r) async => ++n < 3 ? http.Response('{"error":"bad thinking level"}', 400) : http.Response(_gemOk(), 200))
         .processQueue();
     final models = requests.where(isGenerate).map((r) => r.url.pathSegments.last.split(':').first).toList();
-    expect(models.last, Gemini.models[1]);
+    expect(models.last, Gemini.models[1]); // after Flash-Lite refuses twice, 3.6 Flash
     expect(b2.statuses[3], 'text-only');
   });
 

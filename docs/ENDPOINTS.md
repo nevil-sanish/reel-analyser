@@ -177,11 +177,11 @@ Rules for every `IG-*` call:
 
 ### OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT: other AI providers (v0.5.0)
 - Owner `lib/pipeline/providers.dart` (`ChatModel`). Raw HTTP; keys from Settings.
-- **OpenAI** `POST https://api.openai.com/v1/chat/completions`, `gpt-6.1-terra`, `reasoning_effort: none`, images as `image_url` data URLs with `detail: low`.
-- **Claude** `POST https://api.anthropic.com/v1/messages`, `claude-opus-5-5`, headers `x-api-key`, `anthropic-version: 2026-10-21`, `anthropic-beta: server-side-fallback-2026-07-01`; body `output_config.effort: low`, `fallbacks: "default"`; a `refusal` stop reason counts as rejected.
-- **Groq** `POST https://api.groq.com/openai/v1/chat/completions`, `llama-3.3-70b-versatile`. Chat only.
+- **OpenAI** `POST https://api.openai.com/v1/chat/completions`, `gpt-6-luna` (v0.5.1; was `gpt-6.1-terra`), `reasoning_effort: none`, images as `image_url` data URLs with `detail: low`.
+- **Claude** `POST https://api.anthropic.com/v1/messages`, `claude-haiku-5-5` (v0.5.1; was `claude-opus-5-5`), headers `x-api-key`, `anthropic-version: 2026-10-21`; body `thinking: disabled`, `output_config.effort: low` (Haiku has no server-side fallback); a `refusal` stop reason counts as rejected.
+- **Groq** `POST https://api.groq.com/openai/v1/chat/completions`, `openai/gpt-oss-20b` with `reasoning_effort: low` (v0.5.1; Groq lists the Llama models as Contact Sales). Chat only.
 - Notes: OpenAI and Claude get 6 frames (`videoFrames`) or the thumbnail, never audio, and only when Gemini has no key or every Gemini key is rate-limited or rejected. 401/403 → bad key, 429/5xx/network → retry later.
-- Chat sends every saved note (title, tags, URL, summary, key points) as the system prompt plus the last 10 turns.
+- Chat sends the notes that match the question's words: the best 8 in full, the next 32 as title + summary; a question with no matches gets every title + summary. Plus the last 10 turns.
 - **Tests:** `T-PIPE-12`
 
 ### FEEDBACK: GitHub issue (v0.5.0)
@@ -227,3 +227,4 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.3.0: `setAutoSave` and `status.autoSave` for the experimental auto-Save. |
 | 2026-11-06 | v0.4.0: WM-DIGEST implemented; `setPendingStatus` takes `title`; `markOpened` added. |
 | 2026-11-06 | v0.5.0: GEM-GENERATE uses `gemini-3.6-flash` (3.5 Flash now routes there), YouTube as a `watch?v=` URL with no mimeType, `videoMetadata.fps` 0.5, `thinkingLevel` minimal and low media resolution on the first attempt. New: OPENAI-CHAT, CLAUDE-MESSAGES, GROQ-CHAT, `videoFrames`, `openUrl` (feedback). |
+| 2026-11-06 | v0.5.1: cheaper models first to save tokens: Gemini `gemini-3.5-flash-lite` then `gemini-3.6-flash`; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`; Groq `openai/gpt-oss-20b`. Chat sends only matching notes. |
