@@ -30,7 +30,13 @@ class Analysis {
   final String summary;
   final List<String> keyPoints;
   final List<String> tags;
-  const Analysis(this.title, this.summary, this.keyPoints, this.tags);
+
+  /// v0.9.2: short simple bullets that together carry all the important information (shown without a toggle).
+  final List<String> overview;
+
+  /// v0.9.2: tools, apps, products, people, books, sites or links named in the reel.
+  final List<String> mentions;
+  const Analysis(this.title, this.summary, this.keyPoints, this.tags, {this.overview = const [], this.mentions = const []});
 }
 
 /// GEM-GENERATE, GEM-UPLOAD / GEM-FILE-GET / GEM-FILE-DELETE (ENDPOINTS §3).
@@ -53,9 +59,17 @@ class Gemini {
   final Duration pollEvery;
   Gemini(this.client, this.key, {this.pollEvery = const Duration(seconds: 2)});
 
-  static const prompt = '''Turn this short video (Instagram Reel / YouTube Short) into a study note, in the video's language.
-Use speech and on-screen text. Be brief. JSON: title (max 8 words), summary (1 sentence: what it teaches or shows),
-keyPoints (up to 3 short, concrete takeaways), tags (up to 3 lowercase single words).
+  // v0.9.2: the user wants every important detail kept, in simple words: a short overview to read at a glance,
+  // and the full detail behind a toggle. Longer output than v0.6, on purpose.
+  static const prompt = '''Turn this short video (Instagram Reel / YouTube Short) into a note, in the video's language and simple words.
+Use the speech, on-screen text and visuals. Return JSON:
+- title: specific, max 8 words.
+- overview: 3-6 bullets, each one short line (max 15 words), that together cover ALL the important information:
+  what it is about, the main points, key numbers, steps, tools or names, and the conclusion. No filler.
+- summary: 2-4 sentences explaining it in more detail.
+- keyPoints: every concrete takeaway, step, tip, number, example or claim, as many as there are (up to 12), each a clear sentence.
+- mentions: tools, apps, products, people, books, websites or links named (empty if none).
+- tags: 3-5 lowercase single words.
 If you only have a caption, a thumbnail or frames, work from those and say so in the summary.''';
 
   /// The note from a model's JSON reply; tolerates text or a code fence around the object.
@@ -69,18 +83,21 @@ If you only have a caption, a thumbnail or frames, work from those and say so in
       throw GeminiException(GeminiFailure.rejected, 'bad JSON: ${e.message}');
     }
     List<String> list(Object? v) => v is List ? v.map((e) => '$e').toList() : [];
-    return Analysis('${j['title'] ?? ''}', '${j['summary'] ?? ''}', list(j['keyPoints']), list(j['tags']));
+    return Analysis('${j['title'] ?? ''}', '${j['summary'] ?? ''}', list(j['keyPoints']), list(j['tags']),
+        overview: list(j['overview']), mentions: list(j['mentions']));
   }
 
   static final _schema = {
     'type': 'OBJECT',
     'properties': {
       'title': {'type': 'STRING'},
+      'overview': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
       'summary': {'type': 'STRING'},
       'keyPoints': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+      'mentions': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
       'tags': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
     },
-    'required': ['title', 'summary', 'keyPoints', 'tags'],
+    'required': ['title', 'overview', 'summary', 'keyPoints', 'mentions', 'tags'],
   };
 
   Map<String, String> get _headers => {'x-goog-api-key': key, 'Content-Type': 'application/json'};

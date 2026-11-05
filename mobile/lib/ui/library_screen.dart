@@ -338,10 +338,11 @@ class ReelCard extends StatelessWidget {
                     style: t.textTheme.titleMedium?.copyWith(fontWeight: reel.seenAt == 0 ? FontWeight.w700 : FontWeight.w500),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
-                if (reel.summary.isNotEmpty) ...[
+                if (reel.overview.isNotEmpty || reel.summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(reel.summary, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  Text(reel.overview.isEmpty ? reel.summary : reel.overview.take(2).map((o) => '• $o').join('\n'),
+                      maxLines: 3, overflow: TextOverflow.ellipsis,
+                      style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant, height: 1.35)),
                 ],
               ],
             ),

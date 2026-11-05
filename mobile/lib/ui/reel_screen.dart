@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import '../core/models.dart';
 import 'liquid.dart';
+import 'theme.dart';
 
 class ReelScreen extends StatefulWidget {
   final AppServices services;
@@ -85,12 +86,31 @@ class _ReelScreenState extends State<ReelScreen> {
             const SizedBox(height: 16),
           ],
           SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          // The content first, nothing else: the rest sits behind "Show full analysis".
+          const SizedBox(height: 14),
+          // At a glance: the overview bullets carry every important point in short, simple lines.
           Card(
-            child: Padding(padding: const EdgeInsets.all(18), child: SelectableText(reel.summary, style: t.bodyLarge?.copyWith(height: 1.45))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              child: reel.overview.isEmpty
+                  ? SelectableText(reel.summary, style: t.bodyLarge?.copyWith(height: 1.45))
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      for (final o in reel.overview)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 8, right: 12),
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
+                            ),
+                            Expanded(child: SelectableText(o, style: t.bodyLarge?.copyWith(height: 1.4))),
+                          ]),
+                        ),
+                    ]),
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Center(
             child: TextButton.icon(
               onPressed: () {
@@ -108,15 +128,35 @@ class _ReelScreenState extends State<ReelScreen> {
             child: !_full
                 ? const SizedBox(width: double.infinity)
                 : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    for (final k in reel.keyPoints)
-                      Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText('•  $k', style: t.bodyLarge)),
-                    if (reel.tags.isNotEmpty) ...[
-                      const SizedBox(height: 14),
+                    if (reel.overview.isNotEmpty) ...[
+                      Text('In detail', style: t.titleMedium),
+                      const SizedBox(height: 6),
+                      SelectableText(reel.summary, style: t.bodyLarge?.copyWith(height: 1.45)),
+                      const SizedBox(height: 18),
+                    ],
+                    if (reel.keyPoints.isNotEmpty) ...[
+                      Text('Everything in it', style: t.titleMedium),
+                      for (final (i, k) in reel.keyPoints.indexed)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            SizedBox(width: 28, child: Text('${i + 1}.', style: t.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700))),
+                            Expanded(child: SelectableText(k, style: t.bodyLarge?.copyWith(height: 1.4))),
+                          ]),
+                        ),
+                      const SizedBox(height: 18),
+                    ],
+                    if (reel.mentions.isNotEmpty) ...[
+                      Text('Mentioned', style: t.titleMedium),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [for (final m in reel.mentions) Chip(label: Text(m))]),
+                      const SizedBox(height: 18),
+                    ],
+                    if (reel.tags.isNotEmpty)
                       Wrap(spacing: 8, children: [
                         for (final tag in reel.tags) Text('#$tag', style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
                       ]),
-                    ],
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app, savedOn(reel.savedAt)].join(' · '), style: t.bodySmall),
                     if (reel.analysis != 'done') ...[
                       const SizedBox(height: 8),
@@ -128,20 +168,20 @@ class _ReelScreenState extends State<ReelScreen> {
                                 : 'Made from the title and thumbnail: Gemini couldn\'t watch this video.',
                         style: t.bodySmall,
                       ),
-                      if (!reel.url.startsWith('local:'))
-                        TextButton.icon(
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Try again with the video'),
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final ok = await services.retry(reel);
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share the reel to Reel Bot again to retry.')));
-                            if (ok) Navigator.pop(context);
-                          },
-                        ),
                     ],
+                    if (!reel.url.startsWith('local:'))
+                      TextButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        label: Text(reel.analysis == 'done' ? 'Re-analyse' : 'Try again with the video'),
+                        onPressed: () async {
+                          HapticFeedback.lightImpact();
+                          final ok = await services.retry(reel);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share it to Reel Bot again to re-analyse.')));
+                          if (ok) Navigator.pop(context);
+                        },
+                      ),
                   ]),
           ),
         ],

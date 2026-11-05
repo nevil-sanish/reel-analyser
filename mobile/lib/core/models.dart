@@ -9,6 +9,10 @@ class Reel {
   final String summary;
   final List<String> keyPoints;
   final List<String> tags;
+
+  /// v0.9.2: the at-a-glance bullets and the names/tools mentioned. Empty on older notes.
+  final List<String> overview;
+  final List<String> mentions;
   final String author;
   final String caption;
   final String analysis;
@@ -33,6 +37,8 @@ class Reel {
     required this.summary,
     this.keyPoints = const [],
     this.tags = const [],
+    this.overview = const [],
+    this.mentions = const [],
     this.author = '',
     this.caption = '',
     this.analysis = 'done',
@@ -49,6 +55,8 @@ class Reel {
         'summary': summary,
         'keyPoints': keyPoints,
         'tags': tags,
+        'overview': overview,
+        'mentions': mentions,
         'author': author,
         'caption': caption,
         'analysis': analysis,
@@ -65,6 +73,8 @@ class Reel {
         summary: j['summary'] as String? ?? '',
         keyPoints: _strings(j['keyPoints']),
         tags: _strings(j['tags']),
+        overview: _strings(j['overview']),
+        mentions: _strings(j['mentions']),
         author: j['author'] as String? ?? '',
         caption: j['caption'] as String? ?? '',
         analysis: j['analysis'] as String? ?? 'done',
@@ -75,12 +85,21 @@ class Reel {
       );
 
   Map<String, Object?> toRow() =>
-      {...toJson(), 'keyPoints': jsonEncode(keyPoints), 'tags': jsonEncode(tags), 'archived': archived ? 1 : 0};
+      {
+        ...toJson(),
+        'keyPoints': jsonEncode(keyPoints),
+        'tags': jsonEncode(tags),
+        'overview': jsonEncode(overview),
+        'mentions': jsonEncode(mentions),
+        'archived': archived ? 1 : 0,
+      };
 
   factory Reel.fromRow(Map<String, Object?> r) => Reel.fromJson({
         ...r,
         'keyPoints': jsonDecode(r['keyPoints'] as String? ?? '[]'),
         'tags': jsonDecode(r['tags'] as String? ?? '[]'),
+        'overview': jsonDecode(r['overview'] as String? ?? '[]'),
+        'mentions': jsonDecode(r['mentions'] as String? ?? '[]'),
       });
 
   String toMarkdown() => [
@@ -88,8 +107,10 @@ class Reel {
         '',
         '$url · ${author.isEmpty ? app : '@$author'}',
         '',
+        if (overview.isNotEmpty) ...[for (final o in overview) '- $o', ''],
         summary,
-        if (keyPoints.isNotEmpty) ...['', for (final k in keyPoints) '- $k'],
+        if (keyPoints.isNotEmpty) ...['', '## Key points', for (final k in keyPoints) '- $k'],
+        if (mentions.isNotEmpty) ...['', '## Mentioned', mentions.join(', ')],
         if (tags.isNotEmpty) ...['', tags.map((t) => '#$t').join(' ')],
         '',
       ].join('\n');

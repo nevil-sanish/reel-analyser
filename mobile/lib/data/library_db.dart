@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 3,
+        version: 4,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -26,10 +26,12 @@ class LibraryDb {
           await db.insert('meta', {'k': 'processing_until', 'v': 0});
           await _v2(db);
           await _v3(db);
+          await _v4(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
           if (from < 3) await _v3(db);
+          if (from < 4) await _v4(db);
         },
       ),
     );
@@ -45,6 +47,12 @@ class LibraryDb {
   /// Version 3: saved chats. `turns` is a JSON list alternating question, answer.
   static Future<void> _v3(Database db) => db.execute('''CREATE TABLE chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, updatedAt INTEGER NOT NULL, turns TEXT NOT NULL)''');
+
+  /// Version 4: the overview bullets and mentions of richer notes (v0.9.2).
+  static Future<void> _v4(Database db) async {
+    await db.execute("ALTER TABLE reels ADD COLUMN overview TEXT NOT NULL DEFAULT '[]'");
+    await db.execute("ALTER TABLE reels ADD COLUMN mentions TEXT NOT NULL DEFAULT '[]'");
+  }
 
   /// Creates the chat when [id] is null; returns its id.
   Future<int> saveChat(int? id, List<String> turns, int now) async {

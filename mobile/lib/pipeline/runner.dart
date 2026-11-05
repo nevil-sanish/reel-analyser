@@ -321,6 +321,8 @@ class Runner {
         summary: a.summary,
         keyPoints: a.keyPoints,
         tags: a.tags,
+        overview: a.overview,
+        mentions: a.mentions,
         author: author,
         caption: caption,
         analysis: analysis,

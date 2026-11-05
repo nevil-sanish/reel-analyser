@@ -13,5 +13,9 @@ void main() {
     expect(w[2], 10); // Wednesday 4 Nov: 10 minutes
     expect(w[4], 0);
     expect([hourLabel(0), hourLabel(9), hourLabel(12), hourLabel(21)], ['12a', '9a', '12p', '9p']);
+    final hours = List.filled(24, (0, 0));
+    hours[1] = (5, 60000);
+    hours[20] = (3, 30000);
+    expect([for (final b in timeBlocks(hours)) (b.$1, b.$3)], [('Night', 5), ('Morning', 0), ('Afternoon', 0), ('Evening', 3)]);
   });
 }

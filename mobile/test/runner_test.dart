@@ -41,7 +41,14 @@ class FakeBridge implements CounterBridge {
   Future<void> saveDownload(String name, String text) async {}
 }
 
-const _note = {'title': 'Rice', 'summary': 'How to cook rice.', 'keyPoints': ['Rinse'], 'tags': ['food']};
+const _note = {
+  'title': 'Rice',
+  'overview': ['Rinse rice twice', 'Use 1:1.5 water'],
+  'summary': 'How to cook rice.',
+  'keyPoints': ['Rinse'],
+  'mentions': ['Rice cooker'],
+  'tags': ['food'],
+};
 
 String _gemOk() => jsonEncode({
       'candidates': [
@@ -112,6 +119,10 @@ void main() {
     expect(b.statuses[1], 'done');
     expect((await db.reels()).single.title, 'Rice');
     expect(b.titles[1], 'Rice'); // for the digest
+    final saved = (await db.reels()).single;
+    expect(saved.overview, ['Rinse rice twice', 'Use 1:1.5 water']);
+    expect(saved.mentions, ['Rice cooker']);
+    expect(body(requests.single)['generationConfig']['responseSchema']['required'], contains('overview'));
   });
 
   test('T-PIPE-02 rejected YouTube URL falls back to oEmbed', () async {

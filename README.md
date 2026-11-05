@@ -39,7 +39,7 @@ If no video can be fetched, the note is made from the caption and thumbnail, and
 - **OpenAI** (GPT-6 Luna) and **Claude** (Haiku 5.5) are used when no Gemini key can take a reel. They see 6 frames from the video, without sound.
 - **Groq** is for chat only.
 
-Notes are kept short to save tokens: a title, one sentence, up to 3 points and 3 tags.
+Each note has a short bulleted overview in simple words that covers every important point, and behind *Show full analysis*: a fuller summary, every key point and step, and the tools, people and links mentioned.
 
 ### 3. Use: three tabs
 
@@ -126,7 +126,7 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
 - Gemini first. It uses your keys in turn, one reel per key, and a 429 or a rejected key moves that reel to the next key.
 - If every Gemini key fails or there are none, OpenAI and then Claude are tried, with 6 JPEG frames taken from the video (`MediaMetadataRetriever`) or the pictures.
 
-**Token savers:** the cheapest model first; on Gemini, minimal thinking, low media resolution and video sampled at 0.5 fps (a retry drops these settings if a model rejects them); and a prompt that asks for a short JSON note (title, 1 sentence, ≤ 3 points, ≤ 3 tags).
+**Token savers:** the cheapest model first; on Gemini, minimal thinking, low media resolution and video sampled at 0.5 fps (a retry drops these settings if a model rejects them); and a JSON note with fixed fields (title, overview bullets, summary, key points, mentions, tags).
 
 ### Counting reels you watch
 
@@ -140,7 +140,7 @@ The fingerprint is a SHA-1 of the app, author, the first 40 caption characters, 
 
 ### Chat
 
-Each question sends the best-matching notes as context: the top 8 in full and the next 32 as title plus summary, chosen by keyword overlap. It also sends the last 10 turns. No embeddings, and no server.
+Each question searches every note you haven't deleted, archive included: the 12 best keyword matches go in full (overview, points, mentions, link) and the next 40 as title plus overview. It also sends the last 10 turns. No embeddings, and no server.
 
 ### Outside services
 

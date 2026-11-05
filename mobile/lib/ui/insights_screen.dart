@@ -70,9 +70,13 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
     final today = _days.isEmpty ? DayTotal(localDate(), const {}, 0, 0) : _days.last;
     final total = _days.fold(0, (s, d) => s + d.reels);
     final minutes = _days.fold(0, (s, d) => s + d.ms) ~/ 60000;
+    final active = _days.where((d) => d.reels > 0).length;
     final peak = _hours.indexed.reduce((a, b) => b.$2.$1 > a.$2.$1 ? b : a);
+    final blocks = timeBlocks(_hours);
+    final topBlock = blocks.indexed.reduce((a, b) => b.$2.$3 > a.$2.$3 ? b : a);
     final weekday = weekdayMinutes(_days);
     final topDay = weekday.indexed.reduce((a, b) => b.$2 > a.$2 ? b : a);
+    String dur(int m) => m < 60 ? '${m}m' : '${m ~/ 60}h ${m % 60}m';
     const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return LiquidScaffold(
       background: false,
@@ -134,17 +138,19 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat('${minutes ~/ 60}h ${minutes % 60}m', 'watching'),
-                  _HeroStat('${(minutes / _range).round()}m', 'a day'),
+                  _HeroStat(dur(minutes), 'watching'),
+                  _HeroStat(active == 0 ? '0' : '${(total / active).round()}', 'per active day'),
                   _HeroStat('${today.reels}', 'today'),
                 ]),
               ]),
             ),
             const SizedBox(height: 16),
             _Section(
-              title: 'Minutes each day',
+              title: 'Reels & shorts each day',
+              subtitle: active == 0 ? 'Nothing counted yet' : 'Watched on $active of $_range days',
               child: _Bars(
-                values: [for (final d in _days) d.ms / 60000],
+                values: [for (final d in _days) d.reels.toDouble()],
+                valueLabels: [for (final d in _days) d.reels == 0 ? '' : '${d.reels}'],
                 labels: [
                   for (final (i, d) in _days.indexed)
                     _range == 7 ? names[DateTime.parse(d.date).weekday - 1].substring(0, 1) : (i % 5 == 4 ? d.date.substring(8) : ''),
@@ -155,18 +161,24 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
             const SizedBox(height: 16),
             _Section(
               title: 'When you watch',
-              subtitle: peak.$2.$1 == 0 ? 'Nothing counted yet' : 'Most around ${hourLabel(peak.$1)}',
-              child: _Bars(
-                values: [for (final h in _hours) h.$1.toDouble()],
-                labels: [for (var h = 0; h < 24; h++) h % 6 == 0 ? hourLabel(h) : ''],
-                highlight: peak.$2.$1 == 0 ? -1 : peak.$1,
-              ),
+              subtitle: peak.$2.$1 == 0 ? 'Nothing counted yet' : 'Mostly ${blocks[topBlock.$1].$1.toLowerCase()} · peak around ${hourLabel(peak.$1)}',
+              child: Column(children: [
+                for (final (i, (name, range, reels, ms)) in blocks.indexed)
+                  _BlockRow(name, range, reels, total == 0 ? 0 : reels / total, dur(ms ~/ 60000), highlight: reels > 0 && i == topBlock.$1),
+              ]),
             ),
             const SizedBox(height: 16),
             _Section(
               title: 'By weekday',
-              subtitle: topDay.$2 == 0 ? 'Average minutes' : 'You watch most on ${names[topDay.$1]}s',
-              child: _Bars(values: weekday, labels: [for (final n in names) n.substring(0, 1)], highlight: topDay.$2 == 0 ? -1 : topDay.$1),
+              subtitle: active < 7 ? 'Shows once you have a week of watching' : 'You watch most on ${names[topDay.$1]}s',
+              child: active < 7
+                  ? const SizedBox()
+                  : _Bars(
+                      values: weekday,
+                      valueLabels: [for (final w in weekday) w == 0 ? '' : '${w.round()}m'],
+                      labels: [for (final n in names) n.substring(0, 1)],
+                      highlight: topDay.$1,
+                    ),
             ),
             const SizedBox(height: 16),
             _Section(
@@ -189,6 +201,26 @@ List<DayTotal> fillDays(List<DayTotal> rows, int n, DateTime now) {
   return [
     for (var i = n - 1; i >= 0; i--)
       byDate[localDate(now.subtract(Duration(days: i)))] ?? DayTotal(localDate(now.subtract(Duration(days: i))), const {}, 0, 0),
+  ];
+}
+
+/// Reels and watch time in four parts of the day: (name, hours, reels, ms).
+List<(String, String, int, int)> timeBlocks(List<(int, int)> hours) {
+  (int, int) sum(int from, int to) {
+    var r = 0, ms = 0;
+    for (var h = from; h < to; h++) {
+      r += hours[h].$1;
+      ms += hours[h].$2;
+    }
+    return (r, ms);
+  }
+
+  final n = sum(0, 6), m = sum(6, 12), a = sum(12, 18), e = sum(18, 24);
+  return [
+    ('Night', '12a–6a', n.$1, n.$2),
+    ('Morning', '6a–12p', m.$1, m.$2),
+    ('Afternoon', '12p–6p', a.$1, a.$2),
+    ('Evening', '6p–12a', e.$1, e.$2),
   ];
 }
 
@@ -246,8 +278,11 @@ class _Section extends StatelessWidget {
 class _Bars extends StatelessWidget {
   final List<double> values;
   final List<String> labels;
+
+  /// Printed above each bar ("" for none).
+  final List<String> valueLabels;
   final int highlight;
-  const _Bars({required this.values, required this.labels, this.highlight = -1});
+  const _Bars({required this.values, required this.labels, this.valueLabels = const [], this.highlight = -1});
 
   @override
   Widget build(BuildContext context) {
@@ -261,15 +296,23 @@ class _Bars extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: values.length > 12 ? 1 : 4),
               child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                if (i < valueLabels.length && valueLabels[i].isNotEmpty)
+                  Text(valueLabels[i],
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: t.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: t.colorScheme.onSurface)),
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: most == 0 ? 0 : values[i] / most),
                   duration: Duration(milliseconds: 500 + 15 * i),
                   curve: Curves.easeOutCubic,
                   builder: (_, v, _) => Container(
-                    height: 4 + 96 * v,
+                    height: values[i] == 0 ? 3 : 6 + 84 * v,
                     decoration: BoxDecoration(
-                      gradient: i == highlight ? Brand.gradient : null,
-                      color: i == highlight ? null : t.colorScheme.primary.withValues(alpha: 0.25),
+                      gradient: i == highlight && values[i] > 0 ? Brand.gradient : null,
+                      color: i == highlight && values[i] > 0
+                          ? null
+                          : t.colorScheme.primary.withValues(alpha: values[i] == 0 ? 0.1 : 0.35),
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -309,4 +352,60 @@ class _AppStat extends StatelessWidget {
           ]),
         ]),
       );
+}
+
+/// One part of the day: name, hours, a share bar, reels and minutes.
+class _BlockRow extends StatelessWidget {
+  final String name;
+  final String hours;
+  final int reels;
+  final double share;
+  final String time;
+  final bool highlight;
+  const _BlockRow(this.name, this.hours, this.reels, this.share, this.time, {this.highlight = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(children: [
+        SizedBox(
+          width: 92,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, style: t.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(hours, style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+          ]),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(children: [
+              Container(height: 14, color: t.colorScheme.primary.withValues(alpha: 0.1)),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: share),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, _) => FractionallySizedBox(
+                  widthFactor: v,
+                  child: Container(
+                    height: 14,
+                    decoration: BoxDecoration(
+                      gradient: highlight ? Brand.gradient : null,
+                      color: highlight ? null : t.colorScheme.primary.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+        SizedBox(
+          width: 84,
+          child: Text(reels == 0 ? '—' : '$reels · $time',
+              textAlign: TextAlign.end, style: t.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
+        ),
+      ]),
+    );
+  }
 }

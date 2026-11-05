@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.9.1';
+  static const version = '0.9.2';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -61,21 +61,27 @@ class AppServices {
         if (await keys.groq != null) 'groq',
       ];
 
-  /// The saved notes for one question, trimmed to save tokens: the 8 best matches in full, the next 32 as
-  /// title + summary. A question with no matching words ("summarise everything") gets every title + summary.
+  /// The saved notes for one question. Every note you haven't deleted counts, archived ones included.
+  /// The 12 best keyword matches go in full (overview, key points, mentions); the rest as title + overview.
+  /// A question with no matching words ("what have I saved?") gets title + overview for every note.
   Future<String> notesContext(String question) async {
-    final all = await library.reels();
+    final all = await library.reels(); // no filter: library + archive; deleted notes are gone from the DB
     final words = question.toLowerCase().split(RegExp(r'\W+')).where((w) => w.length > 3).toSet();
+    String text(Reel r) => '${r.title} ${r.overview} ${r.summary} ${r.keyPoints} ${r.mentions} ${r.tags}'.toLowerCase();
     // ponytail: keyword overlap, no embeddings; good enough for a personal library.
-    int score(Reel r) => words.where('${r.title} ${r.summary} ${r.keyPoints} ${r.tags}'.toLowerCase().contains).length;
+    int score(Reel r) => words.where(text(r).contains).length;
     final ranked = [...all]..sort((a, b) => score(b).compareTo(score(a)));
+    String brief(Reel r) =>
+        '- ${r.title} (${r.kind}, ${savedAgo(r.savedAt, DateTime.now())}): ${r.overview.isEmpty ? r.summary : r.overview.join('; ')}';
+    String full(Reel r) => [
+          brief(r),
+          if (r.keyPoints.isNotEmpty) '  Points: ${r.keyPoints.join('; ')}',
+          if (r.mentions.isNotEmpty) '  Mentioned: ${r.mentions.join(', ')}',
+          if (r.url.startsWith('http')) '  Link: ${r.url}',
+        ].join('\n');
     final matched = ranked.where((r) => score(r) > 0).toList();
-    String brief(Reel r) => '- ${r.title} [${r.tags.join(', ')}]: ${r.summary}';
     if (matched.isEmpty) return all.map(brief).join('\n');
-    return [
-      for (final r in matched.take(8)) '${brief(r)} Points: ${r.keyPoints.join('; ')} (${r.url})',
-      for (final r in matched.skip(8).take(32)) brief(r),
-    ].join('\n');
+    return [for (final r in matched.take(12)) full(r), for (final r in matched.skip(12).take(40)) brief(r)].join('\n');
   }
 
   /// One chat turn from the user's saved notes. Gemini tries each saved key in turn on a rate limit.

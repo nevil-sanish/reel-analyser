@@ -6,6 +6,7 @@ import '../core/models.dart';
 import '../native/counter_bridge.dart';
 import '../pipeline/providers.dart';
 import 'liquid.dart';
+import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
 
@@ -32,8 +33,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   String? _model;
   bool _busy = false;
   DayTotal? _today;
+  List<Reel> _recent = [];
+  List<String> _ideas = _defaultIdeas;
 
-  static const _ideas = ['What recipes have I saved?', 'Summarise my fitness reels', 'Tips I saved this week'];
+  static const _defaultIdeas = ['What have I saved this week?', 'Summarise my latest reels', 'Which tips can I try today?'];
 
   @override
   void initState() {
@@ -62,15 +65,38 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     } on Exception {
       today = null;
     }
+    final notes = await s.library.reels();
+    // Suggestions from what you actually saved: your three most used tags.
+    final counts = <String, int>{};
+    for (final r in notes) {
+      for (final t in r.tags) {
+        counts[t] = (counts[t] ?? 0) + 1;
+      }
+    }
+    final top = (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).take(3).map((e) => e.key).toList();
     if (!mounted) return;
     setState(() {
       _providers = p;
       _today = today;
+      _recent = notes.take(8).toList();
+      _ideas = top.isEmpty
+          ? _defaultIdeas
+          : [
+              'What did I save about ${top[0]}?',
+              if (top.length > 1) 'Summarise my ${top[1]} notes',
+              if (top.length > 2) 'Best tips on ${top[2]}?',
+              'What have I saved this week?',
+            ];
       if (!p.contains(_provider)) {
         _provider = p.firstOrNull;
         _model = null;
       }
     });
+  }
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    return h < 5 ? 'Up late?' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   }
 
   String get _modelLabel => _provider == null
@@ -251,28 +277,45 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     key: const ValueKey('landing'),
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     children: [
-                      _TodayStrip(_today, onTap: widget.onInsights),
-                      const SizedBox(height: 40),
-                      const Center(child: BrandMark(size: 64)),
-                      const SizedBox(height: 20),
+                      Text(_greeting(), style: t.textTheme.titleMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                       ShaderMask(
                         shaderCallback: (r) => Brand.gradient.createShader(r),
-                        child: Text('What did you\nlearn today?',
-                            textAlign: TextAlign.center,
+                        child: Text('Ask your reels',
                             style: t.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -1)),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        _providers.isEmpty
-                            ? 'Add a Gemini, OpenAI, Claude or Groq key in Settings to chat with your saved reels.'
-                            : 'Ask anything. Answers come only from what you saved.',
-                        textAlign: TextAlign.center,
-                        style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant),
-                      ),
+                      const SizedBox(height: 16),
+                      _TodayStrip(_today, onTap: widget.onInsights),
+                      if (_recent.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Text('Recently saved', style: t.textTheme.titleMedium),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 118,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _recent.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 10),
+                            itemBuilder: (_, i) => _RecentCard(_recent[i], onTap: () async {
+                              HapticFeedback.selectionClick();
+                              await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(s, _recent[i])));
+                              _refresh();
+                            }),
+                          ),
+                        ),
+                      ],
+                      if (_providers.isEmpty) ...[
+                        const SizedBox(height: 24),
+                        Text('Add a Gemini, OpenAI, Claude or Groq key in Settings to chat with your saved reels.',
+                            style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                      ],
                       const SizedBox(height: 24),
+                      if (_providers.isNotEmpty) ...[
+                        Text('Try asking', style: t.textTheme.titleMedium),
+                        const SizedBox(height: 10),
+                      ],
                       if (_providers.isNotEmpty)
                         Wrap(
-                          alignment: WrapAlignment.center,
+                          alignment: WrapAlignment.start,
                           spacing: 8,
                           runSpacing: 8,
                           children: [for (final i in _ideas) ActionChip(label: Text(i), onPressed: () => _send(i))],
@@ -423,4 +466,49 @@ class _Typing extends StatelessWidget {
         decoration: BoxDecoration(color: Brand.glass(Theme.of(context).brightness), borderRadius: BorderRadius.circular(22)),
         child: const SizedBox(width: 28, height: 4, child: LinearProgressIndicator()),
       );
+}
+
+/// A saved note in the "Recently saved" row.
+class _RecentCard extends StatelessWidget {
+  final Reel reel;
+  final VoidCallback onTap;
+  const _RecentCard(this.reel, {required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final icon = switch (reel.kind) {
+      'short' => Icons.smart_display_rounded,
+      'photo' => Icons.photo_rounded,
+      'post' => Icons.collections_rounded,
+      _ => Icons.movie_rounded,
+    };
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 170,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(8)),
+                  child: Icon(icon, size: 14, color: Colors.white),
+                ),
+                const Spacer(),
+                if (reel.seenAt == 0)
+                  Container(width: 8, height: 8, decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle)),
+              ]),
+              const SizedBox(height: 8),
+              Text(reel.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: t.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -89,3 +89,4 @@ Release checklist:
 | 2026-11-06 | v0.8.2 | Fix tabs overlapping; fewer buttons and hints; README explains the workflow; repo renamed to reel-brain. |
 | 2026-11-06 | v0.9.0 | Floating bubble and auto-Save removed: saving is Share → Reel Bot only. Multi-select in Library and Archive (mark read, archive / restore, delete). |
 | 2026-11-06 | v0.9.1 | Instagram: a login page skips one step instead of pausing everything for 30 min; only real rate limits pause. |
+| 2026-11-06 | v0.9.2 | Richer notes (overview bullets + full detail + mentions, Re-analyse); chat uses full notes incl. archive; readable Insights; new Ask home. |
