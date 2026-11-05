@@ -1,6 +1,6 @@
 # Reel Bot: project status
 
-Written 2026-11-06, at **v0.9.2**; updated for **v0.9.3** (P1 items 12–15 done). This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
+Written 2026-11-06; current as of **v0.9.3**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
 
 - [1. Where things stand](#1-where-things-stand)
 - [2. What has been done](#2-what-has-been-done)
@@ -15,11 +15,11 @@ Written 2026-11-06, at **v0.9.2**; updated for **v0.9.3** (P1 items 12–15 done
 
 | | |
 |---|---|
-| **Latest release** | [v0.9.2](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.2): a signed APK for Android 10+, marked pre-release |
-| **Releases so far** | 16 (v0.1.0 to v0.9.2), each with an APK and `SHA256SUMS` |
+| **Latest release** | [v0.9.3](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.3): a signed APK for Android 10+, marked pre-release |
+| **Releases so far** | 17 (v0.1.0 to v0.9.3), each with an APK and `SHA256SUMS` |
 | **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
-| **Automated tests** | 27 Dart and 52 Kotlin, all passing; `flutter analyze` clean |
+| **Automated tests** | 28 Dart and 52 Kotlin, all passing; `flutter analyze` clean |
 | **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Nothing else has been tested on a device. |
 
 **Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
@@ -48,6 +48,7 @@ Written 2026-11-06, at **v0.9.2**; updated for **v0.9.3** (P1 items 12–15 done
 | **v0.9.0** | The bubble, Save and auto-Save were **removed** at the user's request; saving is Share → Reel Bot only. **Multi-select** in the Library and Archive (mark read, archive or restore, delete with Undo). |
 | **v0.9.1** | **Fix:** a login page no longer pauses all Instagram fetching for 30 min. It skips that one step; only HTTP 429 pauses; a reel where every step was walled is retried after 10 min, up to 3 times. |
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
+| **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
 
 ### 2.2 Features as they work today
 
@@ -179,8 +180,8 @@ Written 2026-11-06, at **v0.9.2**; updated for **v0.9.3** (P1 items 12–15 done
 
 | Check | Result |
 |---|---|
-| `flutter analyze` | clean at v0.9.2 |
-| Dart tests (`mobile/test`, 27) | passing. They cover the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import, the archive, saved chats, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
+| `flutter analyze` | clean at v0.9.3 |
+| Dart tests (`mobile/test`, 28) | passing. They cover the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
 | Kotlin tests (`:reelbot_native:testDebugUnitTest`, 52) | passing. They cover share-URL parsing, the Instagram parsers (synthetic fixtures), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
 | Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Bot, O=nevil-sanish`), and published with a SHA-256 |
 | On a phone | only what the user's screenshots show (§1). No live checks (`T-LIVE-*`) or manual checks (`T-MAN-*`) have been run |
