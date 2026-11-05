@@ -41,6 +41,7 @@ class _ReelScreenState extends State<ReelScreen> {
             tooltip: reel.archived ? 'Move back to library' : 'Archive',
             icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
             onPressed: () async {
+              HapticFeedback.mediumImpact();
               await services.library.setArchived(reel.url, !reel.archived);
               if (context.mounted) Navigator.pop(context);
             },
@@ -60,6 +61,7 @@ class _ReelScreenState extends State<ReelScreen> {
                 ),
               );
               if (ok != true) return;
+              HapticFeedback.heavyImpact();
               await services.library.delete(reel.url);
               if (context.mounted) Navigator.pop(context);
             },
@@ -74,13 +76,17 @@ class _ReelScreenState extends State<ReelScreen> {
           Text([if (reel.author.isNotEmpty) '@${reel.author}', reel.app].join(' · '), style: t.bodySmall),
           if (reel.analysis != 'done') ...[
             const SizedBox(height: 8),
-            Chip(
-              avatar: const Icon(Icons.info_outline, size: 16),
-              label: Text(reel.analysis == 'text-only'
-                  ? 'From saved text only: the link never arrived or the reel couldn\'t be fetched'
+            // Short label; the long reason is a tooltip, for when a fallback needs reporting.
+            Tooltip(
+              message: reel.analysis == 'text-only'
+                  ? 'The link never arrived or the reel couldn\'t be fetched'
                   : reel.app == 'instagram'
-                      ? 'From caption + thumbnail: Instagram didn\'t hand over the video (best step ${reel.step})'
-                      : 'From title + thumbnail: Gemini couldn\'t watch this video'),
+                      ? 'Instagram didn\'t hand over the video (best step ${reel.step})'
+                      : 'Gemini couldn\'t watch this video',
+              child: Chip(
+                avatar: const Icon(Icons.info_outline, size: 16),
+                label: Text(reel.analysis == 'text-only' ? 'From text only' : 'From caption + thumbnail'),
+              ),
             ),
           ],
           const SizedBox(height: 16),
@@ -88,23 +94,15 @@ class _ReelScreenState extends State<ReelScreen> {
             color: Theme.of(context).colorScheme.primaryContainer,
             child: Padding(padding: const EdgeInsets.all(16), child: SelectableText(reel.summary, style: t.bodyLarge)),
           ),
-          if (reel.keyPoints.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text('Key points', style: t.titleMedium),
-            for (final k in reel.keyPoints)
-              Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText('•  $k')),
-          ],
+          // Just the gist: older notes may hold more points, the screen shows three.
+          for (final k in reel.keyPoints.take(3))
+            Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText('•  $k', style: t.bodyLarge)),
           if (reel.tags.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Wrap(spacing: 6, children: [for (final tag in reel.tags) Chip(label: Text('#$tag'))]),
+            Wrap(spacing: 8, children: [
+              for (final tag in reel.tags.take(3)) Text('#$tag', style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),
+            ]),
           ],
-          if (reel.caption.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text('Original caption', style: t.titleSmall),
-            SelectableText(reel.caption, style: t.bodySmall),
-          ],
-          const SizedBox(height: 16),
-          SelectableText(reel.url, style: t.bodySmall),
         ],
       ),
     );

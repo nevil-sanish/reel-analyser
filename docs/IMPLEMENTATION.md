@@ -480,6 +480,7 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 - **Home (v0.6.0):** tabs are Ask (chat, with a provider + model picker), Today, Library.
 - **Seen / archive (v0.6.0):** `reel_brain.db` version 2 adds `seenAt` and `archived`. Opening a note marks it seen; unseen notes show a gradient dot. On each library load, seen notes saved more than 3 days ago move to the Archive (searchable, restorable, still used by chat and export). Unseen notes never auto-archive.
 - **Notifications (v0.6.0):** after a background run that finished notes, "Note ready: <title>" (`notifyNotes`). The 9 pm digest on an empty day nudges instead of showing zeros.
+- **v0.6.1:** notes are shorter (prompt asks for a one-sentence summary, up to 3 points and 3 tags; the note screen shows only those, the fallback reason is a tooltip). Haptics via Flutter's `HapticFeedback` (Android touch feedback, no permission): tab switch, send / answer, model pick, card open, archive, delete, intro Next, slide-to-unlock ticks and the unlock thud.
 - **Models (v0.6.0, token cost first):** Gemini Flash-Lite then 3.6 Flash; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`, thinking off, low effort; Groq `openai/gpt-oss-20b`.
 
 ## 7. Phase 4: daily digest

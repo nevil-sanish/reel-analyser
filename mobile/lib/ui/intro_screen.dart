@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'theme.dart';
 
@@ -36,6 +37,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   }
 
   Future<void> _unlock() async {
+    HapticFeedback.heavyImpact();
     await _burst.forward();
     widget.onDone();
   }
@@ -126,7 +128,10 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                                 side: const BorderSide(color: Colors.white24),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
-                              onPressed: () => _pages.nextPage(duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic),
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                _pages.nextPage(duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
+                              },
                               child: const Text('Next', style: TextStyle(fontSize: 16)),
                             ),
                           ),
@@ -215,13 +220,19 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
               curve: Curves.easeOutBack,
               left: _x,
               child: GestureDetector(
-                onHorizontalDragUpdate: (d) => setState(() => _x = (_x + d.delta.dx).clamp(0, max)),
+                onHorizontalDragUpdate: (d) {
+                  final next = (_x + d.delta.dx).clamp(0.0, max);
+                  // A tick each quarter of the track, like a dial clicking into place.
+                  if ((next / max * 4).floor() != (_x / max * 4).floor()) HapticFeedback.selectionClick();
+                  setState(() => _x = next);
+                },
                 onHorizontalDragEnd: (_) {
                   if (_x > max * 0.8 && !_done) {
                     _done = true;
                     setState(() => _x = max);
                     widget.onUnlock();
                   } else {
+                    HapticFeedback.lightImpact();
                     setState(() => _x = 0);
                   }
                 },

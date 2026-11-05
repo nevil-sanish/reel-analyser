@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
@@ -172,7 +173,10 @@ class ReelCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -208,7 +212,7 @@ class ReelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
                 if (reel.summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(reel.summary, maxLines: 3, overflow: TextOverflow.ellipsis,
+                  Text(reel.summary, maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ],
                 if (reel.tags.isNotEmpty) ...[

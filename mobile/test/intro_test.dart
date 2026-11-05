@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelbrain/ui/intro_screen.dart';
 import 'package:reelbrain/ui/theme.dart';
@@ -13,6 +14,11 @@ Future<void> frames(WidgetTester t, [int n = 20]) async {
 void main() {
   testWidgets('intro: Next twice, a short slide springs back, a full slide unlocks', (tester) async {
     var done = 0;
+    final haptics = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (c) async {
+      if (c.method == 'HapticFeedback.vibrate') haptics.add(c.arguments);
+      return null;
+    });
     tester.view.physicalSize = const Size(1080, 2340); // a phone, not the 800×600 test default
     tester.view.devicePixelRatio = 2.75;
     addTearDown(tester.view.reset);
@@ -32,5 +38,6 @@ void main() {
     await tester.drag(thumb, const Offset(1000, 0));
     await frames(tester);
     expect(done, 1);
+    expect(haptics, contains('HapticFeedbackType.heavyImpact')); // the unlock thud
   });
 }

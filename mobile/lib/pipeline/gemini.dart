@@ -54,8 +54,8 @@ class Gemini {
   Gemini(this.client, this.key, {this.pollEvery = const Duration(seconds: 2)});
 
   static const prompt = '''Turn this short video (Instagram Reel / YouTube Short) into a study note, in the video's language.
-Use speech and on-screen text. JSON: title (short, descriptive), summary (1-2 sentences: what it teaches or shows),
-keyPoints (3-6 concrete takeaways: steps, numbers, names), tags (3-5 lowercase single words).
+Use speech and on-screen text. Be brief. JSON: title (max 8 words), summary (1 sentence: what it teaches or shows),
+keyPoints (up to 3 short, concrete takeaways), tags (up to 3 lowercase single words).
 If you only have a caption, a thumbnail or frames, work from those and say so in the summary.''';
 
   /// The note from a model's JSON reply; tolerates text or a code fence around the object.

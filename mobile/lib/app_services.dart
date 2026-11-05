@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.6.0';
+  static const version = '0.6.1';
 
   /// Providers the user has a key for, in the order the chat offers them.
   Future<List<String>> chatProviders() async => [

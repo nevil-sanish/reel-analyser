@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_services.dart';
 import 'pipeline/background.dart';
@@ -80,7 +81,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             index: _tab, children: [ChatScreen(widget.services), TodayScreen(widget.services), LibraryScreen(widget.services)]),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
-          onDestinationSelected: (i) => setState(() => _tab = i),
+          onDestinationSelected: (i) {
+            HapticFeedback.selectionClick();
+            setState(() => _tab = i);
+          },
           destinations: const [
             NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Ask'),
             NavigationDestination(icon: Icon(Icons.today_outlined), label: 'Today'),

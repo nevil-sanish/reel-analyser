@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../pipeline/providers.dart';
@@ -76,7 +77,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   trailing: p == _provider && m.key == (_model ?? ChatModel.models[p]!.keys.first)
                       ? Icon(Icons.check_circle, color: Theme.of(c).colorScheme.primary)
                       : null,
-                  onTap: () => Navigator.pop(c, (p, m.key)),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.pop(c, (p, m.key));
+                  },
                 ),
             ],
           ],
@@ -95,6 +99,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final q = (text ?? _input.text).trim();
     if (q.isEmpty || _busy || _provider == null) return;
     _input.clear();
+    HapticFeedback.lightImpact();
     setState(() {
       _turns.add(q);
       _busy = true;
@@ -109,6 +114,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       a = 'Couldn\'t answer: $e';
     }
     if (!mounted) return;
+    HapticFeedback.selectionClick(); // the answer landed
     setState(() {
       _turns.add(a.trim().isEmpty ? '(no answer)' : a.trim());
       _busy = false;
