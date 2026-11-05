@@ -1,0 +1,48 @@
+package app.reelbrain
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ShareUrlsTest {
+    // T-SHARE-01, T-IG-U02
+    @Test fun instagramLinkInsideTextLosesTrackingParams() {
+        val l = ShareUrls.extract("Check this out! https://www.instagram.com/reel/Cuy8bLvo1Xa/?igsh=MWQ1ZGUx wow")!!
+        assertEquals("https://www.instagram.com/reel/Cuy8bLvo1Xa/", l.url)
+        assertEquals("instagram", l.app)
+        assertEquals("Cuy8bLvo1Xa", l.code)
+    }
+
+    @Test fun everyInstagramPathGivesTheSameCode() {
+        for (p in listOf("reel", "reels", "p", "tv")) {
+            assertEquals("Cuy8bLvo1Xa", ShareUrls.extract("https://instagram.com/$p/Cuy8bLvo1Xa?igsh=x")!!.code)
+        }
+        assertEquals("https://www.instagram.com/reel/abc/", ShareUrls.extract("https://instagram.com/reels/abc/")!!.url)
+    }
+
+    // T-SHARE-02
+    @Test fun youtubeLinksBecomeCanonicalShorts() {
+        assertEquals("https://www.youtube.com/shorts/dQw4w9WgXcQ", ShareUrls.extract("https://youtube.com/shorts/dQw4w9WgXcQ?si=abc123")!!.url)
+        val b = ShareUrls.extract("https://youtu.be/dQw4w9WgXcQ?si=z")!!
+        assertEquals("https://www.youtube.com/shorts/dQw4w9WgXcQ", b.url)
+        assertEquals("youtube", b.app)
+    }
+
+    // T-SHARE-03
+    @Test fun nonReelTextIsRejected() {
+        assertNull(ShareUrls.extract("hello there"))
+        assertNull(ShareUrls.extract("https://www.instagram.com/someuser/"))
+        assertNull(ShareUrls.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
+    }
+
+    // T-SHARE-04
+    @Test fun urlLessRowUnderTenSecondsGetsTheLink() {
+        assertTrue(ShareUrls.shouldAttach(null, 1_000, 5_000))
+        assertTrue(ShareUrls.shouldAttach("", 1_000, 10_999))
+        assertFalse(ShareUrls.shouldAttach(null, 1_000, 11_000))
+        assertFalse(ShareUrls.shouldAttach("https://x", 1_000, 2_000))
+        assertFalse(ShareUrls.shouldAttach(null, null, 2_000))
+    }
+}
