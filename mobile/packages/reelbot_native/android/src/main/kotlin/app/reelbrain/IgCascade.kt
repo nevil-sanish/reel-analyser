@@ -1,0 +1,94 @@
+package app.reelbrain
+
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
+
+/** What one cascade step found (PLAN §3.2). */
+sealed interface StepResult {
+    data class Media(val media: IgMedia) : StepResult
+    object Empty : StepResult
+    /** 429, a login redirect or `require_login`: stop all Instagram calls for a while. */
+    object LoginWall : StepResult
+    /** Private, deleted or age-restricted. */
+    object Gone : StepResult
+}
+
+data class FetchResult(val step: Int, val media: IgMedia)
+
+class RateLimitedException : Exception("Instagram is rate-limiting; try later")
+
+/**
+ * The rules around the Instagram steps (ENDPOINTS §1): first video wins, metadata is merged,
+ * one fetch per code at a time, 1 h negative cache, 30 min pause after a login wall,
+ * and at most one request every 5 s. Steps are plain functions so tests can fake them.
+ */
+class IgCascade(
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val sleep: (Long) -> Unit = Thread::sleep,
+    private val minGapMs: Long = 5_000,
+    private val pauseMs: Long = 30 * 60_000,
+    private val negativeMs: Long = 60 * 60_000,
+) {
+    private val inFlight = ConcurrentHashMap<String, CompletableFuture<FetchResult>>()
+    private val gone = ConcurrentHashMap<String, Long>()
+    @Volatile private var pausedUntil = 0L
+    private var nextRequestAt = 0L
+
+    /** Call before every Instagram request. */
+    fun throttle() {
+        val wait: Long
+        synchronized(this) {
+            val now = clock()
+            if (now < pausedUntil) throw RateLimitedException()
+            val at = maxOf(now, nextRequestAt)
+            nextRequestAt = at + minGapMs
+            wait = at - now
+        }
+        if (wait > 0) sleep(wait)
+    }
+
+    fun run(code: String, steps: List<(String) -> StepResult>): FetchResult {
+        val mine = CompletableFuture<FetchResult>()
+        val existing = inFlight.putIfAbsent(code, mine)
+        if (existing != null) {
+            try { return existing.get() } catch (e: ExecutionException) { throw e.cause ?: e }
+        }
+        try {
+            val r = runSteps(code, steps)
+            mine.complete(r)
+            return r
+        } catch (e: Exception) {
+            mine.completeExceptionally(e)
+            throw e
+        } finally {
+            inFlight.remove(code)
+        }
+    }
+
+    private fun runSteps(code: String, steps: List<(String) -> StepResult>): FetchResult {
+        if (clock() < pausedUntil) throw RateLimitedException()
+        gone[code]?.let { if (clock() - it < negativeMs) return FetchResult(0, IgMedia()) else gone.remove(code) }
+        var best = IgMedia()
+        var bestStep = 0
+        for ((i, step) in steps.withIndex()) {
+            when (val r = step(code)) {
+                is StepResult.Media -> {
+                    if (bestStep == 0 && r.media.hasMeta || r.media.hasVideo) bestStep = i + 1
+                    best = if (r.media.hasVideo) r.media.fill(best) else best.fill(r.media)
+                    if (r.media.hasVideo) return FetchResult(i + 1, best)
+                }
+                StepResult.Empty -> Unit
+                StepResult.LoginWall -> {
+                    pausedUntil = clock() + pauseMs
+                    throw RateLimitedException()
+                }
+                StepResult.Gone -> {
+                    gone[code] = clock()
+                    return FetchResult(bestStep, best)
+                }
+            }
+        }
+        return FetchResult(bestStep, best)
+    }
+}
