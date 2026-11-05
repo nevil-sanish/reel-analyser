@@ -117,7 +117,7 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
    6. oEmbed (caption and thumbnail only);
    7. Apify, if you added a token.
 
-   The video (≤ 100 MB) is downloaded, sent to Gemini (inline up to 20 MB, otherwise through the Files API), and then deleted. If Instagram shows a login wall or returns 429, everything pauses for 30 min.
+   The video (≤ 100 MB) is downloaded, sent to Gemini (inline up to 20 MB, otherwise through the Files API), and then deleted. A login page only skips that step; an HTTP 429 (rate limit) pauses Instagram calls for 30 min, and a reel where every step hit a login page is retried after 10 min (3 tries).
 3. **Instagram photo post or carousel:** the same steps collect every still image. Up to 10 are downloaded and sent in one request.
 4. **Shared photo:** the JPEG from app storage is sent as one image.
 5. **No media at all:** the note is made from the caption, the thumbnail and any on-screen text, and is marked as such.

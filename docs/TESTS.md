@@ -32,6 +32,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-IG-U04 | unit | cascade order | Fake steps: step 1 returns video → steps 2–6 not called; steps 1–4 empty, 5 metadata → result has caption, no video, `step = 5` | passing |
 | T-IG-U05 | unit | rate limits | Two fetches 1 s apart → second waits ≥ 5 s; a 429 → no `IG-*` call for 30 min | passing |
 | T-IG-U06 | unit | negative cache | Private post → same `code` not fetched again within 1 h; other codes still fetched | passing |
+| T-IG-U08 | unit | IgCascade | A login wall skips only its step (the next step's video wins, no pause); all steps walled → retry after 10 min, give up on the 3rd run; 429 still pauses 30 min | passing |
 | T-IG-U07 | unit | single-flight | Two concurrent fetches of one `code` → one network fetch, both get the result | passing |
 | T-IG-F01 | fixture | IG-EMBED | Embed page with `contextJSON` + `video_url` → video URL, caption, author | passing |
 | T-IG-F02 | fixture | IG-EMBED | Embed page with `gql_data: null` → "no data", cascade continues | passing |
@@ -169,6 +170,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.9.1: T-IG-U08 added and passing; the 30-min pause test now uses a 429. |
 | 2026-11-06 | v0.9.0: bubble and auto-Save removed, so T-SAVE-01…03 and T-SHARE-04 are retired; T-UI-06 added and passing. |
 | 2026-11-06 | v0.8.2: T-UI-05 added and passing (regression test for overlapping tabs). |
 | 2026-11-06 | v0.8.1: T-LIB-02, T-UI-03 and T-UI-04 added and passing. |

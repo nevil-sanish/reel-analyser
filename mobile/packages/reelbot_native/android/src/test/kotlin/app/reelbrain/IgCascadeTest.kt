@@ -52,9 +52,9 @@ class IgCascadeTest {
         assertEquals(listOf(4_000L), slept)
     }
 
-    @Test fun loginWallPausesInstagramForThirtyMinutes() {
+    @Test fun rateLimitPausesInstagramForThirtyMinutes() {
         val c = cascade()
-        try { c.run("a", listOf { _ -> StepResult.LoginWall }); fail() } catch (_: RateLimitedException) {}
+        try { c.run("a", listOf { _ -> StepResult.Limited }); fail() } catch (_: RateLimitedException) {}
         val calls = AtomicInteger()
         now += 29 * 60_000
         try { c.run("b", listOf { _ -> calls.incrementAndGet(); video }); fail() } catch (_: RateLimitedException) {}
@@ -62,6 +62,24 @@ class IgCascadeTest {
         assertEquals(0, calls.get())
         now += 2 * 60_000
         assertEquals(1, c.run("b", listOf { _ -> calls.incrementAndGet(); video }).step)
+    }
+
+    // T-IG-U08
+    @Test fun loginWallOnOneStepOnlySkipsThatStep() {
+        val c = cascade()
+        val r = c.run("a", listOf({ _ -> StepResult.LoginWall }, { _ -> video }))
+        assertEquals(2, r.step)
+        c.throttle() // not paused
+    }
+
+    @Test fun allWalledRetriesInTenMinutesThenGivesUp() {
+        val c = cascade()
+        val walls = listOf<(String) -> StepResult>({ _ -> StepResult.LoginWall }, { _ -> StepResult.Empty })
+        try { c.run("a", walls); fail() } catch (_: RateLimitedException) {}
+        now += 11 * 60_000
+        try { c.run("a", walls); fail() } catch (_: RateLimitedException) {}
+        now += 11 * 60_000
+        assertEquals(0, c.run("a", walls).step) // third time: give up, the runner makes do
     }
 
     // T-IG-U06

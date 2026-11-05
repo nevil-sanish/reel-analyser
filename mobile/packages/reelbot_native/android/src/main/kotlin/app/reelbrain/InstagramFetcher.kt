@@ -146,7 +146,8 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         }
         val r = resp!!
         return when {
-            r.code == 429 || r.loginRedirect -> StepResult.LoginWall
+            r.code == 429 -> StepResult.Limited
+            r.loginRedirect -> StepResult.LoginWall
             r.code == 404 -> StepResult.Gone
             r.code != 200 -> StepResult.Empty
             else -> IgParse.embed(r.body)?.let { StepResult.Media(it) } ?: StepResult.Empty
@@ -197,7 +198,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
         val target = URLEncoder.encode("https://www.instagram.com/reel/$code/", "UTF-8")
         val r = try { get("https://www.instagram.com/api/v1/oembed/?url=$target", mapOf("X-IG-App-ID" to IG_APP_ID)) } catch (_: IOException) { return StepResult.Empty }
         return when {
-            r.code == 429 -> StepResult.LoginWall
+            r.code == 429 -> StepResult.Limited
             r.code != 200 -> StepResult.Empty
             else -> IgParse.oembed(r.body)?.let { StepResult.Media(it) } ?: StepResult.Empty
         }
@@ -254,7 +255,7 @@ class InstagramFetcher private constructor(private val ctx: Context) {
                 "server_timestamps" to "true", "variables" to variables, "doc_id" to docId,
             ).joinToString("&") { (k, v) -> "$k=" + URLEncoder.encode(v, "UTF-8") }
             val (status, body) = jsFetch(endpoint, name, page.lsd, form) ?: return StepResult.Empty
-            if (status == 429) return StepResult.LoginWall
+            if (status == 429) return StepResult.Limited
             when (val g = IgParse.gql(body, web)) {
                 is IgParse.Gql.Found -> return StepResult.Media(g.media)
                 IgParse.Gql.RequireLogin -> return StepResult.LoginWall

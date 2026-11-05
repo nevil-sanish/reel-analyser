@@ -190,7 +190,7 @@ class Runner {
       if (e.kind == GeminiFailure.retryLater) throw _RetryLater(e.toString());
       rethrow;
     } on RateLimited {
-      throw _RetryLater('Instagram is pausing requests from this phone; trying again in up to 30 min.');
+      throw _RetryLater('Instagram is limiting requests right now. Reel Bot retries on its own (10–30 min).');
     } on SocketException catch (e) {
       throw _RetryLater('no network ($e)');
     } on http.ClientException catch (e) {

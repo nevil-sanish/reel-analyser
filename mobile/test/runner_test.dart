@@ -213,7 +213,7 @@ void main() {
     final r = runner(b, (r) async => http.Response(_gemOk(), 200));
     await r.processQueue();
     expect(b.statuses, isEmpty);
-    expect(r.lastProblem, contains('Instagram'));
+    expect(r.lastProblem, contains('Instagram is limiting'));
   });
 
   test('T-PIPE-11 Gemini keys take turns, one reel each; a 429 moves the reel to the next key', () async {
