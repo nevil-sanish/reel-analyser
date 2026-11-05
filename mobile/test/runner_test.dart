@@ -147,8 +147,10 @@ void main() {
 
   test('T-PIPE-06 429 keeps the item queued; 400 tries next level then next model', () async {
     final b = FakeBridge([yt]);
-    await runner(b, (r) async => http.Response('busy', 429)).processQueue();
+    final r429 = runner(b, (r) async => http.Response('busy', 429));
+    await r429.processQueue();
     expect(b.statuses, isEmpty);
+    expect(r429.lastProblem, contains('429'));
 
     final b2 = FakeBridge([const PendingItem(id: 3, url: '', app: 'instagram', caption: 'c')]);
     var n = 0;
@@ -191,8 +193,10 @@ void main() {
 
   test('Instagram rate limit keeps the item queued', () async {
     final b = FakeBridge([ig], fetch: (_) => throw RateLimited());
-    await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
+    final r = runner(b, (r) async => http.Response(_gemOk(), 200));
+    await r.processQueue();
     expect(b.statuses, isEmpty);
+    expect(r.lastProblem, contains('Instagram'));
   });
 
   test('T-PIPE-10 the lock lets only one runner through', () async {

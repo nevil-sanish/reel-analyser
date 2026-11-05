@@ -141,7 +141,7 @@ If it is a caption and thumbnail only, say so in the summary and work from what 
   }
 
   static GeminiException _failure(http.Response r) {
-    final msg = r.body.length > 300 ? r.body.substring(0, 300) : r.body;
+    final msg = 'HTTP ${r.statusCode}: ${r.body.length > 300 ? r.body.substring(0, 300) : r.body}';
     if (r.statusCode == 429 || r.statusCode >= 500) return GeminiException(GeminiFailure.retryLater, msg);
     if (r.statusCode == 401 || r.body.contains('API key not valid') || r.body.contains('API_KEY_INVALID')) {
       return GeminiException(GeminiFailure.badKey, msg);

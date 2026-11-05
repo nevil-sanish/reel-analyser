@@ -12,8 +12,9 @@ import 'gemini.dart';
 
 /// Leave the item queued for the next run (network, 429/5xx, Instagram pause, bad key).
 class _RetryLater implements Exception {
+  final String reason;
   final bool stopAll;
-  _RetryLater({this.stopAll = false});
+  _RetryLater(this.reason, {this.stopAll = false});
 }
 
 /// Processes `pending_items` into library notes (IMPLEMENTATION §2.5). Runs on app open and in the background task.
@@ -26,6 +27,9 @@ class Runner {
   final Gemini Function(String key) makeGemini;
   final Directory tempDir;
   final int Function() now;
+
+  /// Why the last run left items queued or failed one, for the library screen. Null when the last run was clean.
+  String? lastProblem;
 
   Runner({
     required this.bridge,
@@ -44,8 +48,12 @@ class Runner {
   Future<int> processQueue() async {
     final key = await geminiKey();
     if (key == null) return 0; // Items stay queued; the library shows "Add your Gemini key".
-    if (!await library.tryLock(now())) return 0;
+    if (!await library.tryLock(now())) {
+      lastProblem = 'Another analysis run is in progress (it holds the queue for up to 5 min).';
+      return 0;
+    }
     var finished = 0;
+    lastProblem = null;
     try {
       final gemini = makeGemini(key);
       for (final item in await bridge.pendingItems(status: 'queued')) {
@@ -53,8 +61,11 @@ class Runner {
           await bridge.setPendingStatus(item.id, await _process(item, gemini));
           finished++;
         } on _RetryLater catch (e) {
+          lastProblem = 'Will retry: ${e.reason}';
           if (e.stopAll) break;
-        } on Exception {
+        } catch (e) {
+          // Errors too, not just Exceptions: an uncaught one used to leave the item queued with no reason shown.
+          lastProblem = 'Failed: $e';
           await bridge.setPendingStatus(item.id, 'failed');
         }
       }
@@ -70,15 +81,15 @@ class Runner {
     try {
       return item.app == 'youtube' ? await _youtube(item, gemini) : await _instagram(item, gemini);
     } on GeminiException catch (e) {
-      if (e.kind == GeminiFailure.badKey) throw _RetryLater(stopAll: true);
-      if (e.kind == GeminiFailure.retryLater) throw _RetryLater();
+      if (e.kind == GeminiFailure.badKey) throw _RetryLater('Gemini rejected your key. Check it in Settings.', stopAll: true);
+      if (e.kind == GeminiFailure.retryLater) throw _RetryLater(e.toString());
       rethrow;
     } on RateLimited {
-      throw _RetryLater();
-    } on SocketException {
-      throw _RetryLater();
-    } on http.ClientException {
-      throw _RetryLater();
+      throw _RetryLater('Instagram is pausing requests from this phone; trying again in up to 30 min.');
+    } on SocketException catch (e) {
+      throw _RetryLater('no network ($e)');
+    } on http.ClientException catch (e) {
+      throw _RetryLater('network error ($e)');
     }
   }
 

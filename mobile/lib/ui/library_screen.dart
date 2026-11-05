@@ -107,6 +107,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               ListTile(
                 leading: _busy ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.schedule),
                 title: Text('$_waiting waiting to be analysed'),
+                subtitle: s.runner.lastProblem == null ? null : Text(s.runner.lastProblem!),
               ),
             if (_reels.isEmpty && _waiting == 0)
               const Padding(
