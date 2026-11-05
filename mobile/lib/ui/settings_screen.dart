@@ -73,6 +73,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _reanalyseAll() async {
+    final old = await s.oldFormatNotes();
+    if (!mounted) return;
+    if (old.isEmpty) return _say('All notes are already in the new format');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Re-analyse ${old.length} notes?'),
+        content: const Text('Each one is analysed again with your AI keys, so this uses tokens. '
+            'They leave the library until their new notes are ready.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Re-analyse')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final n = await s.reanalyseOld();
+    if (mounted) _say(n == old.length ? 'Queued $n notes' : 'Queued $n notes; ${old.length - n} have no saved link and were kept');
+  }
+
   /// The one thing that leaves the phone on purpose: what you type here, as a GitHub issue you submit yourself.
   Future<void> _feedback() async {
     final text = TextEditingController();
@@ -188,6 +209,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
             ),
+          ]),
+          _section('Notes', [
+            const Text('Notes made before v0.9.2 only have a short summary. Re-analyse them to get the overview bullets and full detail.'),
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(onPressed: _reanalyseAll, icon: const Icon(Icons.auto_fix_high_rounded), label: const Text('Re-analyse old notes')),
           ]),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then.'),

@@ -345,6 +345,12 @@ void main() {
     expect((await db.chats()).length, 1);
   });
 
+  test('T-LIB-03 search finds words only in the overview or mentions', () async {
+    await db.saveReel(const Reel(url: 'x', app: 'youtube', title: 'T', summary: 's', savedAt: 1, overview: ['Use a pressure cooker'], mentions: ['Notion']));
+    expect((await db.reels(query: 'pressure')).single.url, 'x');
+    expect((await db.reels(query: 'notion')).single.url, 'x');
+  });
+
   test('search matches tags and summary', () async {
     await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'Rice', summary: 'boil', tags: ['food'], savedAt: 1));
     await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Squats', summary: 'legs', savedAt: 2));

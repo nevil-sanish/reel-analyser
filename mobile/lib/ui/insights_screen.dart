@@ -71,9 +71,14 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
     final total = _days.fold(0, (s, d) => s + d.reels);
     final minutes = _days.fold(0, (s, d) => s + d.ms) ~/ 60000;
     final active = _days.where((d) => d.reels > 0).length;
-    final peak = _hours.indexed.reduce((a, b) => b.$2.$1 > a.$2.$1 ? b : a);
+    // Time spent is what matters here; fall back to counts until any watch time is recorded.
+    final byTime = _hours.any((h) => h.$2 > 0);
+    int weight((int, int) h) => byTime ? h.$2 : h.$1;
+    final peak = _hours.indexed.reduce((a, b) => weight(b.$2) > weight(a.$2) ? b : a);
     final blocks = timeBlocks(_hours);
-    final topBlock = blocks.indexed.reduce((a, b) => b.$2.$3 > a.$2.$3 ? b : a);
+    int blockWeight((String, String, int, int) b) => byTime ? b.$4 : b.$3;
+    final blockTotal = blocks.fold(0, (s, b) => s + blockWeight(b));
+    final topBlock = blocks.indexed.reduce((a, b) => blockWeight(b.$2) > blockWeight(a.$2) ? b : a);
     final weekday = weekdayMinutes(_days);
     final topDay = weekday.indexed.reduce((a, b) => b.$2 > a.$2 ? b : a);
     String dur(int m) => m < 60 ? '${m}m' : '${m ~/ 60}h ${m % 60}m';
@@ -161,10 +166,14 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
             const SizedBox(height: 16),
             _Section(
               title: 'When you watch',
-              subtitle: peak.$2.$1 == 0 ? 'Nothing counted yet' : 'Mostly ${blocks[topBlock.$1].$1.toLowerCase()} · peak around ${hourLabel(peak.$1)}',
+              subtitle: weight(peak.$2) == 0
+                  ? 'Nothing counted yet'
+                  : 'Most ${byTime ? 'time' : 'reels'} ${blocks[topBlock.$1].$1 == 'Night' ? 'at night' : 'in the ${blocks[topBlock.$1].$1.toLowerCase()}'}'
+                      ' · peak around ${hourLabel(peak.$1)}',
               child: Column(children: [
-                for (final (i, (name, range, reels, ms)) in blocks.indexed)
-                  _BlockRow(name, range, reels, total == 0 ? 0 : reels / total, dur(ms ~/ 60000), highlight: reels > 0 && i == topBlock.$1),
+                for (final (i, b) in blocks.indexed)
+                  _BlockRow(b.$1, b.$2, b.$3, blockTotal == 0 ? 0 : blockWeight(b) / blockTotal, dur(b.$4 ~/ 60000),
+                      highlight: blockWeight(b) > 0 && i == topBlock.$1),
               ]),
             ),
             const SizedBox(height: 16),
@@ -362,6 +371,8 @@ class _BlockRow extends StatelessWidget {
   final double share;
   final String time;
   final bool highlight;
+
+  /// [share] is this block's part of the time watched (or of the reels, before any time is recorded).
   const _BlockRow(this.name, this.hours, this.reels, this.share, this.time, {this.highlight = false});
 
   @override

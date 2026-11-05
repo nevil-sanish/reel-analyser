@@ -85,13 +85,14 @@ class LibraryDb {
   Future<bool> has(String url) async =>
       (await _db.query('reels', columns: ['url'], where: 'url = ?', whereArgs: [url])).isNotEmpty;
 
-  /// Newest first; [query] matches title, summary, key points, tags, author and caption.
+  /// Newest first; [query] matches title, overview, summary, key points, mentions, tags, author and caption.
   /// [archived]: null = everything (chat, export), false = the library, true = the archive.
   Future<List<Reel>> reels({String query = '', bool? archived}) async {
     final q = query.trim();
     final where = [
       if (archived != null) 'archived = ${archived ? 1 : 0}',
-      if (q.isNotEmpty) "(title || ' ' || summary || ' ' || keyPoints || ' ' || tags || ' ' || author || ' ' || caption) LIKE ?",
+      if (q.isNotEmpty)
+        "(title || ' ' || overview || ' ' || summary || ' ' || keyPoints || ' ' || mentions || ' ' || tags || ' ' || author || ' ' || caption) LIKE ?",
     ];
     final rows = await _db.query('reels',
         where: where.isEmpty ? null : where.join(' AND '), whereArgs: q.isEmpty ? null : ['%$q%'], orderBy: 'savedAt DESC');

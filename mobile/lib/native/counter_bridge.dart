@@ -161,6 +161,9 @@ class CounterBridge {
   /// "Note ready" notification after a background run; tapping it opens the app.
   Future<void> notifyNotes(String title, String text) => _ch.invokeMethod('notifyNotes', {'title': title, 'text': text});
 
+  /// Deletes files in the app's photo folder that aren't in [keep].
+  Future<void> sweepPhotos(List<String> keep) => _ch.invokeMethod('sweepPhotos', {'keep': keep});
+
   /// The digest is skipped on days the app was opened.
   Future<void> markOpened() => _ch.invokeMethod('markOpened');
 

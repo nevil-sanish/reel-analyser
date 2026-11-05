@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.9.2';
+  static const version = '0.9.3';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -42,6 +42,30 @@ class AppServices {
     }
     await library.delete(r.url);
     return true;
+  }
+
+  /// Notes from before v0.9.2 have no overview bullets; these can be re-analysed into the new format.
+  Future<List<Reel>> oldFormatNotes() async =>
+      [for (final r in await library.reels()) if (r.overview.isEmpty && !r.url.startsWith('local:')) r];
+
+  /// Re-queues every old-format note (see [retry]); returns how many went back in the queue.
+  Future<int> reanalyseOld() async {
+    var n = 0;
+    for (final r in await oldFormatNotes()) {
+      if (await retry(r)) n++;
+    }
+    return n;
+  }
+
+  /// Deletes shared-photo files that no note and no queued item uses any more (a deleted photo note keeps
+  /// its file until the next start, so Undo can still show it).
+  Future<void> sweepPhotos() async {
+    String? path(String url) => url.startsWith('photo:') ? url.substring('photo:'.length) : null;
+    final keep = {
+      for (final r in await library.reels()) ?path(r.url),
+      for (final p in await bridge.pendingItems(status: 'queued')) ?path(p.url),
+    };
+    await bridge.sweepPhotos(keep.toList());
   }
 
   /// v0.6.2 added the Instagram embed-player step; Instagram notes made from text only get one more go.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app_services.dart';
@@ -15,6 +17,7 @@ Future<void> main() async {
   await scheduleBackgroundAnalysis();
   await services.bridge.markOpened();
   await services.retryTextOnlyOnce();
+  unawaited(services.sweepPhotos());
   if (await services.keys.flag('dark')) Brand.mode.value = ThemeMode.dark;
   Brand.mode.addListener(() => services.keys.setFlagTo('dark', Brand.mode.value == ThemeMode.dark));
   runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
