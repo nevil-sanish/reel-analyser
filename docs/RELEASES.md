@@ -91,3 +91,4 @@ Release checklist:
 | 2026-11-06 | v0.9.1 | Instagram: a login page skips one step instead of pausing everything for 30 min; only real rate limits pause. |
 | 2026-11-06 | v0.9.2 | Richer notes (overview bullets + full detail + mentions, Re-analyse); chat uses full notes incl. archive; readable Insights; new Ask home. |
 | 2026-11-06 | v0.9.3 | Search covers overview and mentions; Re-analyse old notes; orphan photo cleanup; time-of-day ranked by minutes. |
+| 2026-11-06 | v0.9.4 | Export/Import include saved chats; share several photos at once; update banner; INSTALL.md; PLAN.md up to date. |

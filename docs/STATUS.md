@@ -1,6 +1,6 @@
 # Reel Bot: project status
 
-Written 2026-11-06; current as of **v0.9.3**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
+Written 2026-11-06; current as of **v0.9.4**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
 
 - [1. Where things stand](#1-where-things-stand)
 - [2. What has been done](#2-what-has-been-done)
@@ -15,11 +15,11 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
 
 | | |
 |---|---|
-| **Latest release** | [v0.9.3](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.3): a signed APK for Android 10+, marked pre-release |
-| **Releases so far** | 17 (v0.1.0 to v0.9.3), each with an APK and `SHA256SUMS` |
+| **Latest release** | [v0.9.4](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.4): a signed APK for Android 10+, marked pre-release |
+| **Releases so far** | 18 (v0.1.0 to v0.9.4), each with an APK and `SHA256SUMS` |
 | **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
-| **Automated tests** | 28 Dart and 52 Kotlin, all passing; `flutter analyze` clean |
+| **Automated tests** | 29 Dart and 52 Kotlin, all passing; `flutter analyze` clean |
 | **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Nothing else has been tested on a device. |
 
 **Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
@@ -49,6 +49,7 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
 | **v0.9.1** | **Fix:** a login page no longer pauses all Instagram fetching for 30 min. It skips that one step; only HTTP 429 pauses; a reel where every step was walled is retried after 10 min, up to 3 times. |
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
+| **v0.9.4** | Export and Import include **saved chats**. **Several photos** can be shared at once (one note each). An **update banner** when GitHub has a newer APK. [INSTALL.md](INSTALL.md) for friends; PLAN.md matches the product. |
 
 ### 2.2 Features as they work today
 
@@ -56,7 +57,7 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
 - **Accepted:**
   - Instagram links (`/reel/`, `/reels/`, `/p/`, `/tv/`), with tracking parameters stripped;
   - YouTube Shorts (`/shorts/` and `youtu.be`);
-  - images (`image/*`) shared from any app.
+  - images (`image/*`) shared from any app, one or several at once (one note per image).
 - **Photos** are decoded, shrunk to at most 1280 px, saved as JPEG in `files/photos/`, and queued as `photo:<path>`.
 - **No overlay:** there's no floating button over other apps; the only way to save is the system share sheet.
 - **Files:** `ShareReceiverActivity.kt`, `ShareUrls.kt`, `CounterDb.addShared` and `addPhoto`.
@@ -109,7 +110,7 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
   - `chats`: saved conversations;
   - `meta`: the lock.
 - **Encrypted secure storage:** API keys, the Gemini rotation turn, and flags (dark mode, intro seen, one-time migrations).
-- **Export:** `Downloads/ReelBot/library.json` plus one Markdown file per note. Import merges by URL.
+- **Export:** `Downloads/ReelBot/library.json` (notes and saved chats) plus one Markdown file per note. Import merges notes by URL and chats by first question and time.
 
 #### App (three tabs)
 - **Ask:**
@@ -167,7 +168,8 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
 - **What leaves the phone:**
   - reels you share, to the AI provider you chose, with your key;
   - logged-out Instagram page requests for reels you shared;
-  - feedback, as a GitHub issue you review before posting.
+  - feedback, as a GitHub issue you review before posting;
+  - one request a day to GitHub's releases list, for the update banner (no token, nothing about you).
 - **What never does:** no analytics, no tracking, no server. Watched reels are counted by hash, never recorded. Turning debug capture off deletes what it recorded.
 
 ### 2.3 Documentation done
@@ -180,8 +182,8 @@ Written 2026-11-06; current as of **v0.9.3**. This page says what has been built
 
 | Check | Result |
 |---|---|
-| `flutter analyze` | clean at v0.9.3 |
-| Dart tests (`mobile/test`, 28) | passing. They cover the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
+| `flutter analyze` | clean at v0.9.4 |
+| Dart tests (`mobile/test`, 29) | passing. They cover the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import (with chats), the update check, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
 | Kotlin tests (`:reelbot_native:testDebugUnitTest`, 52) | passing. They cover share-URL parsing, the Instagram parsers (synthetic fixtures), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
 | Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Bot, O=nevil-sanish`), and published with a SHA-256 |
 | On a phone | only what the user's screenshots show (§1). No live checks (`T-LIVE-*`) or manual checks (`T-MAN-*`) have been run |
@@ -239,17 +241,17 @@ In priority order. Each item says what, why, and what "done" looks like.
 14. ✅ **Done in v0.9.3** (orphan photos are deleted on each start, so Undo still works until then). **Photo files left behind on delete.** Deleting a photo note doesn't delete its `files/photos/*.jpg`, because Undo needs it. Delete the file once the Undo snackbar has closed, or sweep orphan files on start.
 15. ✅ **Done in v0.9.3** (the blocks and peak hour are ranked by minutes watched; counts are used until any time is recorded). **"When you watch" uses counts, not minutes.** The `hourly` query already returns `ms` per hour. Show minutes next to the count, or let the user choose.
 16. **Watch time looks low.** For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
-17. **Sharing several photos at once.** Only `ACTION_SEND` (one image) is handled. Add `ACTION_SEND_MULTIPLE` to queue each image, or one note for the set.
-18. **Export leaves out chats.** `library.json` has notes only. Add `chats` to the export and import.
-19. **Update check (T-REL-01, GH-RELEASE-LATEST).** Planned, never built: a banner when GitHub has a newer release with an `.apk` asset, which stays silent on a 403.
-20. **`docs/INSTALL.md`.** Planned in PLAN §6 before sharing with friends: one page with one screenshot per step (download, Play Protect, restricted settings, Accessibility, battery, Autostart, Gemini key).
-21. **PLAN.md is behind.** It still describes Phase 3 (the bubble and auto-Save), which was removed in v0.9.0, and doesn't mention photos, posts, chat or Insights. Update it to match the product.
+17. ✅ **Done in v0.9.4** (one note per image; decoding moved off the main thread). **Sharing several photos at once.** Only `ACTION_SEND` (one image) is handled. Add `ACTION_SEND_MULTIPLE` to queue each image, or one note for the set.
+18. ✅ **Done in v0.9.4** (`library.json` version 2; version 1 files still import). **Export leaves out chats.** `library.json` has notes only. Add `chats` to the export and import.
+19. ✅ **Done in v0.9.4** (reads `/releases?per_page=1`, because `/releases/latest` skips pre-releases; a *Download* banner on the home screen). **Update check (T-REL-01, GH-RELEASE-LATEST).** Planned, never built: a banner when GitHub has a newer release with an `.apk` asset, which stays silent on a 403.
+20. ✅ **Written in v0.9.4**, text only: the screenshots still need a phone. **`docs/INSTALL.md`.** Planned in PLAN §6 before sharing with friends: one page with one screenshot per step (download, Play Protect, restricted settings, Accessibility, battery, Autostart, Gemini key).
+21. ✅ **Done in v0.9.4.** **PLAN.md is behind.** It still describes Phase 3 (the bubble and auto-Save), which was removed in v0.9.0, and doesn't mention photos, posts, chat or Insights. Update it to match the product.
 
 ### P2: engineering debt
 
 22. **Integration tests for the channel and background job (T-CH-01, T-CH-02, T-BG-01).** The Dart–Kotlin channel and the `callbackDispatcher` are only exercised on a device. Add Robolectric tests for `CounterPlugin`, and a Dart test that runs the dispatcher with fakes.
 23. **Instagram login-wall fixture (T-IG-F04).** A captured login-wall page, to check the v0.9.1 rule that it only skips its own step.
-24. **Kotlin build warnings.** The plugin still applies `kotlin-gradle-plugin` ("migrate to Built-in Kotlin"), and the AGP `android {}` DSL call is deprecated. Migrate before they become errors.
+24. **Kotlin build warnings.** As of v0.9.4 the "migrate to Built-in Kotlin" warning names only `workmanager_android` (already the newest version), not our plugin; wait for an upstream release. Our plugin still puts `kotlin-gradle-plugin` on its buildscript classpath for the `kotlin { compilerOptions }` block; drop it once AGP's built-in Kotlin covers that.
 25. **One commit that doesn't build on its own.** `37cd366` (v0.5.0 work) changed `KeyStore` before the settings screen caught up in the next commit. History was left as it is; just don't bisect into that commit.
 26. **Chat retrieval is keyword overlap.** Fine for hundreds of notes. If libraries grow to thousands, or questions are phrased differently from the notes, add on-device embeddings, or ask the model to pick note IDs first.
 27. **The service's DB writes run on the main thread.** `ReelCounterService` writes to `counter.db` from Accessibility callbacks. That's fine at this volume; move it to a single background executor if profiling shows jank.
@@ -300,4 +302,4 @@ cd mobile && flutter build apk --release
 
 **Where to start:**
 - **Correctness:** begin with **P0** (§4), especially items 1–3, because every other item assumes the fetch and counter work on a real phone.
-- **Small fixes:** items 12–15 are done in v0.9.3; 16–21 are next.
+- **Small fixes:** items 12–15 are done in v0.9.3 and 17–21 in v0.9.4. Item 16 needs the T-MAN-03 stopwatch test on a phone; INSTALL.md needs its screenshots. Next without a phone: P2 items 22–23.
