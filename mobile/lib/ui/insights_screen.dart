@@ -78,10 +78,6 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
       background: false,
       appBar: AppBar(
         title: const Text('Insights'),
-        actions: [
-          const ThemeToggle(),
-          IconButton(tooltip: 'Debug', icon: const Icon(Icons.bug_report_outlined), onPressed: () => _open(DebugScreen(widget.services))),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _load,

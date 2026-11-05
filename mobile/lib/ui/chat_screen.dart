@@ -218,7 +218,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         actions: [
           IconButton(tooltip: 'Saved chats', icon: const Icon(Icons.history_rounded), onPressed: _history),
           if (chatting) IconButton(tooltip: 'New chat', icon: const Icon(Icons.add_comment_outlined), onPressed: _newChat),
-          const ThemeToggle(),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),

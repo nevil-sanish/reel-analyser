@@ -88,25 +88,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         extendBody: true,
         body: Stack(children: [
           const Positioned.fill(child: LiquidBackground()),
-          // All three stay alive (like IndexedStack) but cross-fade and settle, so switching tabs feels liquid.
-          for (final (i, page) in [ChatScreen(widget.services, onInsights: () => setState(() => _tab = 1)), InsightsScreen(widget.services), LibraryScreen(widget.services)].indexed)
-            IgnorePointer(
-              ignoring: i != _tab,
-              child: TickerMode(
-                enabled: i == _tab,
-                child: AnimatedOpacity(
-                  opacity: i == _tab ? 1 : 0,
-                  duration: const Duration(milliseconds: 320),
-                  curve: Curves.easeOutCubic,
-                  child: AnimatedScale(
-                    scale: i == _tab ? 1 : 0.97,
-                    duration: const Duration(milliseconds: 420),
-                    curve: Curves.easeOutQuint,
-                    child: page,
-                  ),
-                ),
-              ),
-            ),
+          FadingTabs(index: _tab, children: [
+            ChatScreen(widget.services, onInsights: () => setState(() => _tab = 1)),
+            InsightsScreen(widget.services),
+            LibraryScreen(widget.services),
+          ]),
         ]),
         bottomNavigationBar: GlassTabBar(
           index: _tab,

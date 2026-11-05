@@ -85,9 +85,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       appBar: AppBar(
         title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
-          const ThemeToggle(),
           IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
-          IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined), onPressed: () => _open(SettingsScreen(s))),
         ],
       ),
       body: RefreshIndicator(
@@ -109,6 +107,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               scrollDirection: Axis.horizontal,
               child: Row(children: [
                 for (final k in _kinds.entries)
+                  if (k.key == 'all' || _reels.any((r) => r.kind == k.key))
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -147,12 +146,6 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   Text('In Instagram or YouTube, tap Share → Reel Bot on a reel or short.',
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
-              ),
-            if (_reels.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text('Swipe left to delete, right to archive. Seen notes archive themselves after 3 days.',
-                    style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ),
             for (final r in _reels.where((r) => _kind == 'all' || r.kind == _kind))
               SwipeNote(s, r, onTap: () => _open(ReelScreen(s, r)), onChanged: _reload),
@@ -233,7 +226,7 @@ class SwipeNote extends StatelessWidget {
         await services.library.setArchived(reel.url, !reel.archived);
         onChanged();
       },
-      child: ReelCard(reel, onTap: onTap, onDelete: () => _delete(context)),
+      child: ReelCard(reel, onTap: onTap),
     );
   }
 }
@@ -242,8 +235,7 @@ class SwipeNote extends StatelessWidget {
 class ReelCard extends StatelessWidget {
   final Reel reel;
   final VoidCallback onTap;
-  final VoidCallback? onDelete;
-  const ReelCard(this.reel, {required this.onTap, this.onDelete, super.key});
+  const ReelCard(this.reel, {required this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -277,7 +269,6 @@ class ReelCard extends StatelessWidget {
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),
-                  if (reel.analysis != 'done') Icon(Icons.text_snippet_outlined, size: 16, color: t.colorScheme.outline),
                   if (reel.seenAt == 0)
                     Semantics(
                       label: 'Not seen yet',
@@ -286,17 +277,6 @@ class ReelCard extends StatelessWidget {
                         width: 10,
                         height: 10,
                         decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
-                      ),
-                    ),
-                  if (onDelete != null)
-                    SizedBox.square(
-                      dimension: 32,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Delete',
-                        iconSize: 18,
-                        icon: Icon(Icons.delete_outline, color: t.colorScheme.outline),
-                        onPressed: onDelete,
                       ),
                     ),
                 ]),

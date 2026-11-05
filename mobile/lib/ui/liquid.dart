@@ -208,3 +208,25 @@ class LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
     );
   }
 }
+
+/// Tabs that all stay alive (like IndexedStack) and cross-fade. The fade sits outside TickerMode: muting a hidden
+/// tab's tickers must not also freeze its own fade-out, or it stays half-visible over the others (the v0.8.1 bug).
+class FadingTabs extends StatelessWidget {
+  final int index;
+  final List<Widget> children;
+  const FadingTabs({required this.index, required this.children, super.key});
+
+  @override
+  Widget build(BuildContext context) => Stack(children: [
+        for (final (i, page) in children.indexed)
+          AnimatedOpacity(
+            opacity: i == index ? 1 : 0,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            child: IgnorePointer(
+              ignoring: i != index,
+              child: ExcludeSemantics(excluding: i != index, child: TickerMode(enabled: i == index, child: page)),
+            ),
+          ),
+      ]);
+}

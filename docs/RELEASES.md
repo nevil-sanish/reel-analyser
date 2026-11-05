@@ -42,7 +42,7 @@ A commit that changes code but leaves a covering test row at **planned** is inco
 
 ## 4. GitHub Releases
 
-Every version is a GitHub Release on `nevil-sanish/reel-notes-bot`:
+Every version is a GitHub Release on `nevil-sanish/reel-brain`:
 - **Tag** `vX.Y.Z` on `main`, created by the release itself.
 - **Pre-release** flag on while `< v1.0.0`.
 - **Assets** (from `v0.1.0`): `reel-bot-vX.Y.Z.apk` (release build, signed with the private key kept outside the repo) and `SHA256SUMS`.
@@ -86,3 +86,4 @@ Release checklist:
 | 2026-11-06 | v0.7.0 | Liquid-glass look: drifting gradient background, frosted cards and floating tab bar, iOS-style transitions; chat opens on one big ask bar that glides into the conversation. |
 | 2026-11-06 | v0.8.0 | Share photos and screenshots to Reel Bot; Instagram photo posts and carousels analysed from all their images. |
 | 2026-11-06 | v0.8.1 | Green theme (light default, dark toggle); liquid transitions; Ask with saved chats and a today strip; Insights by day, hour and weekday; Library filters; compact notes with a full-analysis toggle. |
+| 2026-11-06 | v0.8.2 | Fix tabs overlapping; fewer buttons and hints; README explains the workflow; repo renamed to reel-brain. |

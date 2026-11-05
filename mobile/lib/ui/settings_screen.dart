@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
+import 'debug_screen.dart';
 import 'liquid.dart';
+import 'setup_screen.dart';
 import 'theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -98,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (ok != true || text.text.trim().isEmpty) return;
     final body = Uri.encodeQueryComponent('${text.text.trim()}\n\n— Reel Bot ${AppServices.version}');
-    await s.bridge.openUrl('https://github.com/nevil-sanish/reel-notes-bot/issues/new?title=Feedback&body=$body');
+    await s.bridge.openUrl('https://github.com/nevil-sanish/reel-brain/issues/new?title=Feedback&body=$body');
   }
 
   Widget _key(TextEditingController c, String label, {String? helper, Widget? trailing}) => Padding(
@@ -172,6 +174,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: mode == ThemeMode.dark,
                 onChanged: (v) => Brand.mode.value = v ? ThemeMode.dark : ThemeMode.light,
               ),
+            ),
+          ]),
+          _section('Counter', [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.checklist_rounded),
+              title: const Text('Set up counting'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SetupScreen(s))),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('Counter debug'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
             ),
           ]),
           _section('Bubble', [
