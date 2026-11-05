@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 
-/// Reel Bot's look: violet to coral, rounded cards, quiet surfaces.
+/// Reel Bot's look: the purple → pink → orange → yellow sunset of Reels, on near-black or near-white surfaces.
+/// Colours only; Reel Bot keeps its own mark, never Instagram's logo.
 class Brand {
-  static const violet = Color(0xFF6D4AFF);
-  static const coral = Color(0xFFFF6B81);
-  static const gradient = LinearGradient(colors: [violet, coral], begin: Alignment.topLeft, end: Alignment.bottomRight);
+  static const violet = Color(0xFF833AB4);
+  static const magenta = Color(0xFFC13584);
+  static const pink = Color(0xFFE1306C);
+  static const orange = Color(0xFFF77737);
+  static const yellow = Color(0xFFFCAF45);
+  static const coral = orange;
+  static const colors = [violet, magenta, pink, orange, yellow];
+  static const gradient = LinearGradient(colors: colors, begin: Alignment.bottomLeft, end: Alignment.topRight);
 
   static ThemeData theme(Brightness b) {
-    final scheme = ColorScheme.fromSeed(seedColor: violet, brightness: b, tertiary: coral);
+    final dark = b == Brightness.dark;
+    final scheme = ColorScheme.fromSeed(seedColor: pink, brightness: b, primary: dark ? const Color(0xFFFF5C8A) : pink, tertiary: orange)
+        .copyWith(surface: dark ? Colors.black : Colors.white);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: b == Brightness.dark ? const Color(0xFF0F0D17) : const Color(0xFFF7F5FF),
+      scaffoldBackgroundColor: dark ? Colors.black : const Color(0xFFFAFAFA),
       appBarTheme: const AppBarTheme(centerTitle: false, scrolledUnderElevation: 0, backgroundColor: Colors.transparent),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -75,7 +83,7 @@ class _BrandMarkState extends State<BrandMark> with SingleTickerProviderStateMix
               decoration: BoxDecoration(
                 gradient: Brand.gradient,
                 borderRadius: BorderRadius.circular(widget.size * 0.3),
-                boxShadow: [BoxShadow(color: Brand.violet.withValues(alpha: 0.25 + 0.2 * t), blurRadius: 24 + 16 * t, offset: const Offset(0, 8))],
+                boxShadow: [BoxShadow(color: Brand.pink.withValues(alpha: 0.25 + 0.2 * t), blurRadius: 24 + 16 * t, offset: const Offset(0, 8))],
               ),
               child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: widget.size * (0.55 + 0.06 * t)),
             ),

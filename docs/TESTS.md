@@ -60,6 +60,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-PIPE-09 | integration | nothing found | `fetchInstagram` empty and nothing captured → status `failed` | passing |
 | T-PIPE-11 | integration | GEM-GENERATE | Two Gemini keys, two reels → one reel per key; a 429 on key 1 moves that reel to key 2 | passing |
 | T-PIPE-12 | integration | OPENAI-CHAT | No Gemini key, OpenAI key, Instagram video → 6 frames sent as images; fenced JSON reply parsed | passing |
+| T-UI-01 | widget | intro | Next ×2 reaches *Slide to unlock*; a short drag springs back; a full drag unlocks once (`test/intro_test.dart`) | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
 | T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
@@ -156,5 +157,6 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.5.1: T-UI-01 added and passing. |
 | 2026-11-06 | v0.5.0: T-PIPE-11/12 and T-IG-F11 added and passing; T-PIPE-01 also checks the watch URL, fps 0.5 and minimal thinking; T-SHARE-04 now 2 min. |
 | 2026-11-06 | v0.4.0: T-DIG-01/02 passing as unit tests of the post rule and text (`DigestTest.kt`); T-PIPE-01 also checks the title passed to Kotlin. |
