@@ -111,8 +111,8 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | planned |
 | T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | planned |
 | T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | passing |
-| T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | planned |
-| T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | planned |
+| T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | passing (unit: rule and text; worker needs a device) |
+| T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | passing (unit: rule and text; worker needs a device) |
 | T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | planned |
 
 ## 6. Live checks (debug screen, weekly and before each release)
@@ -142,7 +142,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | T-MAN-04 | Setup checklist on a Xiaomi/Realme and a stock phone | Every button opens the right screen | planned |
 | T-MAN-05 | Reboot, kill the app | Counting and background analysis resume | planned |
 | T-MAN-06 | Rename one detection id on purpose | Unknown alert fires | planned |
-| T-MAN-07 | Force-run the digest: `adb shell cmd jobscheduler run -f app.reelbrain <id>` | Notification as in T-DIG-01/02 | planned |
+| T-MAN-07 | After 21:00, force-run the digest: `adb shell cmd jobscheduler run -f app.reelbrain <id>` (before 21:00 the worker posts nothing by design) | Notification as in T-DIG-01/02 | planned |
 
 ## 8. Change log
 
@@ -153,3 +153,4 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.4.0: T-DIG-01/02 passing as unit tests of the post rule and text (`DigestTest.kt`); T-PIPE-01 also checks the title passed to Kotlin. |

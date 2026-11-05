@@ -35,6 +35,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         ctx = binding.applicationContext
         channel = MethodChannel(binding.binaryMessenger, "reelbot/counter")
         channel.setMethodCallHandler(this)
+        DigestWorker.schedule(ctx)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -45,7 +46,8 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         when (call.method) {
             "pendingItems" -> result.success(CounterDb.get(ctx).pending(call.argument<String>("status")))
             "setPendingStatus" -> {
-                CounterDb.get(ctx).setStatus(call.argument<Number>("id")!!.toLong(), call.argument<String>("status")!!)
+                CounterDb.get(ctx).setStatus(
+                    call.argument<Number>("id")!!.toLong(), call.argument<String>("status")!!, call.argument<String>("title") ?: "")
                 result.success(null)
             }
             "fetchInstagram" -> offMain(result) {
@@ -68,6 +70,10 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "setAutoSave" -> {
                 prefs().edit().putBoolean(ReelCounterService.AUTO_SAVE, call.argument<Boolean>("on") == true).apply()
+                result.success(null)
+            }
+            "markOpened" -> {
+                prefs().edit().putLong(Digest.LAST_OPENED, System.currentTimeMillis()).apply()
                 result.success(null)
             }
             "status" -> result.success(status())

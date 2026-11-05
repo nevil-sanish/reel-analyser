@@ -25,8 +25,12 @@ class FakeBridge implements CounterBridge {
   @override
   Future<List<PendingItem>> pendingItems({String? status}) async =>
       items.where((i) => !statuses.containsKey(i.id)).toList();
+  final Map<int, String> titles = {};
   @override
-  Future<void> setPendingStatus(int id, String status) async => statuses[id] = status;
+  Future<void> setPendingStatus(int id, String status, {String title = ''}) async {
+    statuses[id] = status;
+    titles[id] = title;
+  }
   @override
   Future<IgFetch> fetchInstagram(String url) async => fetch(url);
   @override
@@ -99,6 +103,7 @@ void main() {
     expect(requests.single.headers['x-goog-api-key'], 'KEY');
     expect(b.statuses[1], 'done');
     expect((await db.reels()).single.title, 'Rice');
+    expect(b.titles[1], 'Rice'); // for the digest
   });
 
   test('T-PIPE-02 rejected YouTube URL falls back to oEmbed', () async {

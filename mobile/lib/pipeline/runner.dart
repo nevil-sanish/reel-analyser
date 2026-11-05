@@ -31,6 +31,9 @@ class Runner {
   /// Why the last run left items queued or failed one, for the library screen. Null when the last run was clean.
   String? lastProblem;
 
+  /// Title of the note the current item produced, passed to Kotlin for the digest.
+  String _title = '';
+
   Runner({
     required this.bridge,
     required this.library,
@@ -58,7 +61,9 @@ class Runner {
       final gemini = makeGemini(key);
       for (final item in await bridge.pendingItems(status: 'queued')) {
         try {
-          await bridge.setPendingStatus(item.id, await _process(item, gemini));
+          _title = '';
+          final status = await _process(item, gemini);
+          await bridge.setPendingStatus(item.id, status, title: _title);
           finished++;
         } on _RetryLater catch (e) {
           lastProblem = 'Will retry: ${e.reason}';
@@ -179,7 +184,7 @@ class Runner {
       library.saveReel(Reel(
         url: item.url.isEmpty ? 'local:${item.id}' : item.url,
         app: item.app,
-        title: a.title.isEmpty ? (caption.isEmpty ? 'Untitled reel' : caption.split('\n').first) : a.title,
+        title: _title = a.title.isEmpty ? (caption.isEmpty ? 'Untitled reel' : caption.split('\n').first) : a.title,
         summary: a.summary,
         keyPoints: a.keyPoints,
         tags: a.tags,

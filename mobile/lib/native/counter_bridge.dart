@@ -145,8 +145,12 @@ class CounterBridge {
     return rows.map(PendingItem.fromMap).toList();
   }
 
-  Future<void> setPendingStatus(int id, String status) =>
-      _ch.invokeMethod('setPendingStatus', {'id': id, 'status': status});
+  /// `title` is the analysed note's title, which the Kotlin digest shows (WM-DIGEST).
+  Future<void> setPendingStatus(int id, String status, {String title = ''}) =>
+      _ch.invokeMethod('setPendingStatus', {'id': id, 'status': status, 'title': title});
+
+  /// The digest is skipped on days the app was opened.
+  Future<void> markOpened() => _ch.invokeMethod('markOpened');
 
   Future<IgFetch> fetchInstagram(String url) async {
     try {

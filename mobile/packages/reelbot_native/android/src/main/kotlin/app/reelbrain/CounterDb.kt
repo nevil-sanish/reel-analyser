@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 /** `counter.db`, owned by Kotlin; Dart reaches it only through `reelbot/counter` (PLAN §4.7). */
-class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 2), TrackerSink {
+class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 3), TrackerSink {
     companion object {
         @Volatile private var instance: CounterDb? = null
         fun get(ctx: Context): CounterDb =
@@ -23,13 +23,16 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
               author TEXT NOT NULL DEFAULT '', caption TEXT NOT NULL DEFAULT '',
               on_screen_text TEXT NOT NULL DEFAULT '',
               created_at INTEGER NOT NULL,
-              status TEXT NOT NULL DEFAULT 'queued')"""
+              status TEXT NOT NULL DEFAULT 'queued',
+              title TEXT NOT NULL DEFAULT '')"""
         )
         createCounterTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) createCounterTables(db)
+        // Version 3: the analysed note's title, for the digest (Kotlin never opens Dart's reel_brain.db).
+        if (oldVersion < 3) db.execSQL("ALTER TABLE pending_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
     }
 
     /** Version 2: the Phase 2 counter (IMPLEMENTATION §3.3). */
@@ -144,7 +147,22 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         }
     }
 
-    fun setStatus(id: Long, status: String) {
-        writableDatabase.update("pending_items", ContentValues().apply { put("status", status) }, "id = ?", arrayOf(id.toString()))
+    fun setStatus(id: Long, status: String, title: String = "") {
+        writableDatabase.update("pending_items", ContentValues().apply { put("status", status); put("title", title) },
+            "id = ?", arrayOf(id.toString()))
+    }
+
+    /** Items shared or saved since local midnight, and the titles of those already analysed. */
+    fun savedToday(now: Long): Pair<Int, List<String>> {
+        val midnight = java.util.Calendar.getInstance().apply {
+            timeInMillis = now
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val rows = query("SELECT status, title FROM pending_items WHERE created_at >= ? ORDER BY id", arrayOf(midnight.toString())) {
+            it.getString(0) to it.getString(1)
+        }
+        val analysed = setOf("done", "caption+thumbnail", "text-only")
+        return rows.size to rows.filter { it.first in analysed && it.second.isNotBlank() }.map { it.second }
     }
 }

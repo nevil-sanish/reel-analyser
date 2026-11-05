@@ -473,6 +473,11 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 
 `DigestWorker.kt` (Kotlin `WorkManager`, periodic, aimed at about 21:30). If the app's `last_opened` is before today, post one notification: "N reels · M min · K saved: titles…". Titles come from items already analysed in the background (status `done` / `caption+thumbnail` / `text-only`); if none are analysed yet, show "N reels · M min · K saved" without titles. Tapping it opens the app.
 
+**v0.4.0 as built:**
+- `DigestWorker` runs **hourly** (unique periodic work `reelbot_digest`, scheduled when the plugin attaches) and posts only after 21:00, once a day (`digest_posted` pref), and only if `last_opened` isn't today. A single 24 h job drifts away from 21:30.
+- `last_opened` is written by `markOpened`, which Flutter calls on start and on every resume.
+- Titles come from a new `pending_items.title` column (`counter.db` version 3), filled by `setPendingStatus`, because Kotlin never opens Dart's `reel_brain.db`. "K saved" counts `pending_items` rows created since local midnight.
+
 ## 8. Before sharing with friends: `docs/INSTALL.md`
 
 One page, one screenshot per step:

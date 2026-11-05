@@ -181,7 +181,8 @@ Rules for every `IG-*` call:
 | Method | Phase | Args | Returns | Tests |
 |---|---|---|---|---|
 | `pendingItems` | 1 | `{status}` | `List<{id,url,app,author,caption,onScreenText,createdAt,status}>` | `T-CH-01` |
-| `setPendingStatus` | 1 | `{id, status}` | `null` | `T-CH-01` |
+| `setPendingStatus` | 1 | `{id, status, title}` (`title` from v0.4.0, for the digest) | `null` | `T-CH-01` |
+| `markOpened` | 4 | — | `null` (writes `last_opened`) | `T-DIG-02` |
 | `fetchInstagram` | 1 | `{url}` | `{step, author, caption, thumbnailUrl, videoPath}`; error `rate_limited` | `T-CH-02` |
 | `saveDownload` | 1 | `{name, text}` | `null` (writes `Downloads/ReelBot/<name>`) | manual `T-MAN-01` |
 | `daily` | 2 | `{days}` | `List<{date,app,reels,ms,unknown}>` | `T-CH-03` |
@@ -197,7 +198,7 @@ Rules for every `IG-*` call:
 - **Tests:** `T-BG-01`, `T-BG-02`
 
 ### WM-DIGEST: daily digest worker
-- Kotlin `DigestWorker`, periodic, aimed at 21:30. Phase 4.
+- Kotlin `DigestWorker`, unique periodic work `reelbot_digest`, hourly; posts once after 21:00 if the app wasn't opened today. Phase 4.
 - **Tests:** `T-DIG-01`, `T-DIG-02`
 
 ---
@@ -210,3 +211,4 @@ Rules for every `IG-*` call:
 | 2026-11-05 | v0.1.0: implemented IG-EMBED…IG-CDN, APIFY-RUN, GEM-*, YT-OEMBED, SHARE-IN, CH-COUNTER (+ `saveDownload`), WM-ANALYSE. Kotlin moved to the `reelbot_native` plugin (IMPLEMENTATION §0.1). Not yet verified from a phone (`T-LIVE-*`). |
 | 2026-11-06 | v0.2.0: implemented the Phase 2 CH-COUNTER methods, plus `openNotificationSettings` (the plugin has no activity to ask for `POST_NOTIFICATIONS` itself). |
 | 2026-11-06 | v0.3.0: `setAutoSave` and `status.autoSave` for the experimental auto-Save. |
+| 2026-11-06 | v0.4.0: WM-DIGEST implemented; `setPendingStatus` takes `title`; `markOpened` added. |
