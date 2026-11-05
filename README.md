@@ -190,6 +190,7 @@ The release build needs `mobile/android/key.properties` (gitignored) pointing at
 
 | Doc | What's in it |
 |---|---|
+| [STATUS.md](docs/STATUS.md) | **Start here:** what's done, how it was checked, and every piece of work still to do |
 | [PLAN.md](docs/PLAN.md) | What we're building, decisions, risks, build order |
 | [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | File-by-file guide, with what changed in each version |
 | [ENDPOINTS.md](docs/ENDPOINTS.md) | Every network call and internal interface |
