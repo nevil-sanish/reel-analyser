@@ -79,9 +79,6 @@ class _DebugScreenState extends State<DebugScreen> {
                 ),
                 children: [SelectableText(tree, style: mono)],
               ),
-          if (_state['autosave_tries'] case final tries?)
-            Text('Auto-Save: ${_state['autosave_ok'] ?? '0'} of $tries worked (keep it only above 90%) · '
-                'last: ${_state['autosave_last'] ?? ''}'),
           const Divider(),
           Text('Seen today: ${_seen.length} reels. Reel Bot keeps only an anonymous fingerprint of each, never what it was.',
               style: Theme.of(context).textTheme.bodySmall),

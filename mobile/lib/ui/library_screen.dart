@@ -23,6 +23,11 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   AppServices get s => widget.services;
   List<Reel> _reels = [];
   String _kind = 'all';
+  final _selected = <String>{};
+
+  List<Reel> get _visible => [for (final r in _reels) if (_kind == 'all' || r.kind == _kind) r];
+
+  void _toggle(Reel r) => setState(() => _selected.contains(r.url) ? _selected.remove(r.url) : _selected.add(r.url));
   static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
   int _waiting = 0;
   bool _hasKey = true;
@@ -82,12 +87,24 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     final t = Theme.of(context);
     return LiquidScaffold(
       background: false,
-      appBar: AppBar(
-        title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
-        ],
-      ),
+      appBar: _selected.isNotEmpty
+          ? selectionBar(
+              count: _selected.length,
+              archived: false,
+              onClose: () => setState(_selected.clear),
+              onAll: () => setState(() => _selected.addAll(_visible.map((r) => r.url))),
+              onAction: (a) async {
+                final picked = [for (final r in _reels) if (_selected.contains(r.url)) r];
+                setState(_selected.clear);
+                await bulkAction(context, s, picked, a, _reload);
+              },
+            )
+          : AppBar(
+              title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
+              actions: [
+                IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
+              ],
+            ),
       body: RefreshIndicator(
         onRefresh: _process,
         child: ListView(
@@ -147,8 +164,12 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),
-            for (final r in _reels.where((r) => _kind == 'all' || r.kind == _kind))
-              SwipeNote(s, r, onTap: () => _open(ReelScreen(s, r)), onChanged: _reload),
+            for (final r in _visible)
+              SwipeNote(s, r,
+                  selected: _selected.isEmpty ? null : _selected.contains(r.url),
+                  onLongPress: () => _toggle(r),
+                  onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r)) : _toggle(r),
+                  onChanged: _reload),
           ],
         ),
       ),
@@ -183,7 +204,12 @@ class SwipeNote extends StatelessWidget {
   final Reel reel;
   final VoidCallback onTap;
   final VoidCallback onChanged;
-  const SwipeNote(this.services, this.reel, {required this.onTap, required this.onChanged, super.key});
+
+  /// Multi-select: null when not selecting; otherwise whether this note is ticked. Long-press starts it.
+  final bool? selected;
+  final VoidCallback? onLongPress;
+  const SwipeNote(this.services, this.reel,
+      {required this.onTap, required this.onChanged, this.selected, this.onLongPress, super.key});
 
   Future<void> _delete(BuildContext context) async {
     HapticFeedback.heavyImpact();
@@ -217,6 +243,7 @@ class SwipeNote extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     return Dismissible(
       key: ValueKey(reel.url),
+      direction: selected == null ? DismissDirection.horizontal : DismissDirection.none,
       background: _bg(context, Alignment.centerLeft, reel.archived ? Icons.unarchive_rounded : Icons.archive_rounded,
           reel.archived ? 'Restore' : 'Archive', Brand.emerald),
       secondaryBackground: _bg(context, Alignment.centerRight, Icons.delete_rounded, 'Delete', c.error),
@@ -226,7 +253,7 @@ class SwipeNote extends StatelessWidget {
         await services.library.setArchived(reel.url, !reel.archived);
         onChanged();
       },
-      child: ReelCard(reel, onTap: onTap),
+      child: ReelCard(reel, onTap: onTap, onLongPress: onLongPress, selected: selected),
     );
   }
 }
@@ -235,7 +262,9 @@ class SwipeNote extends StatelessWidget {
 class ReelCard extends StatelessWidget {
   final Reel reel;
   final VoidCallback onTap;
-  const ReelCard(this.reel, {required this.onTap, super.key});
+  final VoidCallback? onLongPress;
+  final bool? selected;
+  const ReelCard(this.reel, {required this.onTap, this.onLongPress, this.selected, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -246,11 +275,20 @@ class ReelCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
         clipBehavior: Clip.antiAlias,
+        shape: selected == true
+            ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: t.colorScheme.primary, width: 2))
+            : null,
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
             onTap();
           },
+          onLongPress: onLongPress == null
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -269,7 +307,13 @@ class ReelCard extends StatelessWidget {
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),
-                  if (reel.seenAt == 0)
+                  if (selected != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(selected! ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                          size: 22, color: selected! ? t.colorScheme.primary : t.colorScheme.outline),
+                    )
+                  else if (reel.seenAt == 0)
                     Semantics(
                       label: 'Not seen yet',
                       child: Container(
@@ -306,4 +350,59 @@ class ReelCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Multi-select toolbar for the Library and the Archive: count, select all, mark read, archive or restore, delete.
+PreferredSizeWidget selectionBar({
+  required int count,
+  required VoidCallback onClose,
+  required VoidCallback onAll,
+  required bool archived,
+  required Future<void> Function(String action) onAction,
+}) =>
+    AppBar(
+      leading: IconButton(tooltip: 'Cancel', icon: const Icon(Icons.close_rounded), onPressed: onClose),
+      title: Text('$count selected'),
+      actions: [
+        IconButton(tooltip: 'Select all', icon: const Icon(Icons.select_all_rounded), onPressed: onAll),
+        IconButton(tooltip: 'Mark read', icon: const Icon(Icons.done_all_rounded), onPressed: () => onAction('read')),
+        IconButton(
+          tooltip: archived ? 'Restore' : 'Archive',
+          icon: Icon(archived ? Icons.unarchive_outlined : Icons.archive_outlined),
+          onPressed: () => onAction(archived ? 'restore' : 'archive'),
+        ),
+        IconButton(tooltip: 'Delete', icon: const Icon(Icons.delete_outline_rounded), onPressed: () => onAction('delete')),
+      ],
+    );
+
+/// Applies a bulk action to [reels]; delete offers Undo (it saves the notes back).
+Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, String action, VoidCallback onDone) async {
+  final now = DateTime.now().millisecondsSinceEpoch;
+  action == 'delete' ? HapticFeedback.heavyImpact() : HapticFeedback.mediumImpact();
+  for (final r in reels) {
+    switch (action) {
+      case 'read':
+        await s.library.markSeen(r.url, now);
+      case 'archive' || 'restore':
+        await s.library.setArchived(r.url, action == 'archive');
+      case 'delete':
+        await s.library.delete(r.url);
+    }
+  }
+  onDone();
+  if (!context.mounted) return;
+  final n = reels.length == 1 ? '1 note' : '${reels.length} notes';
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      content: Text(switch (action) { 'read' => '$n marked read', 'archive' => '$n archived', 'restore' => '$n restored', _ => '$n deleted' }),
+      action: action != 'delete'
+          ? null
+          : SnackBarAction(label: 'Undo', onPressed: () async {
+              for (final r in reels) {
+                await s.library.saveReel(r);
+              }
+              onDone();
+            }),
+    ));
 }

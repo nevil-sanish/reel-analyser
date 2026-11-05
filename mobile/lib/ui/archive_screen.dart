@@ -18,6 +18,9 @@ class ArchiveScreen extends StatefulWidget {
 class _ArchiveScreenState extends State<ArchiveScreen> {
   List<Reel> _reels = [];
   String _query = '';
+  final _selected = <String>{};
+
+  void _toggle(Reel r) => setState(() => _selected.contains(r.url) ? _selected.remove(r.url) : _selected.add(r.url));
 
   @override
   void initState() {
@@ -34,7 +37,19 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return LiquidScaffold(
-      appBar: AppBar(title: const Text('Archive')),
+      appBar: _selected.isNotEmpty
+          ? selectionBar(
+              count: _selected.length,
+              archived: true,
+              onClose: () => setState(_selected.clear),
+              onAll: () => setState(() => _selected.addAll(_reels.map((r) => r.url))),
+              onAction: (a) async {
+                final picked = [for (final r in _reels) if (_selected.contains(r.url)) r];
+                setState(_selected.clear);
+                await bulkAction(context, widget.services, picked, a, _load);
+              },
+            )
+          : AppBar(title: const Text('Archive')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         children: [
@@ -55,10 +70,15 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                   textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
             ),
           for (final r in _reels)
-            SwipeNote(widget.services, r, onChanged: _load, onTap: () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(widget.services, r)));
-              _load();
-            }),
+            SwipeNote(widget.services, r,
+                selected: _selected.isEmpty ? null : _selected.contains(r.url),
+                onLongPress: () => _toggle(r),
+                onChanged: _load,
+                onTap: () async {
+                  if (_selected.isNotEmpty) return _toggle(r);
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(widget.services, r)));
+                  _load();
+                }),
         ],
       ),
     );

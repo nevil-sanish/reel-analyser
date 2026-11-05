@@ -25,7 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _claude = TextEditingController();
   final _groq = TextEditingController();
   final _apify = TextEditingController();
-  bool _autoSave = false;
 
   @override
   void initState() {
@@ -36,11 +35,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _claude.text = await s.keys.claude ?? '';
       _groq.text = await s.keys.groq ?? '';
       _apify.text = await s.keys.apify ?? '';
-      final status = await s.bridge.status();
       if (!mounted) return;
       setState(() {
         _gemini.addAll([for (final k in g.isEmpty ? [''] : g) TextEditingController(text: k)]);
-        _autoSave = status.autoSave;
       });
     }();
   }
@@ -190,18 +187,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: const Text('Counter debug'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
-            ),
-          ]),
-          _section('Bubble', [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Auto-Save (experimental)'),
-              subtitle: const Text('The bubble\'s Save presses Share → Reel Bot for you. If it misses, it goes back and asks you to share.'),
-              value: _autoSave,
-              onChanged: (v) async {
-                await s.bridge.setAutoSave(v);
-                setState(() => _autoSave = v);
-              },
             ),
           ]),
           _section('Backup', [

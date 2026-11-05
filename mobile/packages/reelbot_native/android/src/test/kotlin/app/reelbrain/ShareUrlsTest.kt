@@ -36,13 +36,4 @@ class ShareUrlsTest {
         assertNull(ShareUrls.extract("https://www.instagram.com/someuser/"))
         assertNull(ShareUrls.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
     }
-
-    // T-SHARE-04
-    @Test fun urlLessRowUnderTwoMinutesGetsTheLink() {
-        assertTrue(ShareUrls.shouldAttach(null, 1_000, 5_000))
-        assertTrue(ShareUrls.shouldAttach("", 1_000, 120_999))
-        assertFalse(ShareUrls.shouldAttach(null, 1_000, 121_000))
-        assertFalse(ShareUrls.shouldAttach("https://x", 1_000, 2_000))
-        assertFalse(ShareUrls.shouldAttach(null, null, 2_000))
-    }
 }

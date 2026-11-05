@@ -73,10 +73,6 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 if (!on) CounterDb.get(ctx).clearCapture()
                 result.success(null)
             }
-            "setAutoSave" -> {
-                prefs().edit().putBoolean(ReelCounterService.AUTO_SAVE, call.argument<Boolean>("on") == true).apply()
-                result.success(null)
-            }
             "notifyNotes" -> {
                 DigestWorker.post(ctx, 3, "reelbot_notes", "Notes ready",
                     call.argument<String>("title")!!, call.argument<String>("text")!!)
@@ -143,7 +139,6 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "sdkInt" to Build.VERSION.SDK_INT,
             "manufacturer" to Build.MANUFACTURER,
             "capture" to prefs().getBoolean(ReelCounterService.CAPTURE, false),
-            "autoSave" to prefs().getBoolean(ReelCounterService.AUTO_SAVE, false),
         )
     }
 

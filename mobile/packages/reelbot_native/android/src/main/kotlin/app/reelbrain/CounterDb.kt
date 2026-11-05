@@ -121,18 +121,9 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
     private fun <T> query(sql: String, args: Array<String>?, row: (android.database.Cursor) -> T): List<T> =
         readableDatabase.rawQuery(sql, args).use { c -> buildList { while (c.moveToNext()) add(row(c)) } }
 
-    /** SHARE-IN: fills a fresh URL-less bubble row, else inserts a new queued row. */
-    @Synchronized
+    /** SHARE-IN: queues a shared link. */
     fun addShared(link: ShareUrls.Link, now: Long) {
-        val db = writableDatabase
-        db.rawQuery("SELECT id, url, created_at FROM pending_items ORDER BY id DESC LIMIT 1", null).use { c ->
-            if (c.moveToFirst() && ShareUrls.shouldAttach(c.getString(1), c.getLong(2), now)) {
-                db.update("pending_items", ContentValues().apply { put("url", link.url); put("app", link.app) },
-                    "id = ?", arrayOf(c.getLong(0).toString()))
-                return
-            }
-        }
-        db.insert("pending_items", null, ContentValues().apply {
+        writableDatabase.insert("pending_items", null, ContentValues().apply {
             put("url", link.url); put("app", link.app); put("created_at", now)
         })
     }
@@ -141,14 +132,6 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
     fun addPhoto(path: String, caption: String, now: Long) {
         writableDatabase.insert("pending_items", null, ContentValues().apply {
             put("url", "photo:$path"); put("app", "photo"); put("caption", caption); put("created_at", now)
-        })
-    }
-
-    /** Bubble Save: a URL-less row the next shared link attaches to within 2 min (SHARE-IN). */
-    fun addBubbleSave(app: String, item: ItemText?, onScreenText: String, now: Long) {
-        writableDatabase.insert("pending_items", null, ContentValues().apply {
-            put("app", app); put("author", item?.author ?: ""); put("caption", item?.caption?.ifBlank { item.title } ?: "")
-            put("on_screen_text", onScreenText); put("created_at", now)
         })
     }
 

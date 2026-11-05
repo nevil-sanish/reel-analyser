@@ -88,8 +88,6 @@ class Runner {
     _turn = await readTurn();
     try {
       for (final item in await bridge.pendingItems(status: 'queued')) {
-        // A bubble Save waits for its link (SHARE-IN attaches one shared within 2 min) before going text-only.
-        if (item.url.isEmpty && now() - item.createdAt < 120000) continue;
         try {
           _title = '';
           _itemTurn = _turn++; // one reel per key: the next reel starts on the next key
@@ -307,7 +305,7 @@ class Runner {
     return 'failed';
   }
 
-  /// Bubble Saves never shared, and Instagram posts where only the author could be found.
+  /// Instagram posts where only the author could be found (and URL-less rows from before v0.9.0).
   Future<String> _textOnly(PendingItem item, {String? author, int step = 0}) async {
     final who = author ?? item.author;
     final a = await _captionAndThumbnail('Author: @$who\nCaption: ${item.caption}\nOn screen: ${item.onScreenText}', null);

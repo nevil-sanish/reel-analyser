@@ -72,6 +72,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-UI-03 | unit | Insights | Missing days filled with zeros; weekday averages; hour labels | passing |
 | T-UI-04 | unit | Library kinds | Instagram /reel/ → reel, /p/ → post, YouTube → short, shared picture → photo | passing |
 | T-UI-05 | widget | FadingTabs | After switching tabs, the left tab's rendered opacity is 0 and the new one's 1 | passing |
+| T-UI-06 | widget | multi-select | Long-press calls select; a selected card shows a tick, an unselected one an empty circle | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
 | T-EXP-01 | integration | Export/Import | Export → wipe → Import → same items; Import twice → no duplicates (merge by URL) | passing |
 
@@ -82,7 +83,7 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-SHARE-01 | unit | SHARE-IN | Instagram share text with words around the URL → URL extracted, `igsh` stripped | passing |
 | T-SHARE-02 | unit | SHARE-IN | `youtube.com/shorts/{id}?si=…` and `youtu.be/{id}` → canonical Shorts URL | passing |
 | T-SHARE-03 | unit | SHARE-IN | Non-reel text → "Not a reel link", no row | passing |
-| T-SHARE-04 | unit | SHARE-IN | URL-less row < 2 min old (bubble Save; 10 s before v0.5.0) → URL attached to it; older → new row | passing |
+| T-SHARE-04 | unit | SHARE-IN | URL-less row < 2 min old (bubble Save; 10 s before v0.5.0) → URL attached to it; older → new row | removed (v0.9.0: no bubble) |
 | T-CH-01 | integration | CH-COUNTER | `pendingItems` / `setPendingStatus` round-trip | planned |
 | T-CH-02 | integration | CH-COUNTER | `fetchInstagram` maps Kotlin result to Dart types; errors become typed exceptions | planned |
 | T-BG-01 | integration | WM-ANALYSE | `callbackDispatcher` initialises stores and processes the queue without the UI | planned |
@@ -123,9 +124,9 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | planned |
-| T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | planned |
-| T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | passing |
+| T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | removed (v0.9.0: no bubble) |
+| T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | removed (v0.9.0: no bubble) |
+| T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | removed (v0.9.0: no bubble) |
 | T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | passing (unit: rule and text; worker needs a device) |
 | T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | passing (unit: rule and text; worker needs a device) |
 | T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | planned |
@@ -168,6 +169,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | v0.9.0: bubble and auto-Save removed, so T-SAVE-01…03 and T-SHARE-04 are retired; T-UI-06 added and passing. |
 | 2026-11-06 | v0.8.2: T-UI-05 added and passing (regression test for overlapping tabs). |
 | 2026-11-06 | v0.8.1: T-LIB-02, T-UI-03 and T-UI-04 added and passing. |
 | 2026-11-06 | v0.8.0: T-PIPE-14, T-PIPE-15 and T-IG-F13 added and passing. |

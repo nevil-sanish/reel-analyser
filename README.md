@@ -17,7 +17,7 @@ Instagram / YouTube / Gallery ──Share──▶ Reel Bot ──▶ "Saved ✓
 
 - **Reels, Shorts and Instagram posts:** tap **Share → Reel Bot**. On Instagram, use *Share → Share to…*. The link is cleaned of tracking codes and queued.
 - **Photos and screenshots:** share them from any app. The picture is copied into the app, shrunk to 1280 px, and queued.
-- **Bubble Save (optional):** while you watch, the floating bubble's **Save** queues what's on screen. Share the reel within 2 minutes so the note can use the video.
+- That's the only way in: no floating button over the apps you watch.
 
 ### 2. Analyse: in the background, every 15 minutes and whenever you open the app
 
@@ -45,7 +45,7 @@ Notes are kept short to save tokens: a title, one sentence, up to 3 points and 3
 
 - **Ask:** today's reels, shorts and minutes at the top, then a chat that answers only from your saved notes. Pick the provider and model from the chip above the ask bar. Every chat is saved; the clock icon reopens old ones.
 - **Insights:** a Week or Month view of your watching: minutes per day, the hours you watch most, and your heaviest weekday.
-- **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete (with Undo), right to archive. Notes you've read move to the Archive after 3 days.
+- **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete (with Undo), right to archive, or long-press to select several, then mark them read, archive or delete them. Notes you've read move to the Archive after 3 days.
 
 ### 4. Count: optional, through Android Accessibility
 
@@ -53,7 +53,7 @@ Reel Bot reads the Reels and Shorts screens to count what you watch and for how 
 - a reel counts after 1.5 seconds on screen;
 - swipe-backs and rewatches the same day don't count twice;
 - it keeps only an anonymous fingerprint of each reel, never what it was;
-- it never taps or scrolls (the experimental Auto-Save is the only exception, and it's off by default).
+- it never taps, types or scrolls.
 
 After 9 pm, on days you didn't open the app, you get one digest notification.
 
@@ -77,7 +77,7 @@ Nothing else leaves the phone: no analytics, no tracking, no Reel Bot server.
 │  ShareReceiverActivity   share in (links, photos)  Runner     queue → notes   │
 │  InstagramFetcher        logged-out cascade        Gemini / ChatModel  AI     │
 │  ReelCounterService      Accessibility counter     LibraryDb  notes, chats    │
-│  OverlayBubble, SaveAutomator   bubble             KeyStore   keys, flags     │
+│                                                    KeyStore   keys, flags     │
 │  DigestWorker            9 pm digest               UI: Ask, Insights, Library │
 │  CounterDb (counter.db)  queue + counts                                       │
 │            ▲                                                ▲                 │
@@ -133,7 +133,7 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
 ```
 Accessibility events ─▶ DetectionRules (is this Reels/Shorts? read author, caption, likes)
                      ─▶ ReelTracker (fingerprint, 1.5 s dwell, per-day dedupe, screen time)
-                     ─▶ counter.db ─▶ Insights tab, Ask strip, bubble count, digest
+                     ─▶ counter.db ─▶ Insights tab, Ask strip, digest
 ```
 
 The fingerprint is a SHA-1 of the app, author, the first 40 caption characters, the audio and the title. Only that hash is stored. If 5 or more reels in a day (and at least 30% of them) can't be read, one "counting may be broken" alert is posted.
@@ -184,7 +184,7 @@ The release build needs `mobile/android/key.properties` (gitignored) pointing at
 
 **Layout:**
 - **Flutter app** (`mobile/lib`): `pipeline/` holds the analysis runner and providers, `data/` the library database and keys, `ui/` the screens.
-- **Kotlin** (`mobile/packages/reelbot_native`): the share receiver, the Instagram fetcher, the counter's Accessibility service, the bubble, and the digest.
+- **Kotlin** (`mobile/packages/reelbot_native`): the share receiver, the Instagram fetcher, the counter's Accessibility service, and the digest.
 
 ## Docs
 

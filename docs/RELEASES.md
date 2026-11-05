@@ -87,3 +87,4 @@ Release checklist:
 | 2026-11-06 | v0.8.0 | Share photos and screenshots to Reel Bot; Instagram photo posts and carousels analysed from all their images. |
 | 2026-11-06 | v0.8.1 | Green theme (light default, dark toggle); liquid transitions; Ask with saved chats and a today strip; Insights by day, hour and weekday; Library filters; compact notes with a full-analysis toggle. |
 | 2026-11-06 | v0.8.2 | Fix tabs overlapping; fewer buttons and hints; README explains the workflow; repo renamed to reel-brain. |
+| 2026-11-06 | v0.9.0 | Floating bubble and auto-Save removed: saving is Share → Reel Bot only. Multi-select in Library and Archive (mark read, archive / restore, delete). |
