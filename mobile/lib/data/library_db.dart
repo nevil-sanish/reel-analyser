@@ -13,7 +13,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -22,11 +22,31 @@ class LibraryDb {
             analysis TEXT NOT NULL DEFAULT 'done', step INTEGER NOT NULL DEFAULT 0, savedAt INTEGER NOT NULL)''');
           await db.execute('CREATE TABLE meta (k TEXT PRIMARY KEY, v INTEGER NOT NULL)');
           await db.insert('meta', {'k': 'processing_until', 'v': 0});
+          await _v2(db);
+        },
+        onUpgrade: (db, from, _) async {
+          if (from < 2) await _v2(db);
         },
       ),
     );
     return LibraryDb._(db);
   }
+
+  /// Version 2: seen / archived. Seen notes older than 3 days move to the archive (never deleted).
+  static Future<void> _v2(Database db) async {
+    await db.execute('ALTER TABLE reels ADD COLUMN seenAt INTEGER NOT NULL DEFAULT 0');
+    await db.execute('ALTER TABLE reels ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
+  }
+
+  Future<void> markSeen(String url, int now) =>
+      _db.update('reels', {'seenAt': now}, where: 'url = ? AND seenAt = 0', whereArgs: [url]);
+
+  Future<void> setArchived(String url, bool archived) =>
+      _db.update('reels', {'archived': archived ? 1 : 0}, where: 'url = ?', whereArgs: [url]);
+
+  /// Seen notes saved more than 3 days ago leave the library for the archive. Unseen ones stay until read.
+  Future<int> archiveOld(int now) => _db.update('reels', {'archived': 1},
+      where: 'archived = 0 AND seenAt > 0 AND savedAt < ?', whereArgs: [now - const Duration(days: 3).inMilliseconds]);
 
   Future<void> saveReel(Reel r) => _db.insert('reels', r.toRow(), conflictAlgorithm: ConflictAlgorithm.replace);
 
@@ -34,14 +54,15 @@ class LibraryDb {
       (await _db.query('reels', columns: ['url'], where: 'url = ?', whereArgs: [url])).isNotEmpty;
 
   /// Newest first; [query] matches title, summary, key points, tags, author and caption.
-  Future<List<Reel>> reels({String query = ''}) async {
+  /// [archived]: null = everything (chat, export), false = the library, true = the archive.
+  Future<List<Reel>> reels({String query = '', bool? archived}) async {
     final q = query.trim();
-    final rows = q.isEmpty
-        ? await _db.query('reels', orderBy: 'savedAt DESC')
-        : await _db.query('reels',
-            where: "(title || ' ' || summary || ' ' || keyPoints || ' ' || tags || ' ' || author || ' ' || caption) LIKE ?",
-            whereArgs: ['%$q%'],
-            orderBy: 'savedAt DESC');
+    final where = [
+      if (archived != null) 'archived = ${archived ? 1 : 0}',
+      if (q.isNotEmpty) "(title || ' ' || summary || ' ' || keyPoints || ' ' || tags || ' ' || author || ' ' || caption) LIKE ?",
+    ];
+    final rows = await _db.query('reels',
+        where: where.isEmpty ? null : where.join(' AND '), whereArgs: q.isEmpty ? null : ['%$q%'], orderBy: 'savedAt DESC');
     return rows.map(Reel.fromRow).toList();
   }
 

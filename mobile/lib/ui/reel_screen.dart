@@ -4,10 +4,24 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import '../core/models.dart';
 
-class ReelScreen extends StatelessWidget {
+class ReelScreen extends StatefulWidget {
   final AppServices services;
   final Reel reel;
   const ReelScreen(this.services, this.reel, {super.key});
+
+  @override
+  State<ReelScreen> createState() => _ReelScreenState();
+}
+
+class _ReelScreenState extends State<ReelScreen> {
+  AppServices get services => widget.services;
+  Reel get reel => widget.reel;
+
+  @override
+  void initState() {
+    super.initState();
+    services.library.markSeen(reel.url, DateTime.now().millisecondsSinceEpoch);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +35,14 @@ class ReelScreen extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: reel.url));
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied')));
+            },
+          ),
+          IconButton(
+            tooltip: reel.archived ? 'Move back to library' : 'Archive',
+            icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
+            onPressed: () async {
+              await services.library.setArchived(reel.url, !reel.archived);
+              if (context.mounted) Navigator.pop(context);
             },
           ),
           IconButton(

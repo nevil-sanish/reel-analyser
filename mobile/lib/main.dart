@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_services.dart';
 import 'pipeline/background.dart';
+import 'ui/chat_screen.dart';
 import 'ui/intro_screen.dart';
 import 'ui/library_screen.dart';
 import 'ui/theme.dart';
@@ -75,11 +76,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: IndexedStack(index: _tab, children: [TodayScreen(widget.services), LibraryScreen(widget.services)]),
+        body: IndexedStack(
+            index: _tab, children: [ChatScreen(widget.services), TodayScreen(widget.services), LibraryScreen(widget.services)]),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() => _tab = i),
           destinations: const [
+            NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Ask'),
             NavigationDestination(icon: Icon(Icons.today_outlined), label: 'Today'),
             NavigationDestination(icon: Icon(Icons.video_library_outlined), label: 'Library'),
           ],

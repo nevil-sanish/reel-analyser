@@ -268,6 +268,23 @@ void main() {
     expect(markdownName(r.first), endsWith('-b.md'));
   });
 
+  test('T-LIB-01 unseen notes stay; seen notes older than 3 days move to the archive', () async {
+    const day = 24 * 3600 * 1000;
+    final now = 10 * day;
+    for (final (url, saved) in [('a', now - 4 * day), ('b', now - 4 * day), ('c', now - day)]) {
+      await db.saveReel(Reel(url: url, app: 'youtube', title: url, summary: '', savedAt: saved));
+    }
+    await db.markSeen('a', now);
+    await db.markSeen('c', now);
+    expect(await db.archiveOld(now), 1);
+    expect((await db.reels(archived: false)).map((r) => r.url), ['c', 'b']); // b is unseen: it waits for you
+    expect((await db.reels(archived: true)).single.url, 'a');
+    expect((await db.reels()).length, 3); // chat and export still see everything
+    expect((await db.reels(archived: false)).firstWhere((r) => r.url == 'b').seenAt, 0);
+    await db.setArchived('a', false);
+    expect((await db.reels(archived: true)), isEmpty);
+  });
+
   test('search matches tags and summary', () async {
     await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'Rice', summary: 'boil', tags: ['food'], savedAt: 1));
     await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Squats', summary: 'legs', savedAt: 2));

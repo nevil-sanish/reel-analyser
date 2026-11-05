@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../pipeline/providers.dart';
+import 'settings_screen.dart';
 import 'theme.dart';
 
-/// Chat over every saved note, with whichever provider the user has a key for.
+/// The home tab: chat over saved notes, with the provider and model the user picks.
 class ChatScreen extends StatefulWidget {
   final AppServices services;
   const ChatScreen(this.services, {super.key});
@@ -13,12 +14,13 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final _turns = <String>[]; // user, assistant, user, ...
   List<String> _providers = [];
   String? _provider;
+  String? _model;
   bool _busy = false;
 
   static const _ideas = ['What recipes have I saved?', 'Summarise my fitness reels', 'Which tips did I save this week?'];
@@ -26,13 +28,67 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    widget.services.chatProviders().then((p) {
-      if (!mounted) return;
-      setState(() {
-        _providers = p;
+    WidgetsBinding.instance.addObserver(this);
+    _loadProviders();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadProviders();
+  }
+
+  /// Re-read on resume and after Settings, so a newly added key shows up in the picker.
+  Future<void> _loadProviders() async {
+    final p = await widget.services.chatProviders();
+    if (!mounted) return;
+    setState(() {
+      _providers = p;
+      if (!p.contains(_provider)) {
         _provider = p.firstOrNull;
-      });
+        _model = null;
+      }
     });
+  }
+
+  Future<void> _pick() async {
+    final picked = await showModalBottomSheet<(String, String)>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final p in _providers) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                child: Text(ChatModel.labels[p]!, style: Theme.of(c).textTheme.titleSmall),
+              ),
+              for (final m in ChatModel.models[p]!.entries)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  title: Text(m.value),
+                  trailing: p == _provider && m.key == (_model ?? ChatModel.models[p]!.keys.first)
+                      ? Icon(Icons.check_circle, color: Theme.of(c).colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(c, (p, m.key)),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _provider = picked.$1;
+        _model = picked.$2;
+      });
+    }
   }
 
   Future<void> _send([String? text]) async {
@@ -48,7 +104,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       // Last 10 turns are enough context and keep each request small.
       final recent = _turns.length > 10 ? _turns.sublist(_turns.length - 9) : _turns;
-      a = await widget.services.chat(_provider!, recent);
+      a = await widget.services.chat(_provider!, recent, model: _model);
     } on Exception catch (e) {
       a = 'Couldn\'t answer: $e';
     }
@@ -69,20 +125,32 @@ class _ChatScreenState extends State<ChatScreen> {
     final t = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ask your reels'),
+        title: const Text('Ask your reels', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
-          if (_providers.length > 1)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: DropdownButton<String>(
-                value: _provider,
-                underline: const SizedBox(),
-                borderRadius: BorderRadius.circular(16),
-                items: [for (final p in _providers) DropdownMenuItem(value: p, child: Text(ChatModel.labels[p]!))],
-                onChanged: (p) => setState(() => _provider = p),
-              ),
-            ),
+          if (_turns.isNotEmpty)
+            IconButton(tooltip: 'New chat', icon: const Icon(Icons.add_comment_outlined), onPressed: () => setState(_turns.clear)),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(widget.services)));
+              _loadProviders();
+            },
+          ),
         ],
+        bottom: _provider == null
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(44),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.auto_awesome, size: 18),
+                    label: Text('${ChatModel.labels[_provider]} · ${ChatModel.models[_provider]![_model ?? ChatModel.models[_provider]!.keys.first]}'),
+                    onPressed: _pick,
+                  ),
+                ),
+              ),
       ),
       body: Column(
         children: [

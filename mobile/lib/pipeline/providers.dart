@@ -10,10 +10,22 @@ class ChatModel {
   final String provider; // gemini, openai, claude, groq
   final String key;
   final http.Client client;
-  const ChatModel(this.provider, this.key, this.client);
+
+  /// One of [models] for this provider; null = its cheapest.
+  final String? model;
+  const ChatModel(this.provider, this.key, this.client, {this.model});
 
   static const labels = {'gemini': 'Gemini', 'openai': 'OpenAI', 'claude': 'Claude', 'groq': 'Groq'};
   String get label => labels[provider] ?? provider;
+
+  /// Per provider, cheapest first (the default, token cost first), then one stronger option for the chat picker.
+  static const models = {
+    'gemini': {'gemini-3.5-flash-lite': '3.5 Flash-Lite · cheapest', 'gemini-3.6-flash': '3.6 Flash · smarter'},
+    'openai': {'gpt-6-luna': 'GPT-6 Luna · cheapest', 'gpt-6.1-terra': 'GPT-6.1 Terra · smarter'},
+    'claude': {'claude-haiku-5-5': 'Haiku 5.5 · cheapest', 'claude-sonnet-5-5': 'Sonnet 5.5 · smarter'},
+    'groq': {'openai/gpt-oss-20b': 'gpt-oss 20B · cheapest', 'openai/gpt-oss-120b': 'gpt-oss 120B · smarter'},
+  };
+  String get modelId => model ?? models[provider]!.keys.first;
 
   /// Only these can look at pictures; Groq is for chat only.
   bool get seesImages => provider != 'groq';
@@ -24,15 +36,15 @@ class ChatModel {
       'gemini' => _gemini(system, turns, images),
       'claude' => _claude(system, turns, images),
       // Cheapest models that still read images well enough for short notes; the user put token cost first.
-      'openai' => _openaiCompatible('https://api.openai.com/v1/chat/completions', 'gpt-6-luna', system, turns, images,
+      'openai' => _openaiCompatible('https://api.openai.com/v1/chat/completions', modelId, system, turns, images,
           extra: {'reasoning_effort': 'none'}),
-      _ => _openaiCompatible('https://api.groq.com/openai/v1/chat/completions', 'openai/gpt-oss-20b', system, turns, const [],
+      _ => _openaiCompatible('https://api.groq.com/openai/v1/chat/completions', modelId, system, turns, const [],
           extra: {'reasoning_effort': 'low'}),
     };
   }
 
   Future<String> _gemini(String system, List<String> turns, List<List<int>> images) async {
-    final r = await _post(Uri.parse('${Gemini.base}/v1beta/models/${Gemini.models.first}:generateContent'),
+    final r = await _post(Uri.parse('${Gemini.base}/v1beta/models/$modelId:generateContent'),
         {'x-goog-api-key': key}, {
       'systemInstruction': {'parts': [{'text': system}]},
       'contents': [
@@ -58,10 +70,11 @@ class ChatModel {
       'anthropic-version': '2026-10-21',
     }, {
       // Haiku at low effort with thinking off: the user asked for the cheapest setup that still writes good notes.
-      'model': 'claude-haiku-5-5',
+      // Sonnet 5.5 rejects disabled thinking, so it runs adaptive at low effort.
+      'model': modelId,
       'max_tokens': 16000,
       'system': system,
-      'thinking': {'type': 'disabled'},
+      if (modelId.contains('haiku')) 'thinking': {'type': 'disabled'},
       'output_config': {'effort': 'low'},
       'messages': [
         for (var i = 0; i < turns.length; i++)

@@ -15,6 +15,10 @@ class Reel {
   final int step;
   final int savedAt;
 
+  /// When the note was first opened; 0 = unseen (the library shows a dot).
+  final int seenAt;
+  final bool archived;
+
   const Reel({
     required this.url,
     required this.app,
@@ -27,6 +31,8 @@ class Reel {
     this.analysis = 'done',
     this.step = 0,
     required this.savedAt,
+    this.seenAt = 0,
+    this.archived = false,
   });
 
   Map<String, Object?> toJson() => {
@@ -41,6 +47,8 @@ class Reel {
         'analysis': analysis,
         'step': step,
         'savedAt': savedAt,
+        'seenAt': seenAt,
+        'archived': archived,
       };
 
   factory Reel.fromJson(Map<String, Object?> j) => Reel(
@@ -55,9 +63,12 @@ class Reel {
         analysis: j['analysis'] as String? ?? 'done',
         step: (j['step'] as num?)?.toInt() ?? 0,
         savedAt: (j['savedAt'] as num?)?.toInt() ?? 0,
+        seenAt: (j['seenAt'] as num?)?.toInt() ?? 0,
+        archived: j['archived'] == true || j['archived'] == 1,
       );
 
-  Map<String, Object?> toRow() => {...toJson(), 'keyPoints': jsonEncode(keyPoints), 'tags': jsonEncode(tags)};
+  Map<String, Object?> toRow() =>
+      {...toJson(), 'keyPoints': jsonEncode(keyPoints), 'tags': jsonEncode(tags), 'archived': archived ? 1 : 0};
 
   factory Reel.fromRow(Map<String, Object?> r) => Reel.fromJson({
         ...r,

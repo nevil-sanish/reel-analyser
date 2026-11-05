@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
-import 'chat_screen.dart';
+import 'archive_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
@@ -42,7 +42,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   }
 
   Future<void> _reload() async {
-    final reels = await s.library.reels(query: _query);
+    await s.library.archiveOld(DateTime.now().millisecondsSinceEpoch);
+    final reels = await s.library.reels(query: _query, archived: false);
     final waiting = (await s.bridge.pendingItems(status: 'queued')).length;
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
     if (!mounted) return;
@@ -77,16 +78,10 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       appBar: AppBar(
         title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
+          IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
           IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined), onPressed: () => _open(SettingsScreen(s))),
         ],
       ),
-      floatingActionButton: _reels.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _open(ChatScreen(s)),
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Ask your reels'),
-            ),
       body: RefreshIndicator(
         onRefresh: _process,
         child: ListView(
@@ -126,7 +121,13 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),
-            for (final r in _reels) _ReelCard(r, onTap: () => _open(ReelScreen(s, r))),
+            if (_reels.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('Seen notes move to the archive after 3 days.',
+                    style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+              ),
+            for (final r in _reels) ReelCard(r, onTap: () => _open(ReelScreen(s, r))),
           ],
         ),
       ),
@@ -156,10 +157,11 @@ class _Banner extends StatelessWidget {
       );
 }
 
-class _ReelCard extends StatelessWidget {
+/// A note in a list; a gradient dot marks one you haven't opened yet.
+class ReelCard extends StatelessWidget {
   final Reel reel;
   final VoidCallback onTap;
-  const _ReelCard(this.reel, {required this.onTap});
+  const ReelCard(this.reel, {required this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -188,9 +190,22 @@ class _ReelCard extends StatelessWidget {
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   if (reel.analysis != 'done') Icon(Icons.text_snippet_outlined, size: 16, color: t.colorScheme.outline),
+                  if (reel.seenAt == 0)
+                    Semantics(
+                      label: 'Not seen yet',
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
+                      ),
+                    ),
                 ]),
                 const SizedBox(height: 10),
-                Text(reel.title, style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(reel.title,
+                    style: t.textTheme.titleMedium?.copyWith(fontWeight: reel.seenAt == 0 ? FontWeight.w700 : FontWeight.w500),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
                 if (reel.summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(reel.summary, maxLines: 3, overflow: TextOverflow.ellipsis,

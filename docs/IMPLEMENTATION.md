@@ -476,8 +476,11 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 - **Tokens:** first Gemini attempt sends `thinkingLevel: minimal`, `mediaResolution: LOW` and video at 0.5 fps; a 400 retries without them. Shorter prompt, 1–2 sentence summary.
 - **Chat** (`ui/chat_screen.dart`) replaces *Ask your library*: any provider with a key, all notes in the system prompt, last 10 turns.
 - **Privacy:** watched reels are counted by fingerprint only (§3.3). Feedback is the only thing sent on purpose, as a GitHub issue the user submits.
-- **Look:** `ui/theme.dart` (v0.5.1: the purple→pink→orange→yellow Reels gradient on black/white surfaces; Reel Bot keeps its own play mark, never Instagram's logo), first-run `ui/intro_screen.dart` (spinning gradient ring, three pages, *Slide to unlock* that bursts the gradient across the screen), library cards with the short summary.
-- **Models (v0.5.1, token cost first):** Gemini Flash-Lite then 3.6 Flash; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`, thinking off, low effort; Groq `openai/gpt-oss-20b`.
+- **Look:** `ui/theme.dart` (v0.6.0: the purple→pink→orange→yellow Reels gradient on black/white surfaces; Reel Bot keeps its own play mark, never Instagram's logo), first-run `ui/intro_screen.dart` (spinning gradient ring, three pages, *Slide to unlock* that bursts the gradient across the screen), library cards with the short summary.
+- **Home (v0.6.0):** tabs are Ask (chat, with a provider + model picker), Today, Library.
+- **Seen / archive (v0.6.0):** `reel_brain.db` version 2 adds `seenAt` and `archived`. Opening a note marks it seen; unseen notes show a gradient dot. On each library load, seen notes saved more than 3 days ago move to the Archive (searchable, restorable, still used by chat and export). Unseen notes never auto-archive.
+- **Notifications (v0.6.0):** after a background run that finished notes, "Note ready: <title>" (`notifyNotes`). The 9 pm digest on an empty day nudges instead of showing zeros.
+- **Models (v0.6.0, token cost first):** Gemini Flash-Lite then 3.6 Flash; OpenAI `gpt-6-luna`; Claude `claude-haiku-5-5`, thinking off, low effort; Groq `openai/gpt-oss-20b`.
 
 ## 7. Phase 4: daily digest
 

@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.5.1';
+  static const version = '0.6.0';
 
   /// Providers the user has a key for, in the order the chat offers them.
   Future<List<String>> chatProviders() async => [
@@ -58,7 +58,7 @@ class AppServices {
   }
 
   /// One chat turn from the user's saved notes. Gemini tries each saved key in turn on a rate limit.
-  Future<String> chat(String provider, List<String> turns) async {
+  Future<String> chat(String provider, List<String> turns, {String? model}) async {
     final notes = await notesContext(turns.last);
     if (notes.isEmpty) return 'Your library is empty. Share a reel to Reel Bot first.';
     final system = 'You are Reel Bot. Answer from the user\'s saved reel notes below. Cite note titles you used. '
@@ -72,7 +72,7 @@ class AppServices {
     GeminiException? last;
     for (final k in ks) {
       try {
-        return await ChatModel(provider, k, client).complete(system, turns);
+        return await ChatModel(provider, k, client, model: model).complete(system, turns);
       } on GeminiException catch (e) {
         if (e.kind == GeminiFailure.rejected) rethrow;
         last = e;

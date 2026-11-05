@@ -80,4 +80,4 @@ Release checklist:
 | 2026-11-06 | v0.3.0 | Phase 3: bubble with Today count and Save; experimental auto-Save (off by default) with its success rate on the debug screen. Not yet measured against the 90% bar. |
 | 2026-11-06 | v0.4.0 | Phase 4: evening digest notification (after 21:00, only on days the app was not opened). |
 | 2026-11-06 | v0.5.0 | New look and intro; chat over saved notes with Gemini/OpenAI/Claude/Groq; rotating Gemini keys; OpenAI/Claude fallback from frames; fewer video tokens; YouTube as watch URLs; Instagram rendered-page fallback; watched reels kept as fingerprints only; feedback via GitHub issue. |
-| 2026-11-06 | v0.5.1 | Cheaper models first (Flash-Lite, Luna, Haiku, gpt-oss-20b) and smaller chat context to save tokens; Reels-gradient theme; slide-to-unlock intro. |
+| 2026-11-06 | v0.6.0 | Chat is the home tab with a provider + model picker; cheaper models first and smaller chat context; Reels-gradient theme and slide-to-unlock intro; seen dot and 3-day archive; note-ready notification and 9 pm nudge. |

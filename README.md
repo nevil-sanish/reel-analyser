@@ -2,7 +2,7 @@
 
 Android app that turns the Instagram Reels and YouTube Shorts you share to it into searchable AI notes, using your own Gemini key. Everything stays on the phone; there's no server.
 
-**v0.5.x**: chat with your saved reels (Gemini, OpenAI, Claude or Groq), several Gemini keys used in turn, and a new look. **Phases 1–4**: Share → summary, a counter of the reels and shorts you watch, a floating bubble with **[Today: N]** and **[Save]**, and an evening digest notification on days you don't open the app ([PLAN.md](docs/PLAN.md) §6).
+**v0.6.x**: chat with your saved reels on the home tab (pick Gemini, OpenAI, Claude or Groq and a model), several Gemini keys used in turn, seen/unseen notes with a 3-day archive. **Phases 1–4**: Share → summary, a counter of the reels and shorts you watch, a floating bubble with **[Today: N]** and **[Save]**, and an evening digest notification on days you don't open the app ([PLAN.md](docs/PLAN.md) §6).
 
 ## Install
 
