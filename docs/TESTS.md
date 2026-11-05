@@ -94,11 +94,11 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-FP-06 | unit | Fingerprint | Caption-less reel, likes `12.3K` → `12.4K` mid-watch → one reel | passing |
 | T-FP-07 | unit | Fingerprint | Reel with caption, likes change → one reel | passing |
 | T-FP-08 | unit | Fingerprint | `likeBucket`: `523`→`520`, `12.3K`→`12000`, `1.2M`→`1200000`, junk→`""` | passing |
-| T-RULE-01 | unit | DetectionRules | Not on Reels screen → `inReels = false` | planned |
-| T-RULE-02 | unit | DetectionRules | Known ids → author, caption, likes read | planned |
-| T-RULE-03 | unit | DetectionRules | Fallback: bottom-half text used; `12.3K`, `Subscribe` skipped | planned |
-| T-RULE-04 | unit | DetectionRules | Mid-swipe: page covering the centre wins | planned |
-| T-RULE-05 | unit | DetectionRules | Invisible nodes ignored | planned |
+| T-RULE-01 | unit | DetectionRules | Not on Reels screen → `inReels = false` | passing |
+| T-RULE-02 | unit | DetectionRules | Known ids → author, caption, likes read | passing |
+| T-RULE-03 | unit | DetectionRules | Fallback: bottom-half text used; `12.3K`, `Subscribe` skipped | passing |
+| T-RULE-04 | unit | DetectionRules | Mid-swipe: page covering the centre wins | passing |
+| T-RULE-05 | unit | DetectionRules | Invisible nodes ignored | passing |
 | T-RULE-06 | fixture | DetectionRules | Captured `tree_instagram` / `tree_youtube` dumps from a real phone → expected `Observation` | planned |
 | T-ALERT-01 | unit | unknown alert | Fires at 5 unknown and ≥ 30%; not at 4; not twice a day | planned |
 | T-CH-03 | integration | CH-COUNTER | `daily`, `seenItems`, `debugState`, `setCapture` | planned |
