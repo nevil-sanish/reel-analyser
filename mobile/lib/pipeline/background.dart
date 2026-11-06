@@ -11,11 +11,9 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, _) async {
     WidgetsFlutterBinding.ensureInitialized();
     final s = await AppServices.create();
-    try {
-      await analyseAndNotify(s.runner, s.bridge);
-    } finally {
-      await s.library.close();
-    }
+    // No library.close(): sqflite shares one native connection per path across engines in the process,
+    // so closing it here also closed the open app's database (every screen then failed with database_closed).
+    await analyseAndNotify(s.runner, s.bridge);
     return true;
   });
 }

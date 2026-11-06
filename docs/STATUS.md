@@ -50,7 +50,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
 | **v0.9.4** | Export and Import include **saved chats**. **Several photos** can be shared at once (one note each). An **update banner** when GitHub has a newer APK. [INSTALL.md](INSTALL.md) for friends; PLAN.md matches the product. |
-| *Unreleased* | Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
+| *Unreleased* | **Fix:** the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
 
 ### 2.2 Features as they work today
 
@@ -205,6 +205,7 @@ In priority order. Each item says what, why, and what "done" looks like.
    - **Test:** for a fixed set of public reels, a carousel, a photo post and a private post, record which cascade step won.
    - **Why:** the parsers were built from documented shapes and tested on **synthetic** fixtures. Instagram changes its pages often, and the embed-player step (v0.6.2) has never been tested against Instagram.
    - **Done when:** at least 80% of public reels get the **video** without Apify (the PLAN's exit bar), and a real captured response is saved beside each synthetic fixture.
+   - **First run, 2026-11-06 (Nothing A059, Android 16):** 6 shared (4 reels, 1 post, 1 more waiting). All 5 analysed came from the video or images, none needed Apify: 4 by the embed player (step 2), 1 by logged-out GraphQL (step 4). The sixth hit the Instagram pause after shares a few seconds apart and stays queued. Promising, but too few to call; repeat with 20+ reels shared a minute apart, and add logging of which step won (the app logs nothing today).
 3. **Counter accuracy (T-MAN-03).**
    - **Test:** watch 20 reels and 20 Shorts with swipe-backs, half-swipes, a refresh, rewatches and reels without captions.
    - **Why:** the view ids are the docs' starting guesses. Counting worked on the user's phone, but its accuracy hasn't been measured.
