@@ -206,11 +206,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ]),
-          _section('Counter', [
+          _section('Insights', [
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.checklist_rounded),
-              title: const Text('Set up counting'),
+              title: const Text('Set up Insights'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SetupScreen(s))),
             ),

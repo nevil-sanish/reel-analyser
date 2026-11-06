@@ -74,6 +74,9 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 | T-UI-04 | unit | Library kinds | Instagram /reel/ → reel, /p/ → post, YouTube → short, shared picture → photo | passing |
 | T-UI-05 | widget | FadingTabs | After switching tabs, the left tab's rendered opacity is 0 and the new one's 1 | passing |
 | T-UI-06 | widget | multi-select | Long-press calls select; a selected card shows a tick, an unselected one an empty circle | passing |
+| T-USE-01 | unit | AppUsage | Sessions end when the app's last screen pauses, at screen off, or now; overlays inside the app (a modal over the main screen) keep one session; other apps and repeated resumes ignored (`AppUsageTest.kt`). Matches `dumpsys usagestats` on a phone | passing |
+| T-USE-02 | unit | AppUsage | A session over midnight and an hour boundary is split by local date and hour | passing |
+| T-USE-03 | integration | CH-COUNTER | Usage-access time joins the counter's days (counts kept, time replaced) and replaces the hourly time; without it the counter's time stays | passing |
 | T-UI-07 | widget | Reduce effects | On: no `BackdropFilter` and no running animation; off again: both back (`test/reduce_effects_test.dart`) | passing |
 | T-LIB-03 | integration | library search | A word found only in the overview or mentions finds the note | passing |
 | T-PIPE-10 | integration | lock | App and background runner start together → each item analysed once | passing |
@@ -172,6 +175,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | Usage access: T-USE-01…03 added and passing. |
 | 2026-11-06 | On the phone (Nothing A059, Android 16): T-MAN-04 passes on this brand after the Accessibility-check fix; T-MAN-05 kill part passes (reboot still to do); first T-LIVE run 5 of 5 from video. The rate-limit test also checks the login-wall message. |
 | 2026-11-06 | After v0.9.4 (unreleased): T-IG-F04, T-CH-01, T-CH-02, T-BG-01 and T-UI-07 added and passing; the Kotlin channel tests run on Robolectric. |
 | 2026-11-06 | v0.9.4: T-REL-01 added and passing; T-EXP-01 covers chats. Sharing several photos needs a phone. |

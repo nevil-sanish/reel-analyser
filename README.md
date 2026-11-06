@@ -47,9 +47,13 @@ Each note has a short bulleted overview in simple words that covers every import
 - **Insights:** a Week or Month view of your watching: minutes per day, the hours you watch most, and your heaviest weekday.
 - **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete (with Undo), right to archive, or long-press to select several, then mark them read, archive or delete them. Notes you've read move to the Archive after 3 days.
 
-### 4. Count: optional, through Android Accessibility
+### 4. Time and counts: Usage access, plus optional Accessibility
 
-Reel Bot reads the Reels and Shorts screens to count what you watch and for how long:
+Both are optional; notes and chat work without them.
+
+**Time in Instagram and YouTube** comes from Android's own app-usage data (Usage access). Nothing is read from the screen, and it's time in the whole app, not only Reels or Shorts.
+
+**Counting reels and Shorts is optional.** Turn on Accessibility as well, and Reel Bot reads the Reels and Shorts screens to count what you watch and the time on those screens:
 - a reel counts after 1.5 seconds on screen;
 - swipe-backs and rewatches the same day don't count twice;
 - it keeps only an anonymous fingerprint of each reel, never what it was;
@@ -161,7 +165,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 1. Download `reel-bot-vX.Y.Z.apk` from [Releases](https://github.com/nevil-sanish/reel-brain/releases) and open it. If Play Protect warns, choose *Install anyway*.
 2. Slide to unlock through the intro, then open **Ask → ⚙ Settings** and paste a free Gemini key from [aistudio.google.com](https://aistudio.google.com/apikey). Optionally add OpenAI, Claude or Groq keys.
 3. Share a reel to Reel Bot. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
-4. To count what you watch, go to **Settings → Set up counting** and follow the checklist: on Android 13+, *Allow restricted settings* first, then Accessibility, notifications, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
+4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts (optional): on Android 13+, *Allow restricted settings* first, then Accessibility, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
 
 Uninstalling deletes your notes, so use **Settings → Export** now and then. A banner tells you when a newer APK is out. The step-by-step guide for friends is [INSTALL.md](docs/INSTALL.md).
 

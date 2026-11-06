@@ -26,7 +26,12 @@ The key stays on your phone. Reel Bot has no server.
 
 In Instagram or YouTube, tap **Share → Reel Bot** (in Instagram it's under *Share to…*). You'll see *Saved ✓* and stay where you were. The note appears in the Library when you open Reel Bot, or within about 15 minutes in the background. Photos and screenshots can be shared the same way.
 
-The rest is only needed if you want Reel Bot to **count** the reels and Shorts you watch. Open **⚙ → Set up counting** and follow the list there.
+For **Insights** (optional; notes and chat work without it), open **⚙ → Set up Insights**:
+
+- **Usage access:** tap **Open** next to *Allow usage access* and turn on Reel Bot. This shows your time in Instagram and YouTube. It's Android's own usage data; nothing is read from the screen.
+- **Notifications:** tap **Open** next to *Allow notifications*.
+
+The steps below are **optional**: only if you also want Reel Bot to **count** the reels and Shorts you watch.
 
 ## 5. Allow restricted settings (Android 13+)
 

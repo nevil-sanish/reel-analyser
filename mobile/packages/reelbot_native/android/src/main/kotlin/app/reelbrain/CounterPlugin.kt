@@ -1,7 +1,10 @@
 package app.reelbrain
 
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.app.AppOpsManager
 import android.app.NotificationManager
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
@@ -72,6 +75,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "daily" -> result.success(CounterDb.get(ctx).daily(call.argument<Int>("days") ?: 14, localDate(System.currentTimeMillis())))
             "hourly" -> result.success(CounterDb.get(ctx).hourly(call.argument<Int>("days") ?: 7, localDate(System.currentTimeMillis())))
+            "appUsage" -> offMain(result) { appUsage(call.argument<Int>("days") ?: 7) }
             "seenItems" -> result.success(CounterDb.get(ctx).seenItems(call.argument<String>("date")!!))
             "debugState" -> result.success(CounterDb.get(ctx).debugState())
             "setCapture" -> {
@@ -91,6 +95,9 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "status" -> result.success(status())
             "openUrl" -> result.success(launch(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url")!!))))
+            "openUsageAccess" -> result.success(
+                launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
+                    || launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)))
             "openAccessibilitySettings" -> result.success(launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
             "openAppInfo" -> result.success(launch(appInfo()))
             "openNotificationSettings" -> result.success(launch(
@@ -149,6 +156,32 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "sdkInt" to Build.VERSION.SDK_INT,
             "manufacturer" to Build.MANUFACTURER,
             "capture" to prefs().getBoolean(ReelCounterService.CAPTURE, false),
+            "usageAccess" to usageAccess(),
+        )
+    }
+
+    private fun usageAccess(): Boolean = ctx.getSystemService(AppOpsManager::class.java)
+        .unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), ctx.packageName) ==
+        AppOpsManager.MODE_ALLOWED
+
+    /** Time in Instagram and YouTube for the last [days] days (today included), by day and by hour of day. */
+    private fun appUsage(days: Int): Map<String, Any?> {
+        if (!usageAccess()) return mapOf("granted" to false, "daily" to emptyList<Any>(), "hourly" to emptyList<Any>())
+        val zone = java.time.ZoneId.systemDefault()
+        val now = System.currentTimeMillis()
+        val from = java.time.LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant().toEpochMilli()
+        val raw = ctx.getSystemService(UsageStatsManager::class.java).queryEvents(from, now)
+        val events = mutableListOf<AppUsage.Event>()
+        val e = UsageEvents.Event()
+        while (raw.hasNextEvent()) {
+            raw.getNextEvent(e)
+            events += AppUsage.Event(e.packageName ?: "", e.eventType, e.timeStamp, e.className ?: "")
+        }
+        val (daily, hourly) = AppUsage.split(AppUsage.sessions(events, now), zone)
+        return mapOf(
+            "granted" to true,
+            "daily" to daily.map { (k, ms) -> mapOf("date" to k.first, "app" to k.second, "ms" to ms) },
+            "hourly" to hourly.map { (k, ms) -> mapOf("hour" to k.first, "app" to k.second, "ms" to ms) },
         )
     }
 

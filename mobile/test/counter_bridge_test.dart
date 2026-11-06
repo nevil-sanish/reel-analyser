@@ -5,9 +5,11 @@ import 'package:reelbrain/native/counter_bridge.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final calls = <MethodCall>[];
+  Map<String, Object>? appUsage; // null: no Usage access
 
   setUp(() {
     calls.clear();
+    appUsage = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       const MethodChannel('reelbot/counter'),
       (c) async {
@@ -23,6 +25,10 @@ void main() {
             ],
           'debugState' => [
               {'k': 'now', 'v': '{}', 'ts': 1},
+            ],
+          'appUsage' => appUsage,
+          'hourly' => [
+              {'hour': 21, 'reels': 4, 'ms': 50000},
             ],
           'pendingItems' => [
               {'id': 7, 'url': 'https://www.instagram.com/reel/A/', 'app': 'instagram', 'createdAt': 9, 'status': 'queued'},
@@ -75,5 +81,34 @@ void main() {
     expect(f.images, ['a', 'b']);
     await expectLater(b.fetchInstagram('limited'), throwsA(isA<RateLimited>().having((e) => e.loginWall, 'loginWall', isTrue)));
     await expectLater(b.fetchInstagram('broken'), throwsA(isA<PlatformException>().having((e) => e.code, 'code', 'failed')));
+  });
+
+  // T-USE-03
+  test('T-USE-03 Usage-access time joins the counter days and replaces the hourly time', () async {
+    final b = CounterBridge();
+    expect((await b.hourly())[21], (4, 50000)); // no Usage access: the counter's time
+
+    appUsage = {
+      'granted': true,
+      'daily': [
+        {'date': '2026-11-06', 'app': 'instagram', 'ms': 1800000},
+        {'date': '2026-11-06', 'app': 'youtube', 'ms': 600000},
+        {'date': '2026-11-04', 'app': 'youtube', 'ms': 60000},
+      ],
+      'hourly': [
+        {'hour': 21, 'app': 'instagram', 'ms': 900000},
+        {'hour': 21, 'app': 'youtube', 'ms': 300000},
+        {'hour': 8, 'app': 'youtube', 'ms': 60000},
+      ],
+    };
+    final h = await b.history();
+    expect(h.map((d) => d.date), ['2026-11-06', '2026-11-05', '2026-11-04']);
+    expect(h.first.reels, 37); // counts kept
+    expect(h.first.appMs, {'instagram': 1800000, 'youtube': 600000});
+    expect(h.first.timeMs, 2400000); // app time wins over the counter's 720000
+    expect(h[1].timeMs, 1000); // no Usage-access row that day: the counter's time
+    expect(h.last.reels, 0);
+    final hours = await b.hourly();
+    expect((hours[21], hours[8]), ((4, 1200000), (0, 60000)));
   });
 }

@@ -19,7 +19,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **Releases so far** | 18 (v0.1.0 to v0.9.4), each with an APK and `SHA256SUMS` |
 | **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
-| **Automated tests** | 33 Dart and 56 Kotlin, all passing; `flutter analyze` clean |
+| **Automated tests** | 34 Dart and 59 Kotlin, all passing; `flutter analyze` clean |
 | **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Since then, checked over ADB on a Nothing A059 (Android 16, 90 Hz): the first Instagram run (item 2), scrolling (item 11), the setup checklist (item 4) and surviving a kill (item 5). It found and fixed three bugs (§2.1 *Unreleased*). |
 
 **Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
@@ -50,7 +50,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
 | **v0.9.4** | Export and Import include **saved chats**. **Several photos** can be shared at once (one note each). An **update banner** when GitHub has a newer APK. [INSTALL.md](INSTALL.md) for friends; PLAN.md matches the product. |
-| *Unreleased* | **Fixes found on the phone:** the setup checklist said Accessibility was off when it was on (now read from `AccessibilityManager`); a private post's login wall was shown as "Instagram is limiting requests"; the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. The winning Instagram step and each Gemini attempt are logged (`ReelBot`). Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
+| *Unreleased* | **Time from Usage access:** Insights and the Ask home show time in Instagram and YouTube from Android's usage data; reel counting through Accessibility is optional. Setup becomes *Set up Insights*, and **both parts are optional**: with neither on, the home strip hides and Insights says how to turn them on. **App icon:** the brand mark (green gradient, white play glyph) as an adaptive icon with a themed-icon layer, replacing Flutter's default. **Fixes found on the phone:** the setup checklist said Accessibility was off when it was on (now read from `AccessibilityManager`); a private post's login wall was shown as "Instagram is limiting requests"; the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. The winning Instagram step and each Gemini attempt are logged (`ReelBot`). Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
 
 ### 2.2 Features as they work today
 
@@ -141,7 +141,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
   - a privacy card;
   - AI keys: several Gemini keys, plus OpenAI, Claude, Groq and Apify;
   - Appearance (dark mode, reduce effects);
-  - Counter (Set up counting, Counter debug);
+  - Insights (Set up Insights, Counter debug);
   - Backup (Export, Import);
   - Feedback;
   - the version number.
@@ -152,6 +152,12 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
   - liquid page transitions and cross-fading tabs;
   - haptics on key actions;
   - a first-run intro with *Slide to unlock*.
+
+#### Time in the apps (Usage access)
+- **Source:** `UsageStatsManager.queryEvents` for Instagram and YouTube; an app counts as in front while any of its screens is resumed, until the last one pauses or the screen goes off (`AppUsage.kt`).
+- **Checked on the phone, 2026-11-06:** recomputed from `dumpsys usagestats` for the last 24 h, Instagram 33.7 min and YouTube 12.8 min, and the app's logic now gives the same. The first version ended a session whenever Instagram opened an overlay (comments, browser, modal) and showed ~20% too little.
+- **Shown:** Ask home (Instagram and YouTube time today), Insights (time per day, time-of-day blocks, weekday, apps today). It's time in the whole app, not only Reels or Shorts.
+- **Setup:** Settings → Set up Insights → *Allow usage access*. No Accessibility needed.
 
 #### Counting (optional, Accessibility)
 - **Reading the screen:** reads Instagram Reels and YouTube Shorts screens with `DetectionRules`, from starting-point view ids plus a fallback that reads text in the bottom half of the screen.
@@ -170,6 +176,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
   - reels you share, to the AI provider you chose, with your key;
   - logged-out Instagram page requests for reels you shared;
   - feedback, as a GitHub issue you review before posting;
+  - nothing from Usage access: app times stay on the phone;
   - one request a day to GitHub's releases list, for the update banner (no token, nothing about you).
 - **What never does:** no analytics, no tracking, no server. Watched reels are counted by hash, never recorded. Turning debug capture off deletes what it recorded.
 
@@ -184,8 +191,8 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | Check | Result |
 |---|---|
 | `flutter analyze` | clean (v0.9.4 and the unreleased work after it) |
-| Dart tests (`mobile/test`, 33) | passing. They cover the background task body, the channel mapping (pending items, Instagram results and errors), Reduce effects, the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import (with chats), the update check, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
-| Kotlin tests (`:reelbot_native:testDebugUnitTest`, 56) | passing. They cover the plugin through a real `MethodChannel` (Robolectric), share-URL parsing, the Instagram parsers (synthetic fixtures, login wall included), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
+| Dart tests (`mobile/test`, 34) | passing. They cover the background task body, the channel mapping (pending items, Instagram results and errors), Reduce effects, the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import (with chats), the update check, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
+| Kotlin tests (`:reelbot_native:testDebugUnitTest`, 59) | passing. They cover the plugin through a real `MethodChannel` (Robolectric), share-URL parsing, the Instagram parsers (synthetic fixtures, login wall included), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
 | Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Bot, O=nevil-sanish`), and published with a SHA-256 |
 | On a phone | only what the user's screenshots show (§1). No live checks (`T-LIVE-*`) or manual checks (`T-MAN-*`) have been run |
 
@@ -247,7 +254,7 @@ In priority order. Each item says what, why, and what "done" looks like.
 13. ✅ **Done in v0.9.3** (Settings → Notes → *Re-analyse old notes*, with a token warning). **Re-analyse all old notes at once.** Notes made before v0.9.2 have no overview or mentions; for now each has to be re-analysed by hand. Add Settings → *Re-analyse all notes*: for each note with an empty overview that still has a queue row, re-queue it and drop the note, like `AppServices.retry`. Warn that it costs tokens. Waiting on the user's decision.
 14. ✅ **Done in v0.9.3** (orphan photos are deleted on each start, so Undo still works until then). **Photo files left behind on delete.** Deleting a photo note doesn't delete its `files/photos/*.jpg`, because Undo needs it. Delete the file once the Undo snackbar has closed, or sweep orphan files on start.
 15. ✅ **Done in v0.9.3** (the blocks and peak hour are ranked by minutes watched; counts are used until any time is recorded). **"When you watch" uses counts, not minutes.** The `hourly` query already returns `ms` per hour. Show minutes next to the count, or let the user choose.
-16. **Watch time looks low.** For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
+16. **Watch time looks low.** *Mostly answered after v0.9.4:* time now comes from Usage access (whole-app time), so the counter's Reels-only time is no longer the headline number. For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
 17. ✅ **Done in v0.9.4** (one note per image; decoding moved off the main thread). **Sharing several photos at once.** Only `ACTION_SEND` (one image) is handled. Add `ACTION_SEND_MULTIPLE` to queue each image, or one note for the set.
 18. ✅ **Done in v0.9.4** (`library.json` version 2; version 1 files still import). **Export leaves out chats.** `library.json` has notes only. Add `chats` to the export and import.
 19. ✅ **Done in v0.9.4** (reads `/releases?per_page=1`, because `/releases/latest` skips pre-releases; a *Download* banner on the home screen). **Update check (T-REL-01, GH-RELEASE-LATEST).** Planned, never built: a banner when GitHub has a newer release with an `.apk` asset, which stays silent on a 403.

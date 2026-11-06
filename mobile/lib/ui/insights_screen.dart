@@ -68,9 +68,11 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final today = _days.isEmpty ? DayTotal(localDate(), const {}, 0, 0) : _days.last;
+    // Reel counts only exist with the optional Accessibility counter; time comes from Usage access without it.
+    final counting = _status?.serviceEnabled == true || _days.any((d) => d.reels > 0);
     final total = _days.fold(0, (s, d) => s + d.reels);
-    final minutes = _days.fold(0, (s, d) => s + d.ms) ~/ 60000;
-    final active = _days.where((d) => d.reels > 0).length;
+    final minutes = _days.fold(0, (s, d) => s + d.timeMs) ~/ 60000;
+    final active = _days.where((d) => counting ? d.reels > 0 : d.timeMs > 0).length;
     // Time spent is what matters here; fall back to counts until any watch time is recorded.
     final byTime = _hours.any((h) => h.$2 > 0);
     int weight((int, int) h) => byTime ? h.$2 : h.$1;
@@ -93,12 +95,13 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 120), // clear of the floating tab bar
           children: [
-            if (_status != null && !_status!.serviceEnabled) ...[
+            if (_status != null && !_status!.usageAccess && !counting) ...[
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.accessibility_new),
-                  title: const Text('Set up counting'),
-                  subtitle: const Text('Turn on Reel Bot in Accessibility so it can count what you watch.'),
+                  leading: const Icon(Icons.insights_rounded),
+                  title: const Text('Insights are optional'),
+                  subtitle: const Text('Allow usage access to see your time in Instagram and YouTube, '
+                      'and turn on Accessibility to count reels and Shorts. Either one is enough.'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _open(SetupScreen(widget.services)),
                 ),
@@ -135,27 +138,35 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(_range == 7 ? 'This week' : 'Last 30 days', style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
                 TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: total.toDouble()),
+                  tween: Tween(begin: 0, end: (counting ? total : minutes).toDouble()),
                   duration: const Duration(milliseconds: 700),
                   curve: Curves.easeOutCubic,
-                  builder: (_, v, _) => Text('${v.round()} reels & shorts',
+                  builder: (_, v, _) => Text(counting ? '${v.round()} reels & shorts' : '${dur(v.round())} in the apps',
                       style: t.textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -0.8)),
                 ),
                 const SizedBox(height: 14),
-                Row(children: [
-                  _HeroStat(dur(minutes), 'watching'),
-                  _HeroStat(active == 0 ? '0' : '${(total / active).round()}', 'per active day'),
-                  _HeroStat('${today.reels}', 'today'),
-                ]),
+                Row(children: counting
+                    ? [
+                        _HeroStat(dur(minutes), 'in the apps'),
+                        _HeroStat(active == 0 ? '0' : '${(total / active).round()}', 'per active day'),
+                        _HeroStat('${today.reels}', 'today'),
+                      ]
+                    : [
+                        _HeroStat(active == 0 ? '0m' : dur(minutes ~/ active), 'per active day'),
+                        _HeroStat(dur(today.timeMs ~/ 60000), 'today'),
+                      ]),
               ]),
             ),
             const SizedBox(height: 16),
             _Section(
-              title: 'Reels & shorts each day',
-              subtitle: active == 0 ? 'Nothing counted yet' : 'Watched on $active of $_range days',
+              title: counting ? 'Reels & shorts each day' : 'Time each day',
+              subtitle: active == 0 ? 'Nothing yet' : 'On $active of $_range days',
               child: _Bars(
-                values: [for (final d in _days) d.reels.toDouble()],
-                valueLabels: [for (final d in _days) d.reels == 0 ? '' : '${d.reels}'],
+                values: [for (final d in _days) counting ? d.reels.toDouble() : d.timeMs / 60000],
+                valueLabels: [
+                  for (final d in _days)
+                    counting ? (d.reels == 0 ? '' : '${d.reels}') : (d.timeMs < 60000 ? '' : '${d.timeMs ~/ 60000}m'),
+                ],
                 labels: [
                   for (final (i, d) in _days.indexed)
                     _range == 7 ? names[DateTime.parse(d.date).weekday - 1].substring(0, 1) : (i % 5 == 4 ? d.date.substring(8) : ''),
@@ -167,7 +178,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
             _Section(
               title: 'When you watch',
               subtitle: weight(peak.$2) == 0
-                  ? 'Nothing counted yet'
+                  ? 'Nothing yet'
                   : 'Most ${byTime ? 'time' : 'reels'} ${blocks[topBlock.$1].$1 == 'Night' ? 'at night' : 'in the ${blocks[topBlock.$1].$1.toLowerCase()}'}'
                       ' · peak around ${hourLabel(peak.$1)}',
               child: Column(children: [
@@ -193,10 +204,26 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
             _Section(
               title: 'Apps today',
               child: Row(children: [
-                _AppStat(Icons.movie_rounded, 'Instagram', today.reelsByApp['instagram'] ?? 0),
-                _AppStat(Icons.smart_display_rounded, 'YouTube', today.reelsByApp['youtube'] ?? 0),
+                for (final (icon, app, name, unit) in [
+                  (Icons.movie_rounded, 'instagram', 'Instagram', 'reels'),
+                  (Icons.smart_display_rounded, 'youtube', 'YouTube', 'shorts'),
+                ])
+                  _AppStat(
+                    icon,
+                    today.appMs.isEmpty ? '${today.reelsByApp[app] ?? 0}' : dur((today.appMs[app] ?? 0) ~/ 60000),
+                    counting && today.appMs.isNotEmpty ? '$name · ${today.reelsByApp[app] ?? 0} $unit' : name,
+                  ),
               ]),
             ),
+            // Once one part is on, offer the other quietly.
+            if (_status != null && (_status!.usageAccess || counting) && !(_status!.usageAccess && counting)) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => _open(SetupScreen(widget.services)),
+                icon: const Icon(Icons.add_rounded),
+                label: Text(counting ? 'Optional: time in each app too' : 'Optional: count reels and Shorts too'),
+              ),
+            ],
           ],
         ),
       ),
@@ -238,7 +265,7 @@ List<double> weekdayMinutes(List<DayTotal> days) {
   final sum = List.filled(7, 0.0), count = List.filled(7, 0);
   for (final d in days) {
     final w = DateTime.parse(d.date).weekday - 1;
-    sum[w] += d.ms / 60000;
+    sum[w] += d.timeMs / 60000;
     count[w]++;
   }
   return [for (var i = 0; i < 7; i++) count[i] == 0 ? 0 : sum[i] / count[i]];
@@ -342,9 +369,9 @@ class _Bars extends StatelessWidget {
 
 class _AppStat extends StatelessWidget {
   final IconData icon;
+  final String value;
   final String label;
-  final int n;
-  const _AppStat(this.icon, this.label, this.n);
+  const _AppStat(this.icon, this.value, this.label);
 
   @override
   Widget build(BuildContext context) => Expanded(
@@ -356,7 +383,7 @@ class _AppStat extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$n', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
             Text(label, style: Theme.of(context).textTheme.labelSmall),
           ]),
         ]),
@@ -413,7 +440,7 @@ class _BlockRow extends StatelessWidget {
         ),
         SizedBox(
           width: 84,
-          child: Text(reels == 0 ? '—' : '$reels · $time',
+          child: Text(reels == 0 ? (share == 0 ? '—' : time) : '$reels · $time',
               textAlign: TextAlign.end, style: t.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
         ),
       ]),

@@ -86,11 +86,21 @@ class DayCount {
 class DayTotal {
   final String date;
   final Map<String, int> reelsByApp;
+
+  /// Time on the Reels and Shorts screens, from the optional Accessibility counter.
   final int ms;
   final int unknown;
-  const DayTotal(this.date, this.reelsByApp, this.ms, this.unknown);
+
+  /// Time in each whole app (Instagram, YouTube), from Usage access.
+  final Map<String, int> appMs;
+  const DayTotal(this.date, this.reelsByApp, this.ms, this.unknown, {this.appMs = const {}});
 
   int get reels => reelsByApp.values.fold(0, (a, b) => a + b);
+
+  /// The time to show: time in the apps when Usage access gives it, else the counter's Reels/Shorts time.
+  int get timeMs => appMs.isEmpty ? ms : appMs.values.fold(0, (a, b) => a + b);
+
+  DayTotal withAppMs(Map<String, int> m) => DayTotal(date, reelsByApp, ms, unknown, appMs: m);
 
   /// Same rule as the Kotlin alert: at least 5 unreadable and 30% of what was seen.
   bool get detectionLooksBroken => unknown >= 5 && unknown * 10 >= (reels + unknown) * 3;
@@ -128,6 +138,9 @@ class CounterStatus {
   final String manufacturer;
   final bool capture;
 
+  /// Usage access: time in Instagram and YouTube. The Accessibility counter (reel counts) is optional on top.
+  final bool usageAccess;
+
   CounterStatus.fromMap(Map m)
       : serviceEnabled = m['serviceEnabled'] == true,
         serviceRunning = m['serviceRunning'] == true,
@@ -135,7 +148,8 @@ class CounterStatus {
         notificationsAllowed = m['notificationsAllowed'] == true,
         sdkInt = (m['sdkInt'] as num?)?.toInt() ?? 0,
         manufacturer = m['manufacturer'] as String? ?? '',
-        capture = m['capture'] == true;
+        capture = m['capture'] == true,
+        usageAccess = m['usageAccess'] == true;
 
   /// Phones whose battery managers kill background services unless Autostart is allowed.
   bool get needsAutostart => const ['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'oneplus', 'vivo', 'iqoo', 'huawei', 'honor']
@@ -185,18 +199,35 @@ class CounterBridge {
   Future<void> saveDownload(String name, String text) =>
       _ch.invokeMethod('saveDownload', {'name': name, 'text': text});
 
+  /// Counter rows per day, with time in each app from Usage access merged in; newest first.
   Future<List<DayTotal>> history({int days = 14}) async {
     final rows = await _ch.invokeListMethod<Map>('daily', {'days': days}) ?? [];
-    return DayTotal.group(rows.map(DayCount.fromMap).toList());
+    return mergeAppTime(DayTotal.group(rows.map(DayCount.fromMap).toList()), (await _appUsage(days))['daily']!);
   }
 
-  /// Reels and watch time per hour of the day (0–23) over the last [days] days; hours with nothing are 0.
+  /// Reels and time per hour of the day (0–23) over the last [days] days; hours with nothing are 0.
+  /// Time is time in the apps when Usage access is on, else the counter's Reels/Shorts time.
   Future<List<(int reels, int ms)>> hourly({int days = 7}) async {
     final out = List.filled(24, (0, 0));
     for (final r in await _ch.invokeListMethod<Map>('hourly', {'days': days}) ?? []) {
       out[(r['hour'] as num).toInt()] = ((r['reels'] as num).toInt(), (r['ms'] as num?)?.toInt() ?? 0);
     }
-    return out;
+    final app = (await _appUsage(days))['hourly']!;
+    if (app.isEmpty) return out;
+    final byHour = List.filled(24, 0);
+    for (final r in app) {
+      byHour[(r['hour'] as num).toInt()] += (r['ms'] as num).toInt();
+    }
+    return [for (var h = 0; h < 24; h++) (out[h].$1, byHour[h])];
+  }
+
+  /// `daily` and `hourly` rows of time per app; both empty without Usage access.
+  Future<Map<String, List<Map>>> _appUsage(int days) async {
+    final m = await _ch.invokeMapMethod<String, dynamic>('appUsage', {'days': days}) ?? const {};
+    return {
+      'daily': [for (final r in m['daily'] as List? ?? const []) r as Map],
+      'hourly': [for (final r in m['hourly'] as List? ?? const []) r as Map],
+    };
   }
 
   Future<List<SeenItem>> seenItems(String date) async =>
@@ -211,7 +242,20 @@ class CounterBridge {
 
   Future<CounterStatus> status() async => CounterStatus.fromMap((await _ch.invokeMapMethod('status'))!);
 
-  /// Opens a system screen: `openAccessibilitySettings`, `openAppInfo`, `openNotificationSettings`,
+  /// Opens a system screen: `openUsageAccess`, `openAccessibilitySettings`, `openAppInfo`, `openNotificationSettings`,
   /// `requestBatteryExemption` or `openAutostart`.
   Future<void> open(String screen) => _ch.invokeMethod(screen);
+}
+
+/// Adds Usage-access time (`{date, app, ms}` rows) to the counter's days; dates only one side has are kept. Newest first.
+List<DayTotal> mergeAppTime(List<DayTotal> days, List<Map> appRows) {
+  final app = <String, Map<String, int>>{};
+  for (final r in appRows) {
+    (app[r['date'] as String] ??= {})[r['app'] as String] = (r['ms'] as num).toInt();
+  }
+  final byDate = {for (final d in days) d.date: d};
+  for (final date in app.keys) {
+    byDate[date] = (byDate[date] ?? DayTotal(date, const {}, 0, 0)).withAppMs(app[date]!);
+  }
+  return byDate.values.toList()..sort((a, b) => b.date.compareTo(a.date));
 }

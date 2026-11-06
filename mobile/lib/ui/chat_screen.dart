@@ -33,6 +33,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   String? _model;
   bool _busy = false;
   DayTotal? _today;
+  var _counting = false;
+  var _usage = false;
   List<Reel> _recent = [];
   List<String> _ideas = _defaultIdeas;
 
@@ -60,8 +62,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Future<void> _refresh() async {
     final p = await s.chatProviders();
     DayTotal? today;
+    var counting = false, usage = false;
     try {
       today = (await s.bridge.history(days: 1)).where((d) => d.date == localDate()).firstOrNull;
+      final st = await s.bridge.status();
+      counting = st.serviceEnabled;
+      usage = st.usageAccess;
     } on Exception {
       today = null;
     }
@@ -78,6 +84,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() {
       _providers = p;
       _today = today;
+      _counting = counting || (today?.reels ?? 0) > 0;
+      _usage = usage;
       _recent = notes.take(8).toList();
       _ideas = top.isEmpty
           ? _defaultIdeas
@@ -284,7 +292,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                             style: t.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -1)),
                       ),
                       const SizedBox(height: 16),
-                      _TodayStrip(_today, onTap: widget.onInsights),
+                      // Insights are optional: with neither Usage access nor the counter there's nothing to show.
+                      if (_counting || _usage) _TodayStrip(_today, counting: _counting, onTap: widget.onInsights),
                       if (_recent.isNotEmpty) ...[
                         const SizedBox(height: 24),
                         Text('Recently saved', style: t.textTheme.titleMedium),
@@ -390,13 +399,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 /// Today at a glance on the Ask tab; tap for Insights.
 class _TodayStrip extends StatelessWidget {
   final DayTotal? today;
+
+  /// With the optional reel counter on, the strip leads with counts; without it, with time in each app.
+  final bool counting;
   final VoidCallback? onTap;
-  const _TodayStrip(this.today, {this.onTap});
+  const _TodayStrip(this.today, {this.counting = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final d = today ?? DayTotal(localDate(), const {}, 0, 0);
+    String min(int ms) => ms < 3600000 ? '${ms ~/ 60000}m' : '${ms ~/ 3600000}h ${ms % 3600000 ~/ 60000}m';
     Widget stat(String v, String label) => Expanded(
           child: Column(children: [
             Text(v, style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
@@ -409,9 +422,14 @@ class _TodayStrip extends StatelessWidget {
         radius: 24,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         child: Row(children: [
-          stat('${d.reelsByApp['instagram'] ?? 0}', 'Reels today'),
-          stat('${d.reelsByApp['youtube'] ?? 0}', 'Shorts today'),
-          stat('${(d.ms / 60000).round()}m', 'Watching'),
+          if (counting) ...[
+            stat('${d.reelsByApp['instagram'] ?? 0}', 'Reels today'),
+            stat('${d.reelsByApp['youtube'] ?? 0}', 'Shorts today'),
+            stat(min(d.timeMs), d.appMs.isEmpty ? 'Watching' : 'In the apps'),
+          ] else ...[
+            stat(min(d.appMs['instagram'] ?? 0), 'Instagram today'),
+            stat(min(d.appMs['youtube'] ?? 0), 'YouTube today'),
+          ],
           Icon(Icons.chevron_right_rounded, color: t.colorScheme.onSurfaceVariant),
         ]),
       ),
