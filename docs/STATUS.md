@@ -1,6 +1,6 @@
 # Reel Bot: project status
 
-Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` after it (§2.1). This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
+Written 2026-11-06; current as of **v0.9.5**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
 
 - [1. Where things stand](#1-where-things-stand)
 - [2. What has been done](#2-what-has-been-done)
@@ -15,12 +15,12 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 
 | | |
 |---|---|
-| **Latest release** | [v0.9.4](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.4): a signed APK for Android 10+, marked pre-release |
-| **Releases so far** | 18 (v0.1.0 to v0.9.4), each with an APK and `SHA256SUMS` |
+| **Latest release** | [v0.9.5](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.5): a signed APK for Android 10+, marked pre-release |
+| **Releases so far** | 18 published (v0.1.0 to v0.9.3, then v0.9.5), each with an APK and `SHA256SUMS`. v0.9.4 was built and logged but never published; its changes ship in v0.9.5 |
 | **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
-| **Automated tests** | 34 Dart and 59 Kotlin, all passing; `flutter analyze` clean |
-| **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Since then, checked over ADB on a Nothing A059 (Android 16, 90 Hz): the first Instagram run (item 2), scrolling (item 11), the setup checklist (item 4) and surviving a kill (item 5). It found and fixed three bugs (§2.1 *Unreleased*). |
+| **Automated tests** | 34 Dart and 60 Kotlin, all passing; `flutter analyze` clean |
+| **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Since then, checked over ADB on a Nothing A059 (Android 16, 90 Hz): the first Instagram run (item 2), scrolling (item 11), the setup checklist (item 4) and surviving a kill (item 5). It found and fixed four bugs (§2.1, v0.9.5). |
 
 **Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
 
@@ -50,7 +50,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
 | **v0.9.4** | Export and Import include **saved chats**. **Several photos** can be shared at once (one note each). An **update banner** when GitHub has a newer APK. [INSTALL.md](INSTALL.md) for friends; PLAN.md matches the product. |
-| *Unreleased* | **Time from Usage access:** Insights and the Ask home show time in Instagram and YouTube from Android's usage data; reel counting through Accessibility is optional. Setup becomes *Set up Insights*, and **both parts are optional**: with neither on, the home strip hides and Insights says how to turn them on. **App icon:** the brand mark (green gradient, white play glyph) as an adaptive icon with a themed-icon layer, replacing Flutter's default. **Fixes found on the phone:** the setup checklist said Accessibility was off when it was on (now read from `AccessibilityManager`); a private post's login wall was shown as "Instagram is limiting requests"; the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. The winning Instagram step and each Gemini attempt are logged (`ReelBot`). Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
+| **v0.9.5** | **Time from Usage access:** Insights and the Ask home show time in Instagram and YouTube from Android's usage data; reel counting through Accessibility is optional. Setup becomes *Set up Insights*, and **both parts are optional**: with neither on, the home strip hides and Insights says how to turn them on. **App icon:** the brand mark (green gradient, white play glyph) as an adaptive icon with a themed-icon layer, replacing Flutter's default. **Fixes found on the phone:** the setup checklist said Accessibility was off when it was on (now read from `AccessibilityManager`); a private post's login wall was shown as "Instagram is limiting requests"; the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. The winning Instagram step and each Gemini attempt are logged (`ReelBot`). Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
 
 ### 2.2 Features as they work today
 
@@ -190,9 +190,9 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 
 | Check | Result |
 |---|---|
-| `flutter analyze` | clean (v0.9.4 and the unreleased work after it) |
+| `flutter analyze` | clean at v0.9.5 |
 | Dart tests (`mobile/test`, 34) | passing. They cover the background task body, the channel mapping (pending items, Instagram results and errors), Reduce effects, the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import (with chats), the update check, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
-| Kotlin tests (`:reelbot_native:testDebugUnitTest`, 59) | passing. They cover the plugin through a real `MethodChannel` (Robolectric), share-URL parsing, the Instagram parsers (synthetic fixtures, login wall included), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
+| Kotlin tests (`:reelbot_native:testDebugUnitTest`, 60) | passing. They cover the plugin through a real `MethodChannel` (Robolectric), share-URL parsing, the Instagram parsers (synthetic fixtures, login wall included), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
 | Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Bot, O=nevil-sanish`), and published with a SHA-256 |
 | On a phone | only what the user's screenshots show (§1). No live checks (`T-LIVE-*`) or manual checks (`T-MAN-*`) have been run |
 
@@ -245,7 +245,7 @@ In priority order. Each item says what, why, and what "done" looks like.
     - **Test:** scroll each tab on a mid-range or older phone.
     - **Why:** the background blur (`BackdropFilter`) and the animated background can stutter on weak GPUs.
     - **Done when:** smooth, or a "reduce effects" switch is added.
-    - **Switch added** after v0.9.4 (Settings → Appearance → *Reduce effects*, T-UI-07).
+    - **Switch added** in v0.9.5 (Settings → Appearance → *Reduce effects*, T-UI-07).
     - **Measured on the Nothing A059 (mid-range, 90 Hz), 2026-11-06,** from SurfaceFlinger frame times while swiping the Library 12 times: effects on, 0% and 1.6% of frames late (the very first scroll after a fresh install was 17.7%, while shaders compile); Reduce effects on, 0% and 0.8%. Smooth either way on this phone. Found: with effects on the background redraws at ~90 fps even when idle, which costs battery; worth pausing it when nothing moves. Still to try: an older or low-end phone.
 
 ### P1: product gaps (small, well understood)
@@ -254,7 +254,7 @@ In priority order. Each item says what, why, and what "done" looks like.
 13. ✅ **Done in v0.9.3** (Settings → Notes → *Re-analyse old notes*, with a token warning). **Re-analyse all old notes at once.** Notes made before v0.9.2 have no overview or mentions; for now each has to be re-analysed by hand. Add Settings → *Re-analyse all notes*: for each note with an empty overview that still has a queue row, re-queue it and drop the note, like `AppServices.retry`. Warn that it costs tokens. Waiting on the user's decision.
 14. ✅ **Done in v0.9.3** (orphan photos are deleted on each start, so Undo still works until then). **Photo files left behind on delete.** Deleting a photo note doesn't delete its `files/photos/*.jpg`, because Undo needs it. Delete the file once the Undo snackbar has closed, or sweep orphan files on start.
 15. ✅ **Done in v0.9.3** (the blocks and peak hour are ranked by minutes watched; counts are used until any time is recorded). **"When you watch" uses counts, not minutes.** The `hourly` query already returns `ms` per hour. Show minutes next to the count, or let the user choose.
-16. **Watch time looks low.** *Mostly answered after v0.9.4:* time now comes from Usage access (whole-app time), so the counter's Reels-only time is no longer the headline number. For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
+16. **Watch time looks low.** *Mostly answered in v0.9.5:* time now comes from Usage access (whole-app time), so the counter's Reels-only time is no longer the headline number. For example, 41 reels in 8 min. Screen time only counts while the Reels/Shorts screen is recognised, and a 5 s gap without events ends the session. Check this against a stopwatch during the T-MAN-03 test, and tune `maxGapMs` or the 1 s tick if it under-counts.
 17. ✅ **Done in v0.9.4** (one note per image; decoding moved off the main thread). **Sharing several photos at once.** Only `ACTION_SEND` (one image) is handled. Add `ACTION_SEND_MULTIPLE` to queue each image, or one note for the set.
 18. ✅ **Done in v0.9.4** (`library.json` version 2; version 1 files still import). **Export leaves out chats.** `library.json` has notes only. Add `chats` to the export and import.
 19. ✅ **Done in v0.9.4** (reads `/releases?per_page=1`, because `/releases/latest` skips pre-releases; a *Download* banner on the home screen). **Update check (T-REL-01, GH-RELEASE-LATEST).** Planned, never built: a banner when GitHub has a newer release with an `.apk` asset, which stays silent on a 403.
@@ -263,8 +263,8 @@ In priority order. Each item says what, why, and what "done" looks like.
 
 ### P2: engineering debt
 
-22. ✅ **Done after v0.9.4** (`CounterPluginTest.kt` on Robolectric drives the plugin through a real `MethodChannel`; the task body is `analyseAndNotify`, tested with fakes. Opening the real stores in a background engine is still T-BG-02, on a phone). **Integration tests for the channel and background job (T-CH-01, T-CH-02, T-BG-01).** The Dart–Kotlin channel and the `callbackDispatcher` are only exercised on a device. Add Robolectric tests for `CounterPlugin`, and a Dart test that runs the dispatcher with fakes.
-23. ✅ **Done after v0.9.4** (synthetic: a collected login page and a `require_login` reply; the page decode moved to `IgParse.page`. Add a real capture at the first live check). **Instagram login-wall fixture (T-IG-F04).** A captured login-wall page, to check the v0.9.1 rule that it only skips its own step.
+22. ✅ **Done in v0.9.5** (`CounterPluginTest.kt` on Robolectric drives the plugin through a real `MethodChannel`; the task body is `analyseAndNotify`, tested with fakes. Opening the real stores in a background engine is still T-BG-02, on a phone). **Integration tests for the channel and background job (T-CH-01, T-CH-02, T-BG-01).** The Dart–Kotlin channel and the `callbackDispatcher` are only exercised on a device. Add Robolectric tests for `CounterPlugin`, and a Dart test that runs the dispatcher with fakes.
+23. ✅ **Done in v0.9.5** (synthetic: a collected login page and a `require_login` reply; the page decode moved to `IgParse.page`. Add a real capture at the first live check). **Instagram login-wall fixture (T-IG-F04).** A captured login-wall page, to check the v0.9.1 rule that it only skips its own step.
 24. **Kotlin build warnings.** As of v0.9.4 the "migrate to Built-in Kotlin" warning names only `workmanager_android` (already the newest version), not our plugin; wait for an upstream release. Our plugin still puts `kotlin-gradle-plugin` on its buildscript classpath for the `kotlin { compilerOptions }` block; drop it once AGP's built-in Kotlin covers that.
 25. **One commit that doesn't build on its own.** `37cd366` (v0.5.0 work) changed `KeyStore` before the settings screen caught up in the next commit. History was left as it is; just don't bisect into that commit.
 26. **Chat retrieval is keyword overlap.** Fine for hundreds of notes. If libraries grow to thousands, or questions are phrased differently from the notes, add on-device embeddings, or ask the model to pick note IDs first.
@@ -316,4 +316,4 @@ cd mobile && flutter build apk --release
 
 **Where to start:**
 - **Correctness:** begin with **P0** (§4), especially items 1–3, because every other item assumes the fetch and counter work on a real phone.
-- **Small fixes:** items 12–15 are done in v0.9.3 and 17–21 in v0.9.4. Item 16 needs the T-MAN-03 stopwatch test on a phone; INSTALL.md needs its screenshots. P2 items 22–23 and the item 11 switch are done (unreleased). What's left without a phone is conditional: 24 waits on an upstream release, 26–27 only if libraries grow or profiling shows jank. Everything else needs a phone.
+- **Small fixes:** items 12–15 are done in v0.9.3 and 17–21 in v0.9.4. Item 16 needs the T-MAN-03 stopwatch test on a phone; INSTALL.md needs its screenshots. P2 items 22–23 and the item 11 switch are done (v0.9.5). What's left without a phone is conditional: 24 waits on an upstream release, 26–27 only if libraries grow or profiling shows jank. Everything else needs a phone.

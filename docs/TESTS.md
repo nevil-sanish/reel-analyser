@@ -175,9 +175,9 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
-| 2026-11-06 | Usage access: T-USE-01…03 added and passing. |
+| 2026-11-06 | v0.9.5, Usage access: T-USE-01…03 added and passing. |
 | 2026-11-06 | On the phone (Nothing A059, Android 16): T-MAN-04 passes on this brand after the Accessibility-check fix; T-MAN-05 kill part passes (reboot still to do); first T-LIVE run 5 of 5 from video. The rate-limit test also checks the login-wall message. |
-| 2026-11-06 | After v0.9.4 (unreleased): T-IG-F04, T-CH-01, T-CH-02, T-BG-01 and T-UI-07 added and passing; the Kotlin channel tests run on Robolectric. |
+| 2026-11-06 | v0.9.5: T-IG-F04, T-CH-01, T-CH-02, T-BG-01 and T-UI-07 added and passing; the Kotlin channel tests run on Robolectric. |
 | 2026-11-06 | v0.9.4: T-REL-01 added and passing; T-EXP-01 covers chats. Sharing several photos needs a phone. |
 | 2026-11-06 | v0.9.3: T-LIB-03 added and passing. Re-analyse-all and the photo sweep aren't unit-tested (they need the plugin); check them on a phone. |
 | 2026-11-06 | v0.9.2: T-PIPE-01 checks overview and mentions are requested and saved; T-UI-03 checks the time-of-day blocks. |
