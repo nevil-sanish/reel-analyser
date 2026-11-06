@@ -45,7 +45,7 @@ Each note has a short bulleted overview in simple words that covers every import
 
 - **Ask:** today's reels, shorts and minutes at the top, then a chat that answers only from your saved notes. Pick the provider and model from the chip above the ask bar. Every chat is saved; the clock icon reopens old ones.
 - **Insights:** a Week or Month view of your watching: minutes per day, the hours you watch most, and your heaviest weekday.
-- **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete (with Undo), right to archive, or long-press to select several, then mark them read, archive or delete them. Notes you've read move to the Archive after 3 days.
+- **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete, right to archive, or long-press to select several, then mark them read, archive or delete them; every one of these has Undo. Sharing a reel you already saved doesn't analyse it again: its note comes back to the top, unread. Notes you've read move to the Archive after 3 days.
 
 ### 4. Time and counts: Usage access, plus optional Accessibility
 

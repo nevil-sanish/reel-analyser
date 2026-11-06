@@ -5,13 +5,17 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
+import 'library_screen.dart';
 import 'liquid.dart';
 import 'theme.dart';
 
 class ReelScreen extends StatefulWidget {
   final AppServices services;
   final Reel reel;
-  const ReelScreen(this.services, this.reel, {super.key});
+
+  /// Called after an Undo from this page's archive or delete, so the list behind it shows the note again.
+  final VoidCallback? onChanged;
+  const ReelScreen(this.services, this.reel, {this.onChanged, super.key});
 
   @override
   State<ReelScreen> createState() => _ReelScreenState();
@@ -48,8 +52,11 @@ class _ReelScreenState extends State<ReelScreen> {
             icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
             onPressed: () async {
               HapticFeedback.mediumImpact();
+              final m = ScaffoldMessenger.of(context);
               await services.library.setArchived(reel.url, !reel.archived);
               if (context.mounted) Navigator.pop(context);
+              showUndo(m, reel.archived ? 'Note restored' : 'Note archived',
+                  () => services.library.setArchived(reel.url, reel.archived), widget.onChanged);
             },
           ),
           IconButton(
@@ -68,8 +75,11 @@ class _ReelScreenState extends State<ReelScreen> {
               );
               if (ok != true) return;
               HapticFeedback.heavyImpact();
+              if (!context.mounted) return;
+              final m = ScaffoldMessenger.of(context);
               await services.library.delete(reel.url);
               if (context.mounted) Navigator.pop(context);
+              showUndo(m, 'Note deleted', () => services.library.saveReel(reel), widget.onChanged);
             },
           ),
         ],

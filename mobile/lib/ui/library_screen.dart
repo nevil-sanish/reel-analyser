@@ -168,7 +168,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               SwipeNote(s, r,
                   selected: _selected.isEmpty ? null : _selected.contains(r.url),
                   onLongPress: () => _toggle(r),
-                  onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r)) : _toggle(r),
+                  onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r, onChanged: _reload)) : _toggle(r),
                   onChanged: _reload),
           ],
         ),
@@ -216,15 +216,7 @@ class SwipeNote extends StatelessWidget {
     await services.library.delete(reel.url);
     onChanged();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: const Text('Note deleted'),
-        action: SnackBarAction(label: 'Undo', onPressed: () async {
-          await services.library.saveReel(reel);
-          onChanged();
-        }),
-      ));
+    showUndo(ScaffoldMessenger.of(context), 'Note deleted', () => services.library.saveReel(reel), onChanged);
   }
 
   Widget _bg(BuildContext context, Alignment a, IconData icon, String label, Color color) => Container(
@@ -252,6 +244,9 @@ class SwipeNote extends StatelessWidget {
         HapticFeedback.mediumImpact();
         await services.library.setArchived(reel.url, !reel.archived);
         onChanged();
+        if (!context.mounted) return;
+        showUndo(ScaffoldMessenger.of(context), reel.archived ? 'Note restored' : 'Note archived',
+            () => services.library.setArchived(reel.url, reel.archived), onChanged);
       },
       child: ReelCard(reel, onTap: onTap, onLongPress: onLongPress, selected: selected),
     );
@@ -376,7 +371,7 @@ PreferredSizeWidget selectionBar({
       ],
     );
 
-/// Applies a bulk action to [reels]; delete offers Undo (it saves the notes back).
+/// Applies a bulk action to [reels]; every action offers Undo.
 Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, String action, VoidCallback onDone) async {
   final now = DateTime.now().millisecondsSinceEpoch;
   action == 'delete' ? HapticFeedback.heavyImpact() : HapticFeedback.mediumImpact();
@@ -393,17 +388,35 @@ Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, S
   onDone();
   if (!context.mounted) return;
   final n = reels.length == 1 ? '1 note' : '${reels.length} notes';
-  ScaffoldMessenger.of(context)
+  showUndo(
+    ScaffoldMessenger.of(context),
+    switch (action) { 'read' => '$n marked read', 'archive' => '$n archived', 'restore' => '$n restored', _ => '$n deleted' },
+    () async {
+      for (final r in reels) {
+        switch (action) {
+          case 'read':
+            if (r.seenAt == 0) await s.library.markUnseen(r.url); // only the ones that were unread
+          case 'archive' || 'restore':
+            await s.library.setArchived(r.url, r.archived);
+          case 'delete':
+            await s.library.saveReel(r);
+        }
+      }
+    },
+    onDone,
+  );
+}
+
+/// "Note deleted · Undo": every action that changes notes or chats can be taken back for a few seconds.
+void showUndo(ScaffoldMessengerState m, String text, Future<void> Function() undo, VoidCallback? onUndone) {
+  m
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(
-      content: Text(switch (action) { 'read' => '$n marked read', 'archive' => '$n archived', 'restore' => '$n restored', _ => '$n deleted' }),
-      action: action != 'delete'
-          ? null
-          : SnackBarAction(label: 'Undo', onPressed: () async {
-              for (final r in reels) {
-                await s.library.saveReel(r);
-              }
-              onDone();
-            }),
+      content: Text(text),
+      action: SnackBarAction(label: 'Undo', onPressed: () async {
+        HapticFeedback.selectionClick();
+        await undo();
+        onUndone?.call();
+      }),
     ));
 }

@@ -5,6 +5,7 @@ import '../app_services.dart';
 import '../core/models.dart';
 import '../native/counter_bridge.dart';
 import '../pipeline/providers.dart';
+import 'library_screen.dart';
 import 'liquid.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
@@ -174,6 +175,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                           HapticFeedback.mediumImpact();
                           s.library.deleteChat(ch.$1);
                           set(() => chats.remove(ch));
+                          showUndo(ScaffoldMessenger.of(context), 'Chat deleted', () => s.library.restoreChat(ch),
+                              // The sheet may be closed by the time Undo is tapped.
+                              () => c.mounted ? set(() => chats..add(ch)..sort((a, b) => b.$3.compareTo(a.$3))) : null);
                         },
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -306,7 +310,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                             separatorBuilder: (_, _) => const SizedBox(width: 10),
                             itemBuilder: (_, i) => _RecentCard(_recent[i], onTap: () async {
                               HapticFeedback.selectionClick();
-                              await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(s, _recent[i])));
+                              await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(s, _recent[i], onChanged: _refresh)));
                               _refresh();
                             }),
                           ),

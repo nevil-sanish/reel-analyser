@@ -1,6 +1,11 @@
 package app.reelbrain
 
+import android.app.AppOpsManager
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -68,5 +73,27 @@ object AppUsage {
             }
         }
         return daily to hourly
+    }
+
+    fun granted(ctx: Context): Boolean = ctx.getSystemService(AppOpsManager::class.java)
+        .unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), ctx.packageName) ==
+        AppOpsManager.MODE_ALLOWED
+
+    /** Time per (date, app) and per (hour, app) for the last [days] days, today included; null without Usage access. */
+    fun load(ctx: Context, days: Int): Pair<Map<Pair<String, String>, Long>, Map<Pair<Int, String>, Long>>? {
+        if (!granted(ctx)) return null
+        val zone = ZoneId.systemDefault()
+        val now = System.currentTimeMillis()
+        val from = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant().toEpochMilli()
+        val raw = ctx.getSystemService(UsageStatsManager::class.java).queryEvents(from, now)
+        val events = mutableListOf<Event>()
+        val e = UsageEvents.Event()
+        while (raw.hasNextEvent()) {
+            raw.getNextEvent(e)
+            if (e.packageName in apps || e.eventType == SCREEN_OFF || e.eventType == KEYGUARD_SHOWN || e.eventType == SHUTDOWN) {
+                events += Event(e.packageName ?: "", e.eventType, e.timeStamp, e.className ?: "")
+            }
+        }
+        return split(sessions(events, now), zone)
     }
 }

@@ -10,6 +10,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import app.reelbrain.core.R
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -20,10 +21,15 @@ object Digest {
     /** After 21:00, once a day, and only if you didn't open the app today. */
     fun shouldPost(openedToday: Boolean, postedToday: Boolean, hour: Int) = !openedToday && !postedToday && hour >= 21
 
-    /** "37 reels · 52 min · 3 saved: A, B, C"; without titles when nothing has been analysed yet; a nudge on an empty day. */
-    fun text(reels: Long, ms: Long, saved: Int, titles: List<String>): String {
-        if (reels == 0L && saved == 0) return "Nothing saved today. Saw a reel worth keeping? Share it to Reel Bot for the key points."
-        val counts = "$reels reels · ${ms / 60000} min · $saved saved"
+    /**
+     * "37 reels · 52 min · 3 saved: A, B, C". [reels] is null when the optional counter is off and [ms] when no time
+     * is tracked (neither Usage access nor the counter), so the digest never shows a made-up 0. A nudge on an empty day.
+     */
+    fun text(reels: Long?, ms: Long?, saved: Int, titles: List<String>): String {
+        if ((reels ?: 0L) == 0L && (ms ?: 0L) < 60000 && saved == 0) {
+            return "Nothing saved today. Saw a reel worth keeping? Share it to Reel Bot for the key points."
+        }
+        val counts = listOfNotNull(reels?.let { "$it reels" }, ms?.let { "${it / 60000} min" }, "$saved saved").joinToString(" · ")
         return if (titles.isEmpty()) counts else "$counts: ${titles.take(3).joinToString(", ")}"
     }
 }
@@ -42,7 +48,7 @@ class DigestWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params)
             nm.createNotificationChannel(NotificationChannel(channel, channelName, NotificationManager.IMPORTANCE_DEFAULT))
             val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
             nm.notify(id, Notification.Builder(ctx, channel)
-                .setSmallIcon(ctx.applicationInfo.icon)
+                .setSmallIcon(R.drawable.ic_stat_reelbot)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(Notification.BigTextStyle().bigText(text))
@@ -71,7 +77,11 @@ class DigestWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params)
         val db = CounterDb.get(ctx)
         val day = db.daily(1, today)
         val (saved, titles) = db.savedToday(now)
-        val text = Digest.text(day.sumOf { it["reels"] as Long }, day.sumOf { it["ms"] as Long }, saved, titles)
+        val counting = ReelCounterService.running || day.isNotEmpty()
+        // Time in the apps when Usage access is on (as Insights shows it), else the counter's Reels/Shorts time.
+        val appMs = AppUsage.load(ctx, 1)?.first?.values?.sum()
+        val text = Digest.text(if (counting) day.sumOf { it["reels"] as Long } else null,
+            appMs ?: if (counting) day.sumOf { it["ms"] as Long } else null, saved, titles)
         post(ctx, 2, CHANNEL, "Daily digest", "Today on Reels and Shorts", text)
         prefs.edit().putString(Digest.POSTED, today).apply()
         return Result.success()

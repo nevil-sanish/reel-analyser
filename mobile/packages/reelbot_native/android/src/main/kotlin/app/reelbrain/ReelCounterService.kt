@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import app.reelbrain.core.R
 import org.json.JSONObject
 
 /**
@@ -148,7 +149,7 @@ class ReelCounterService : AccessibilityService() {
         val open = packageManager.getLaunchIntentForPackage(packageName)
         val name = if (app == "youtube") "YouTube" else "Instagram"
         nm.notify(1, Notification.Builder(this, CHANNEL)
-            .setSmallIcon(applicationInfo.icon)
+            .setSmallIcon(R.drawable.ic_stat_reelbot)
             .setContentTitle("Reel Bot can't read $name any more")
             .setStyle(Notification.BigTextStyle().bigText(
                 "An app update probably changed the screen. Open Reel Bot → Today → Debug to capture the new layout."))

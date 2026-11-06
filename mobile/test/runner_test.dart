@@ -386,4 +386,30 @@ void main() {
     await analyseAndNotify(runner(idle, (r) async => http.Response(_gemOk(), 200)), idle);
     expect(idle.notified, isEmpty);
   });
+
+  test('T-PIPE-16 a link shared again is not analysed twice; its note comes back to the top, unread', () async {
+    await db.saveReel(const Reel(url: 'https://www.youtube.com/shorts/abcdefg', app: 'youtube', title: 'Rice', summary: '', savedAt: 1, seenAt: 5));
+    await db.setArchived('https://www.youtube.com/shorts/abcdefg', true);
+    await db.saveReel(const Reel(url: 'u2', app: 'youtube', title: 'Newer', summary: '', savedAt: 2));
+    final b = FakeBridge([yt]);
+    await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
+    expect(requests, isEmpty); // no tokens spent
+    expect(b.statuses[1], 'done');
+    final top = (await db.reels(archived: false)).first;
+    expect((top.title, top.seenAt, top.archived), ('Rice', 0, false));
+  });
+
+  test('T-LIB-04 Undo helpers: mark unread, restore a deleted chat with its id', () async {
+    await db.saveReel(const Reel(url: 'u', app: 'youtube', title: 'A', summary: '', savedAt: 1));
+    await db.markSeen('u', 9);
+    await db.markUnseen('u');
+    expect((await db.reels()).single.seenAt, 0);
+    final id = await db.saveChat(null, ['q', 'a'], 7);
+    final chat = (await db.chats()).single;
+    await db.deleteChat(id);
+    await db.restoreChat(chat);
+    final back = (await db.chats()).single;
+    expect((back.$1, back.$2, back.$3), (chat.$1, chat.$2, chat.$3));
+    expect(back.$4, chat.$4);
+  });
 }

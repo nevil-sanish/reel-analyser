@@ -147,7 +147,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
                 const SizedBox(height: 14),
                 Row(children: counting
                     ? [
-                        _HeroStat(dur(minutes), 'in the apps'),
+                        _HeroStat(dur(minutes), _days.any((d) => d.appMs.isNotEmpty) ? 'in the apps' : 'watching'),
                         _HeroStat(active == 0 ? '0' : '${(total / active).round()}', 'per active day'),
                         _HeroStat('${today.reels}', 'today'),
                       ]

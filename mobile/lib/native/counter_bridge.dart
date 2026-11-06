@@ -221,9 +221,16 @@ class CounterBridge {
     return [for (var h = 0; h < 24; h++) (out[h].$1, byHour[h])];
   }
 
-  /// `daily` and `hourly` rows of time per app; both empty without Usage access.
+  (int, DateTime, Future<Map<String, dynamic>?>)? _usage;
+
+  /// `daily` and `hourly` rows of time per app; both empty without Usage access. [history] and [hourly] are
+  /// called together every few seconds, so one read of Android's usage events serves both for 2 s.
   Future<Map<String, List<Map>>> _appUsage(int days) async {
-    final m = await _ch.invokeMapMethod<String, dynamic>('appUsage', {'days': days}) ?? const {};
+    final u = _usage;
+    final fresh = u != null && u.$1 == days && DateTime.now().difference(u.$2) < const Duration(seconds: 2);
+    final pending = fresh ? u.$3 : _ch.invokeMapMethod<String, dynamic>('appUsage', {'days': days});
+    if (!fresh) _usage = (days, DateTime.now(), pending);
+    final m = await pending ?? const {};
     return {
       'daily': [for (final r in m['daily'] as List? ?? const []) r as Map],
       'hourly': [for (final r in m['hourly'] as List? ?? const []) r as Map],

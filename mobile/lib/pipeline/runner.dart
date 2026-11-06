@@ -178,7 +178,11 @@ class Runner {
 
   Future<String> _process(PendingItem item) async {
     if (item.url.isEmpty) return item.author.isEmpty && item.caption.isEmpty && item.onScreenText.isEmpty ? 'failed' : await _textOnly(item);
-    if (await library.has(item.url)) return 'done'; // shared twice
+    if (await library.has(item.url)) {
+      // Shared again: don't spend tokens on it twice; bring the note back to the top, unread.
+      await library.resurface(item.url, now());
+      return 'done';
+    }
     try {
       return switch (item.app) {
         'youtube' => await _youtube(item),

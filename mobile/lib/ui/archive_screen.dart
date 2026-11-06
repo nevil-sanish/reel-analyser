@@ -76,7 +76,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                 onChanged: _load,
                 onTap: () async {
                   if (_selected.isNotEmpty) return _toggle(r);
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(widget.services, r)));
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(widget.services, r, onChanged: _load)));
                   _load();
                 }),
         ],

@@ -21,4 +21,12 @@ class DigestTest {
         assertFalse(Digest.shouldPost(openedToday = false, postedToday = true, hour = 22))
         assertFalse(Digest.shouldPost(openedToday = false, postedToday = false, hour = 20))
     }
+
+    // T-DIG-03: only what is tracked; no "0 reels" when the optional counter is off.
+    @Test fun untrackedPartsAreLeftOut() {
+        assertEquals("42 min · 2 saved: Rice", Digest.text(null, 42 * 60000, 2, listOf("Rice")))
+        assertEquals("1 saved", Digest.text(null, null, 1, emptyList()))
+        assertEquals("42 min · 0 saved", Digest.text(null, 42 * 60000, 0, emptyList()))
+        assertTrue(Digest.text(null, null, 0, emptyList()).startsWith("Nothing saved today"))
+    }
 }

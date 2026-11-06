@@ -68,10 +68,23 @@ class LibraryDb {
           (r['id'] as int, r['title'] as String, r['updatedAt'] as int, [for (final t in jsonDecode(r['turns'] as String) as List) '$t']),
       ];
 
+  /// Undo for a deleted chat: puts it back with its id and time.
+  Future<void> restoreChat((int, String, int, List<String>) c) => _db.insert(
+      'chats', {'id': c.$1, 'title': c.$2, 'updatedAt': c.$3, 'turns': jsonEncode(c.$4)},
+      conflictAlgorithm: ConflictAlgorithm.replace);
+
   Future<void> deleteChat(int id) => _db.delete('chats', where: 'id = ?', whereArgs: [id]);
 
   Future<void> markSeen(String url, int now) =>
       _db.update('reels', {'seenAt': now}, where: 'url = ? AND seenAt = 0', whereArgs: [url]);
+
+  /// Undo for "mark read".
+  Future<void> markUnseen(String url) => _db.update('reels', {'seenAt': 0}, where: 'url = ?', whereArgs: [url]);
+
+  /// A link shared again: no new analysis, the note just comes back to the top of the library, unread
+  /// (out of the archive if it was there).
+  Future<void> resurface(String url, int now) =>
+      _db.update('reels', {'savedAt': now, 'seenAt': 0, 'archived': 0}, where: 'url = ?', whereArgs: [url]);
 
   Future<void> setArchived(String url, bool archived) =>
       _db.update('reels', {'archived': archived ? 1 : 0}, where: 'url = ?', whereArgs: [url]);
