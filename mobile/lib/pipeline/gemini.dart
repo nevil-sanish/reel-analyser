@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Why a Gemini call failed, so the runner knows whether to retry later.
@@ -161,9 +162,11 @@ If you only have a caption, a thumbnail or frames, work from those and say so in
         try {
           final a = parseAnalysis(_text(await _generate(model, body)));
           _acceptedLevel[model] = i;
+          debugPrint('ReelBot gemini $model ok, token savers ${lean ? 'on' : 'off'}');
           return a;
         } on GeminiException catch (e) {
           if (e.kind != GeminiFailure.rejected) rethrow;
+          debugPrint('ReelBot gemini $model rejected (savers ${lean ? 'on' : 'off'}): ${e.message}');
           last = e; // 400: try without the token savers, then the next model.
         }
       }

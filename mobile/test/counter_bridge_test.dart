@@ -28,7 +28,7 @@ void main() {
               {'id': 7, 'url': 'https://www.instagram.com/reel/A/', 'app': 'instagram', 'createdAt': 9, 'status': 'queued'},
             ],
           'fetchInstagram' => c.arguments['url'] == 'limited'
-              ? throw PlatformException(code: 'rate_limited')
+              ? throw PlatformException(code: 'rate_limited', message: 'every step hit a login wall; retrying in 10 min')
               : c.arguments['url'] == 'broken'
                   ? throw PlatformException(code: 'failed', message: 'IllegalArgumentException')
                   : {
@@ -73,7 +73,7 @@ void main() {
     final f = await b.fetchInstagram('ok');
     expect((f.step, f.author, f.caption, f.thumbnailUrl, f.videoPath), (2, 'chef', 'Rice', 't', '/v.mp4'));
     expect(f.images, ['a', 'b']);
-    await expectLater(b.fetchInstagram('limited'), throwsA(isA<RateLimited>()));
+    await expectLater(b.fetchInstagram('limited'), throwsA(isA<RateLimited>().having((e) => e.loginWall, 'loginWall', isTrue)));
     await expectLater(b.fetchInstagram('broken'), throwsA(isA<PlatformException>().having((e) => e.code, 'code', 'failed')));
   });
 }

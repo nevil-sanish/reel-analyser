@@ -1,5 +1,6 @@
 package app.reelbrain
 
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.ContentValues
@@ -13,6 +14,7 @@ import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.view.accessibility.AccessibilityManager
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -134,8 +136,11 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     private fun status(): Map<String, Any?> {
         val ours = ComponentName(ctx, ReelCounterService::class.java)
-        val enabled = (Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: "")
-            .split(':').any { ComponentName.unflattenFromString(it) == ours }
+        // The AccessibilityManager list, not the raw ENABLED_ACCESSIBILITY_SERVICES setting: on a Nothing phone with
+        // Android 16 the setting read back without our service while it was on and bound, so setup said "off".
+        val enabled = ReelCounterService.running || ctx.getSystemService(AccessibilityManager::class.java)
+            .getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any { ComponentName(it.resolveInfo.serviceInfo.packageName, it.resolveInfo.serviceInfo.name) == ours }
         return mapOf(
             "serviceEnabled" to enabled,
             "serviceRunning" to ReelCounterService.running,

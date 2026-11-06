@@ -158,10 +158,10 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | T-MAN-01 | Fresh install from the GitHub release APK on Android 13+ | Installs (note any Play Protect prompt) | planned |
 | T-MAN-02 | Share 10 reels + 10 Shorts with the app closed | All summarised within 30 min (Phase 1 exit test) | planned |
 | T-MAN-03 | Sloppy-use counter test: 20 reels + 20 Shorts with 5 swipe-backs, 3 half-swipes, 1 refresh, 2 rewatches, 3 caption-less reels from one creator | Count within ±1 (Phase 2 exit test) | planned |
-| T-MAN-04 | Setup checklist on a Xiaomi/Realme and a stock phone | Every button opens the right screen | planned |
-| T-MAN-05 | Reboot, kill the app | Counting and background analysis resume | planned |
+| T-MAN-04 | Setup checklist on a Xiaomi/Realme and a stock phone | Every button opens the right screen | passing on Nothing A059 (Android 16); Xiaomi/Realme still planned |
+| T-MAN-05 | Reboot, kill the app | Counting and background analysis resume | kill passing (Nothing A059); reboot planned |
 | T-MAN-06 | Rename one detection id on purpose | Unknown alert fires | planned |
-| T-MAN-07 | After 21:00, force-run the digest: `adb shell cmd jobscheduler run -f app.reelbrain <id>` (before 21:00 the worker posts nothing by design) | Notification as in T-DIG-01/02 | planned |
+| T-MAN-07 | After 21:00, run the digest: `adb shell cmd jobscheduler run -f -n androidx.work.systemjobscheduler app.reelbrain <id>` once its hourly window is up (WorkManager delays earlier forced runs; before 21:00 the worker posts nothing by design) | Notification as in T-DIG-01/02 | planned |
 
 ## 8. Change log
 
@@ -172,6 +172,7 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-05 | v0.1.1: T-PIPE-06 and the Instagram rate-limit test also check the reason shown in the library. |
 | 2026-11-06 | v0.2.0: T-TRK-*, T-FP-*, T-RULE-01…05 and T-ALERT-01 written and passing (Kotlin unit); T-CH-03 passing on the Dart side. T-RULE-06 needs captured trees; T-CH-04 and T-MAN-03…06 need a phone. |
 | 2026-11-06 | v0.3.0: T-SAVE-03 (unit) added and passing. T-SAVE-01/02 need a phone. |
+| 2026-11-06 | On the phone (Nothing A059, Android 16): T-MAN-04 passes on this brand after the Accessibility-check fix; T-MAN-05 kill part passes (reboot still to do); first T-LIVE run 5 of 5 from video. The rate-limit test also checks the login-wall message. |
 | 2026-11-06 | After v0.9.4 (unreleased): T-IG-F04, T-CH-01, T-CH-02, T-BG-01 and T-UI-07 added and passing; the Kotlin channel tests run on Robolectric. |
 | 2026-11-06 | v0.9.4: T-REL-01 added and passing; T-EXP-01 covers chats. Sharing several photos needs a phone. |
 | 2026-11-06 | v0.9.3: T-LIB-03 added and passing. Re-analyse-all and the photo sweep aren't unit-tested (they need the plugin); check them on a phone. |

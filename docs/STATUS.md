@@ -20,7 +20,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
 | **Automated tests** | 33 Dart and 56 Kotlin, all passing; `flutter analyze` clean |
-| **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Nothing else has been tested on a device. |
+| **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Since then, checked over ADB on a Nothing A059 (Android 16, 90 Hz): the first Instagram run (item 2), scrolling (item 11), the setup checklist (item 4) and surviving a kill (item 5). It found and fixed three bugs (§2.1 *Unreleased*). |
 
 **Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
 
@@ -50,7 +50,7 @@ Written 2026-11-06; current as of **v0.9.4**, plus unreleased work on `main` aft
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
 | **v0.9.4** | Export and Import include **saved chats**. **Several photos** can be shared at once (one note each). An **update banner** when GitHub has a newer APK. [INSTALL.md](INSTALL.md) for friends; PLAN.md matches the product. |
-| *Unreleased* | **Fix:** the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
+| *Unreleased* | **Fixes found on the phone:** the setup checklist said Accessibility was off when it was on (now read from `AccessibilityManager`); a private post's login wall was shown as "Instagram is limiting requests"; the background job closed the open app's notes database when it finished (sqflite shares one connection per path), so every screen failed until restart; found on the phone. The winning Instagram step and each Gemini attempt are logged (`ReelBot`). Settings → Appearance → **Reduce effects** (a still background, no blur). Channel and background-task integration tests (Robolectric on the Kotlin side) and the Instagram login-wall fixture. |
 
 ### 2.2 Features as they work today
 
@@ -205,7 +205,7 @@ In priority order. Each item says what, why, and what "done" looks like.
    - **Test:** for a fixed set of public reels, a carousel, a photo post and a private post, record which cascade step won.
    - **Why:** the parsers were built from documented shapes and tested on **synthetic** fixtures. Instagram changes its pages often, and the embed-player step (v0.6.2) has never been tested against Instagram.
    - **Done when:** at least 80% of public reels get the **video** without Apify (the PLAN's exit bar), and a real captured response is saved beside each synthetic fixture.
-   - **First run, 2026-11-06 (Nothing A059, Android 16):** 6 shared (4 reels, 1 post, 1 more waiting). All 5 analysed came from the video or images, none needed Apify: 4 by the embed player (step 2), 1 by logged-out GraphQL (step 4). The sixth hit the Instagram pause after shares a few seconds apart and stays queued. Promising, but too few to call; repeat with 20+ reels shared a minute apart, and add logging of which step won (the app logs nothing today).
+   - **First run, 2026-11-06 (Nothing A059, Android 16):** 6 shared (4 reels, 1 post, 1 more waiting). All 5 analysed came from the video or images, none needed Apify: 4 by the embed player (step 2), 1 by logged-out GraphQL (step 4). The sixth was a **private account's post** (a 39-character code): every step hit the login wall, so it waits 10 min and retries up to 3 times, as designed. The library wrongly called that "Instagram is limiting requests"; fixed to say Instagram wants a login. Promising, but too few to call: repeat with 20+ public reels shared a minute apart. The winning step is now logged: `adb logcat -s ReelBot`.
 3. **Counter accuracy (T-MAN-03).**
    - **Test:** watch 20 reels and 20 Shorts with swipe-backs, half-swipes, a refresh, rewatches and reels without captions.
    - **Why:** the view ids are the docs' starting guesses. Counting worked on the user's phone, but its accuracy hasn't been measured.
@@ -213,13 +213,15 @@ In priority order. Each item says what, why, and what "done" looks like.
 4. **Setup checklist on several brands (T-MAN-04, T-CH-04).**
    - **Test:** every button on a stock Android phone and on a Xiaomi or Realme, on Android 13+ (restricted settings).
    - **Done when:** each button opens the right system screen.
+   - **Nothing A059, Android 16 (2026-11-06):** the checklist said Accessibility was off while it was on and bound, because the raw `ENABLED_ACCESSIBILITY_SERVICES` read didn't match; fixed by asking `AccessibilityManager`. After the fix every row shows done, and all five intents behind the buttons resolve to the right Settings screen. Still to do: a Xiaomi or Realme (Autostart).
 5. **Survives reboot and kill (T-MAN-05).**
    - **Done when:** counting and background analysis resume after a reboot and after the app is swiped away.
+   - **Kill, 2026-11-06:** after the process was killed (`am crash`), Android restarted it within 8 s with the counter service bound and both jobs (analyse, digest) still scheduled. `am kill` doesn't kill it at all while the Accessibility service is bound. A **force stop** (App info → Force stop) removes the jobs until the app is opened again; that is Android's rule. Still to do: a reboot.
 6. **Unknown alert fires (T-MAN-06).**
    - **Test:** rename one detection id on purpose and watch reels.
    - **Done when:** one alert appears that day.
 7. **Digest (T-MAN-07).**
-   - **Test:** after 21:00, force-run the job with `adb shell cmd jobscheduler run -f app.reelbrain <id>`.
+   - **Test:** after 21:00, let the hourly job run (or wait for its window and then run `adb shell cmd jobscheduler run -f -n androidx.work.systemjobscheduler app.reelbrain <id>`; WorkManager delays a forced run that comes before the period is up, and the ids need the `-n` namespace).
    - **Done when:** the notification shows titles, or counts only, or the nudge, as expected.
 8. **Fresh install (T-MAN-01).**
    - **Test:** install the release APK on Android 13+ and note any Play Protect prompt.
@@ -231,11 +233,13 @@ In priority order. Each item says what, why, and what "done" looks like.
     - **Test:** check that `videoMetadata.fps` and `mediaResolution` are accepted by `generateContent` (the docs only show them on the newer Interactions API).
     - **Why:** if they're rejected, every reel costs an extra request, because the retry without them still works.
     - **Done when:** a log or debug check shows the first attempt succeeding.
+    - **Logging added:** each Gemini call now logs `ReelBot gemini <model> ok, token savers on|off` or the rejection; read it with `adb logcat | grep ReelBot` while a reel is analysed.
 11. **Performance.**
     - **Test:** scroll each tab on a mid-range or older phone.
     - **Why:** the background blur (`BackdropFilter`) and the animated background can stutter on weak GPUs.
     - **Done when:** smooth, or a "reduce effects" switch is added.
-    - **Switch added** after v0.9.4 (Settings → Appearance → *Reduce effects*, T-UI-07). Still to do on a phone: scroll with it off, and say in INSTALL.md to turn it on if it stutters.
+    - **Switch added** after v0.9.4 (Settings → Appearance → *Reduce effects*, T-UI-07).
+    - **Measured on the Nothing A059 (mid-range, 90 Hz), 2026-11-06,** from SurfaceFlinger frame times while swiping the Library 12 times: effects on, 0% and 1.6% of frames late (the very first scroll after a fresh install was 17.7%, while shaders compile); Reduce effects on, 0% and 0.8%. Smooth either way on this phone. Found: with effects on the background redraws at ~90 fps even when idle, which costs battery; worth pausing it when nothing moves. Still to try: an older or low-end phone.
 
 ### P1: product gaps (small, well understood)
 

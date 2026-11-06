@@ -21,7 +21,7 @@ sealed interface StepResult {
 
 data class FetchResult(val step: Int, val media: IgMedia)
 
-class RateLimitedException : Exception("Instagram is rate-limiting; try later")
+class RateLimitedException(why: String = "Instagram is rate-limiting; try later") : Exception(why)
 
 /**
  * The rules around the Instagram steps (ENDPOINTS §1): first video wins, metadata is merged,
@@ -76,7 +76,7 @@ class IgCascade(
     }
 
     private fun runSteps(code: String, steps: List<(String) -> StepResult>): FetchResult {
-        if (clock() < pausedUntil) throw RateLimitedException()
+        if (clock() < pausedUntil) throw RateLimitedException("paused for ${(pausedUntil - clock()) / 1000} s more")
         gone[code]?.let { if (clock() - it < negativeMs) return FetchResult(0, IgMedia()) else gone.remove(code) }
         var best = IgMedia()
         var bestStep = 0
@@ -91,7 +91,7 @@ class IgCascade(
                 StepResult.Empty -> Unit
                 StepResult.Limited -> {
                     pausedUntil = clock() + pauseMs
-                    throw RateLimitedException()
+                    throw RateLimitedException("HTTP 429 at step ${i + 1}; pausing 30 min")
                 }
                 StepResult.LoginWall -> wall = true
                 StepResult.Gone -> {
@@ -104,7 +104,7 @@ class IgCascade(
         // but give up after a few runs so the reel isn't stuck in the queue for ever.
         if (wall && bestStep == 0 && walled.merge(code, 1, Int::plus)!! < wallTries) {
             pausedUntil = maxOf(pausedUntil, clock() + wallRetryMs)
-            throw RateLimitedException()
+            throw RateLimitedException("every step hit a login wall; retrying in 10 min")
         }
         walled.remove(code)
         return FetchResult(bestStep, best)

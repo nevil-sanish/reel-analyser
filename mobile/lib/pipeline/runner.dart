@@ -189,8 +189,11 @@ class Runner {
       if (e.kind == GeminiFailure.badKey) throw _RetryLater('Your key was rejected (${e.message.split(':').first}). Check it in Settings.', stopAll: true);
       if (e.kind == GeminiFailure.retryLater) throw _RetryLater(e.toString());
       rethrow;
-    } on RateLimited {
-      throw _RetryLater('Instagram is limiting requests right now. Reel Bot retries on its own (10–30 min).');
+    } on RateLimited catch (e) {
+      throw _RetryLater(e.loginWall
+          ? 'Instagram wants a login to show this post (often a private account). Reel Bot tries again in 10 min, '
+              'up to 3 times, then makes the note from what it has.'
+          : 'Instagram is limiting requests right now. Reel Bot retries on its own (10–30 min).');
     } on SocketException catch (e) {
       throw _RetryLater('no network ($e)');
     } on http.ClientException catch (e) {

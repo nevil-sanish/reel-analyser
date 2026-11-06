@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -90,8 +91,17 @@ class InstagramFetcher private constructor(private val ctx: Context) {
             ?: throw IllegalArgumentException("not an Instagram link: $url")
         repeat(2) { attempt ->
             val r = synchronized(webLock) {
-                try { cascade.run(code, steps(code)) } finally { destroyWebView() }
+                try {
+                    cascade.run(code, steps(code))
+                } catch (e: RateLimitedException) {
+                    Log.w("ReelBot", "ig $code: ${e.message}")
+                    throw e
+                } finally {
+                    destroyWebView()
+                }
             }
+            // Which step won is what the live checks (T-LIVE-*) count; `adb logcat -s ReelBot` reads it.
+            Log.i("ReelBot", "ig $code: step ${r.step}, video ${r.media.hasVideo}, images ${r.media.images.size}")
             if (!r.media.hasVideo) return Result(r.step, r.media, null)
             try {
                 return Result(r.step, r.media, download(r.media.videoUrl, code)?.path)

@@ -229,6 +229,12 @@ void main() {
     await r.processQueue();
     expect(b.statuses, isEmpty);
     expect(r.lastProblem, contains('Instagram is limiting'));
+
+    // A post walled on every step (a private account's, say) is not a rate limit, and the library says so.
+    final walled = runner(FakeBridge([ig], fetch: (_) => throw RateLimited('every step hit a login wall; retrying in 10 min')),
+        (r) async => http.Response(_gemOk(), 200));
+    await walled.processQueue();
+    expect(walled.lastProblem, contains('wants a login'));
   });
 
   test('T-PIPE-11 Gemini keys take turns, one reel each; a 429 moves the reel to the next key', () async {

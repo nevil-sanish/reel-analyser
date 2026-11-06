@@ -57,8 +57,14 @@ class IgFetch {
       );
 }
 
-/// Instagram is pausing us (429 / login wall); the item stays queued.
+/// Instagram is pausing us (429 / login wall); the item stays queued. [reason] is Kotlin's message.
 class RateLimited implements Exception {
+  final String reason;
+  RateLimited([this.reason = '']);
+
+  /// Every step for this post hit a login wall: usually a private account's post, not a rate limit.
+  bool get loginWall => reason.contains('login wall');
+
   @override
   String toString() => 'Instagram is rate-limiting; will retry later';
 }
@@ -171,7 +177,7 @@ class CounterBridge {
     try {
       return IgFetch.fromMap((await _ch.invokeMapMethod('fetchInstagram', {'url': url}))!);
     } on PlatformException catch (e) {
-      if (e.code == 'rate_limited') throw RateLimited();
+      if (e.code == 'rate_limited') throw RateLimited(e.message ?? '');
       rethrow;
     }
   }
