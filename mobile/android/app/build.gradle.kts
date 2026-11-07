@@ -35,6 +35,14 @@ android {
         versionName = flutter.versionName
     }
 
+    // `direct`: the GitHub APK, with the optional Accessibility counter and the in-app update banner.
+    // `play`: the Google Play build (see src/play/AndroidManifest.xml and lib/flavor.dart).
+    flavorDimensions += "dist"
+    productFlavors {
+        create("direct") { dimension = "dist" }
+        create("play") { dimension = "dist" }
+    }
+
     signingConfigs {
         if (keyProps.isNotEmpty()) create("release") {
             storeFile = file(keyProps.getProperty("storeFile"))

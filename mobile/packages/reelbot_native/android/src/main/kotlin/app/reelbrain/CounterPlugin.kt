@@ -88,7 +88,16 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "markOpened" -> {
                 prefs().edit().putLong(Digest.LAST_OPENED, System.currentTimeMillis()).apply()
+                val now = System.currentTimeMillis()
+                io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now) } } // retention: see the Privacy Policy
                 result.success(null)
+            }
+            "eraseAll" -> offMain(result) {
+                CounterDb.get(ctx).eraseAll()
+                java.io.File(ctx.filesDir, "photos").deleteRecursively()
+                prefs().edit().clear().apply()
+                (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancelAll()
+                null
             }
             "status" -> result.success(status())
             "openUrl" -> result.success(launch(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url")!!))))

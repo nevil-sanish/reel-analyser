@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_services.dart';
+import 'flavor.dart';
 import 'data/update_check.dart';
 import 'pipeline/background.dart';
 import 'ui/chat_screen.dart';
 import 'ui/intro_screen.dart';
+import 'ui/legal_screen.dart';
 import 'ui/library_screen.dart';
 import 'ui/liquid.dart';
 import 'ui/theme.dart';
@@ -79,7 +82,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkUpdate();
+    if (!kPlayBuild) _checkUpdate(); // Play updates the app itself
+    WidgetsBinding.instance.addPostFrameCallback((_) => _askConsent());
+  }
+
+  /// Once (and again if the documents change): the Terms and Privacy Policy, before anything else is used.
+  Future<void> _askConsent() async {
+    final k = widget.services.keys;
+    if (await k.flag('legal_v1') || !mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('Terms and Privacy'),
+          content: const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
+              'with your own key. Please read how your data is handled and the terms of use.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.privacy)), child: const Text('Privacy Policy')),
+            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.terms)), child: const Text('Terms of Use')),
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Close app')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('I agree')),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) {
+      await k.setFlag('legal_v1');
+    } else {
+      await SystemNavigator.pop();
+    }
   }
 
   /// A banner when GitHub has a newer APK. Silent when offline or rate-limited.

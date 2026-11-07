@@ -182,7 +182,7 @@ cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest
 ```
 
 ```bash
-cd mobile && flutter build apk --release
+cd mobile && flutter build apk --release --flavor direct
 ```
 
 The release build needs `mobile/android/key.properties` (gitignored) pointing at a keystore kept outside the repo.

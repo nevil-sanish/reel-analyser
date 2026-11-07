@@ -12,7 +12,10 @@ class WrongPassphrase implements Exception {
 /// The passphrase is never stored, so the file is useless without it, and so is the app: only someone who
 /// knows it can restore the keys. Forgetting it means entering the keys by hand again.
 class KeyBackup {
-  static const iterations = 120000;
+  /// OWASP's figure for PBKDF2-SHA256. Backups made by v0.9.8 used 120,000 and still open: the accepted range
+  /// is bounded so a forged file cannot make the phone grind for hours (too many) or weaken the key (too few).
+  static const iterations = 600000;
+  static const _minIterations = 100000, _maxIterations = 1000000;
   static final _aes = AesGcm.with256bits();
 
   static List<int> _random(int n) {
@@ -41,7 +44,9 @@ class KeyBackup {
   /// Throws [WrongPassphrase] for a wrong passphrase or a damaged file.
   static Future<Map<String, Object?>> decrypt(Map<String, Object?> blob, String passphrase) async {
     try {
-      final key = await _derive(passphrase, base64Decode('${blob['salt']}'), (blob['iter'] as num).toInt());
+      final iter = (blob['iter'] as num).toInt();
+      if (iter < _minIterations || iter > _maxIterations) throw WrongPassphrase();
+      final key = await _derive(passphrase, base64Decode('${blob['salt']}'), iter);
       final clear = await _aes.decrypt(
         SecretBox(base64Decode('${blob['ct']}'), nonce: base64Decode('${blob['nonce']}'), mac: Mac(base64Decode('${blob['mac']}'))),
         secretKey: key,

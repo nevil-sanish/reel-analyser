@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:flutter/services.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +11,9 @@ import '../app_services.dart';
 import '../data/export.dart';
 import '../data/key_backup.dart';
 import '../data/key_store.dart';
+import '../flavor.dart';
 import 'debug_screen.dart';
+import 'legal_screen.dart';
 import 'liquid.dart';
 import 'setup_screen.dart';
 import 'theme.dart';
@@ -167,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_withKeys) {
       final pass = await _askPassphrase(confirm: true);
       if (pass == null) return;
-      _say('Encrypting your keys…');
+      _say('Encrypting your keys; this can take up to 20 seconds…');
       final keys = await s.keys.all();
       encrypted = await Isolate.run(() => KeyBackup.encrypt(keys, pass));
     }
@@ -205,6 +209,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on Object catch (e) {
       if (mounted) _say('Could not import: the file is not a Reel Analyser export ($e)');
     }
+  }
+
+  /// Settings → Erase all my data (Privacy Policy §7). Asks first; the app closes afterwards so nothing stale stays on screen.
+  Future<void> _eraseAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Erase all your data?'),
+        content: const Text('This deletes every note, chat, count, shared photo and API key from this phone. '
+            'It cannot be undone. Files you exported to Downloads are not touched.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(c).colorScheme.error),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Erase everything'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    _saveTimer?.cancel();
+    _loaded = false; // leaving this screen must not write the key boxes back
+    try {
+      await s.eraseEverything();
+    } on Object catch (e) {
+      if (mounted) _say('Could not erase everything: $e');
+      return;
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        title: const Text('All data erased'),
+        content: const Text('Reel Analyser will close now.'),
+        actions: [FilledButton(onPressed: () => Navigator.pop(c), child: const Text('OK'))],
+      ),
+    );
+    await SystemNavigator.pop();
   }
 
   /// The one thing that leaves the phone on purpose: what you type here, as a GitHub issue you submit yourself.
@@ -335,6 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SetupScreen(s))),
             ),
+            if (!kPlayBuild)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.bug_report_outlined),
@@ -362,6 +407,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text('Found a bug or have an idea?'),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(onPressed: _feedback, icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
+          ]),
+          _section('About and legal', [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Policy'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.privacy)),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.gavel_outlined),
+              title: const Text('Terms of Use'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.terms)),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.article_outlined),
+              title: const Text('Open-source licenses'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showLicensePage(context: context, applicationName: 'Reel Analyser', applicationVersion: AppServices.version),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
+              title: Text('Erase all my data', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              subtitle: const Text('Deletes every note, chat, count, photo and API key from this phone.'),
+              onTap: _eraseAll,
+            ),
           ]),
           Center(child: Text('Reel Analyser ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
         ],

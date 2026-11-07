@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Google Play build. Play's policies do not allow what the download build does for reel counting, so none of it ships:
+      - no Accessibility service (it would read other apps' screens);
+      - no battery-optimisation exemption request.
+      Time in Instagram and YouTube still comes from Usage access, which the user grants in Android settings.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove"/>
+    <application>
+        <service android:name="app.reelbrain.ReelCounterService" tools:node="remove"/>
+    </application>
+</manifest>

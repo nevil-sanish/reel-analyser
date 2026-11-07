@@ -7,6 +7,7 @@ import '../app_services.dart';
 import '../native/counter_bridge.dart';
 import 'debug_screen.dart';
 import 'liquid.dart';
+import '../flavor.dart';
 import 'setup_screen.dart';
 import 'theme.dart';
 
@@ -100,8 +101,10 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
                 child: ListTile(
                   leading: const Icon(Icons.insights_rounded),
                   title: const Text('Insights are optional'),
-                  subtitle: const Text('Allow usage access to see your time in Instagram and YouTube, '
-                      'and turn on Accessibility to count reels and Shorts. Either one is enough.'),
+                  subtitle: Text(kPlayBuild
+                      ? 'Allow usage access to see your time in Instagram and YouTube.'
+                      : 'Allow usage access to see your time in Instagram and YouTube, '
+                          'and turn on Accessibility to count reels and Shorts. Either one is enough.'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _open(SetupScreen(widget.services)),
                 ),

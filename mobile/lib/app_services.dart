@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.9.8';
+  static const version = '0.9.9';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -42,6 +42,13 @@ class AppServices {
     }
     await library.delete(r.url);
     return true;
+  }
+
+  /// Settings → "Erase all my data": notes, chats, queue, counts, photos and keys. The caller closes the app after.
+  Future<void> eraseEverything() async {
+    await library.eraseAll();
+    await bridge.eraseAll();
+    await keys.eraseAll();
   }
 
   /// Deletes shared-photo files that no note and no queued item uses any more (a deleted photo note keeps

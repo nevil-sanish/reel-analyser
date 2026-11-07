@@ -304,7 +304,7 @@ cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest
 ```
 
 ```bash
-cd mobile && flutter build apk --release
+cd mobile && flutter build apk --release --flavor direct
 ```
 
 **Releasing:**

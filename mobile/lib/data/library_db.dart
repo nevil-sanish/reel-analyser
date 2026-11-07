@@ -144,5 +144,12 @@ class LibraryDb {
 
   Future<void> unlock() => _db.rawUpdate("UPDATE meta SET v = 0 WHERE k = 'processing_until'");
 
+  /// Erase all my data: every note and chat.
+  Future<void> eraseAll() async {
+    await _db.delete('reels');
+    await _db.delete('chats');
+    await _db.update('meta', {'v': 0}, where: "k = 'gemini_turn'");
+  }
+
   Future<void> close() => _db.close();
 }

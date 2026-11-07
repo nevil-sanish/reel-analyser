@@ -184,8 +184,11 @@ class CounterBridge {
   /// Deletes files in the app's photo folder that aren't in [keep].
   Future<void> sweepPhotos(List<String> keep) => _ch.invokeMethod('sweepPhotos', {'keep': keep});
 
-  /// The digest is skipped on days the app was opened.
+  /// The digest is skipped on days the app was opened. Also applies the retention rules (old Insights data goes).
   Future<void> markOpened() => _ch.invokeMethod('markOpened');
+
+  /// "Erase all my data": counters, queue, debug rows, shared photos and the notification state.
+  Future<void> eraseAll() => _ch.invokeMethod('eraseAll');
 
   Future<IgFetch> fetchInstagram(String url) async {
     try {

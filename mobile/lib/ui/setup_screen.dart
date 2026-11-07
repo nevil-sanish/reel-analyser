@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../flavor.dart';
 import '../native/counter_bridge.dart';
 import 'liquid.dart';
 
@@ -41,12 +42,45 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     if (mounted) setState(() => _s = s);
   }
 
+  /// Prominent disclosure (Google Play policy): what the access reads and what is done with it, asked before the
+  /// system screen opens. The system screen is only opened after "Agree".
+  static const _disclosures = {
+    'openUsageAccess': ('Usage access',
+        'Reel Analyser will read Android\'s app-usage statistics to show how long you spend in Instagram and YouTube, '
+            'by day and hour. Nothing is read from the screen. The figures stay on this phone, are deleted after 90 days, and are '
+            'never sent anywhere. You can turn this off in Android settings at any time.'),
+    'openAccessibilitySettings': ('Accessibility service',
+        'Reel Analyser will use Android\'s Accessibility service to notice when you are on an Instagram or YouTube Reels or '
+            'Shorts screen, so it can count them and the time on them. It reads only those two apps, ignores every other app, '
+            'never types, taps or scrolls, and keeps only an anonymous fingerprint and a count on this phone, deleted after 90 days. '
+            'Nothing is sent anywhere. You can turn it off in Android settings at any time.'),
+  };
+
+  Future<void> _go(String screen) async {
+    final d = _disclosures[screen];
+    if (d != null) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text(d.$1),
+          content: Text(d.$2),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Not now')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Agree')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    await b.open(screen);
+  }
+
   Widget _step(String title, String detail, bool? done, String screen, String button) => ListTile(
         leading: Icon(done == true ? Icons.check_circle : Icons.radio_button_unchecked,
             color: done == true ? Colors.green : null),
         title: Text(title),
         subtitle: Text(detail),
-        trailing: done == true ? null : FilledButton.tonal(onPressed: () => b.open(screen), child: Text(button)),
+        trailing: done == true ? null : FilledButton.tonal(onPressed: () => _go(screen), child: Text(button)),
       );
 
   Widget _header(BuildContext context, String title, String detail) => Padding(
@@ -73,6 +107,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                     'Insights are optional. Notes and chat work without any of this.'),
                 _step('Allow usage access', 'Time spent in each app, from Android\'s own app usage. '
                     'Nothing is read from the screen.', s.usageAccess, 'openUsageAccess', 'Open'),
+                if (!kPlayBuild) ...[
                 _header(context, 'Optional: count reels and Shorts',
                     'Turn this on to also see how many reels and Shorts you watch, and the time on those screens.'),
                 if (s.sdkInt >= 33 && !s.serviceEnabled)
@@ -85,6 +120,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                 if (s.needsAutostart)
                   _step('Allow Autostart', '${s.manufacturer} phones stop background apps unless Autostart is on.', null,
                       'openAutostart', 'Open'),
+                ],
                 if (s.serviceEnabled && !s.serviceRunning)
                   const ListTile(
                     leading: Icon(Icons.info_outline),

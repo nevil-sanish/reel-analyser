@@ -121,6 +121,24 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
     private fun <T> query(sql: String, args: Array<String>?, row: (android.database.Cursor) -> T): List<T> =
         readableDatabase.rawQuery(sql, args).use { c -> buildList { while (c.moveToNext()) add(row(c)) } }
 
+    /**
+     * The retention rules of the Privacy Policy: Insights rows (counts, screen time, unknown counts) are kept 90 days,
+     * and finished, failed or stopped queue entries 30 days. [today] is the local date as yyyy-MM-dd, [now] epoch ms.
+     */
+    fun prune(today: String, now: Long) {
+        val db = writableDatabase
+        for (t in listOf("seen_items", "screen_time", "unknown_items")) {
+            db.execSQL("DELETE FROM $t WHERE date < date(?, '-90 days')", arrayOf(today))
+        }
+        db.delete("pending_items", "status != 'queued' AND created_at < ?", arrayOf((now - 30L * 24 * 3600 * 1000).toString()))
+    }
+
+    /** "Erase all my data": every counter, queue and debug row. */
+    fun eraseAll() {
+        val db = writableDatabase
+        for (t in listOf("pending_items", "seen_items", "screen_time", "unknown_items", "debug_state")) db.delete(t, null, null)
+    }
+
     /** SHARE-IN: queues a shared link. */
     fun addShared(link: ShareUrls.Link, now: Long) {
         writableDatabase.insert("pending_items", null, ContentValues().apply {

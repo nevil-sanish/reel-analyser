@@ -7,6 +7,9 @@ class KeyStore {
   // just reads as "not set" and nothing is deleted.
   static const _s = FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: false));
 
+  /// Erase all my data: every key, flag and counter this class holds.
+  Future<void> eraseAll() => _s.deleteAll();
+
   /// Every key the user entered, as one map: what an encrypted backup holds.
   Future<Map<String, Object?>> all() async => {
         'gemini': await geminiKeys,
