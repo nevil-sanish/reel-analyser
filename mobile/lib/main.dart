@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             m.hideCurrentMaterialBanner();
             runUpdate(context, s, rel);
           },
-          child: Text(kPrivateBuild ? 'Download' : 'Update'),
+          child: Text(kSemiBuild ? 'Download' : 'Update'),
         ),
       ],
     ));
@@ -166,8 +166,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         body: Stack(children: [
           const Positioned.fill(child: LiquidBackground()),
           FadingTabs(index: _tab, children: [
-            ChatScreen(widget.services, onInsights: kPrivateBuild ? null : () => setState(() => _tab = 1)),
-            if (!kPrivateBuild) InsightsScreen(widget.services),
+            ChatScreen(widget.services, onInsights: kSemiBuild ? null : () => setState(() => _tab = 1)),
+            if (!kSemiBuild) InsightsScreen(widget.services),
             LibraryScreen(widget.services),
           ]),
         ]),
@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onTap: (i) => setState(() => _tab = i),
           tabs: [
             const (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Ask'),
-            if (!kPrivateBuild) const (Icons.insights_outlined, Icons.insights, 'Insights'),
+            if (!kSemiBuild) const (Icons.insights_outlined, Icons.insights, 'Insights'),
             const (Icons.video_library_outlined, Icons.video_library, 'Library'),
           ],
         ),

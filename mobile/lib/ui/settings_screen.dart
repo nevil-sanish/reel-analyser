@@ -213,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (mounted) _say('That passphrase does not open this backup. Try again.');
         }
       }
-      if (mounted) _say('Imported $notes new notes and $chats chats${restored > 0 ? ', and restored $restored keys' : ''}');
+      if (mounted) _say('Added ${notes == 1 ? '1 new note' : '$notes new notes'} and ${chats == 1 ? '1 new chat' : '$chats new chats'}${restored > 0 ? ', and restored $restored keys' : ''}. Ones you already have are skipped.');
     } on FormatException catch (e) {
       if (mounted) _say('Could not import: ${e.message}');
     } on Object catch (e) {
@@ -384,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ]),
-          if (!kPrivateBuild)
+          if (!kSemiBuild)
           _section('Insights', [
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -402,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ]),
           _section('Backup', [
-            const Text('Uninstalling deletes your notes. Export now and then.'),
+            const Text('Uninstalling deletes your notes. Export now and then: every export is a complete copy in its own file.'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Include my API keys'),

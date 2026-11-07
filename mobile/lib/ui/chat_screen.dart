@@ -535,13 +535,16 @@ class _RecentCard extends StatelessWidget {
   }
 }
 
-/// `**word**` shows as bold instead of with the asterisks; the rest of the text is left as it is.
+/// `**word**` shows as bold and `*word*` as italic instead of with the asterisks; the rest of the text is left as it is.
 TextSpan boldSpans(String text) {
   final out = <TextSpan>[];
   var last = 0;
-  for (final m in RegExp(r'\*\*(.+?)\*\*', dotAll: true).allMatches(text)) {
+  for (final m in RegExp(r'\*\*(.+?)\*\*|\*([^*\s][^*\n]*?)\*', dotAll: true).allMatches(text)) {
     if (m.start > last) out.add(TextSpan(text: text.substring(last, m.start)));
-    out.add(TextSpan(text: m.group(1), style: const TextStyle(fontWeight: FontWeight.w700)));
+    final bold = m.group(1) != null;
+    out.add(TextSpan(
+        text: bold ? m.group(1) : m.group(2),
+        style: bold ? const TextStyle(fontWeight: FontWeight.w700) : const TextStyle(fontStyle: FontStyle.italic)));
     last = m.end;
   }
   if (last < text.length) out.add(TextSpan(text: text.substring(last)));

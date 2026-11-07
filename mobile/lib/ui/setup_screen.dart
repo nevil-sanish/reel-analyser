@@ -107,7 +107,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                     'Insights are optional. Notes and chat work without any of this.'),
                 _step('Allow usage access', 'Time spent in each app, from Android\'s own app usage. '
                     'Nothing is read from the screen.', s.usageAccess, 'openUsageAccess', 'Open'),
-                if (!kPrivateBuild) ...[
+                if (!kSemiBuild) ...[
                 _header(context, 'Optional: count reels and Shorts',
                     'Turn this on to also see how many reels and Shorts you watch, and the time on those screens.'),
                 if (s.sdkInt >= 33 && !s.serviceEnabled)

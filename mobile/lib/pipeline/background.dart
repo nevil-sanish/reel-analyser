@@ -40,7 +40,7 @@ Future<bool> analyseAndNotify(
     n = await runner.processQueue();
   }
   if (n == 0) return true;
-  if (kPrivateBuild) return true; // the private build posts no notifications
+  if (kSemiBuild) return true; // the semi build posts no notifications
   // Only from the background: with the app open, the library already shows the new notes.
   final t = runner.finishedTitles;
   await bridge.notifyNotes(

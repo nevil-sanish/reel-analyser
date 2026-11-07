@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The semi build's own colours (indigo to violet) so it is told apart from the green full build on the home screen. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+  <path android:pathData="M0,0h108v108h-108z">
+    <aapt:attr name="android:fillColor">
+      <gradient android:type="linear"
+          android:startX="0" android:startY="108" android:endX="108" android:endY="0">
+        <item android:offset="0" android:color="#FF312E81"/>
+        <item android:offset="0.5" android:color="#FF4F46E5"/>
+        <item android:offset="1" android:color="#FFA78BFA"/>
+      </gradient>
+    </aapt:attr>
+  </path>
+</vector>

@@ -413,6 +413,19 @@ void main() {
     expect(b.statuses[1], 'cancelled');
   });
 
+  test('T-EXP-02 every export holds everything: archived notes and all chats, the same each time', () async {
+    await db.saveReel(const Reel(url: 'https://youtu.be/e1', app: 'youtube', title: 'A', summary: 's', savedAt: 1));
+    await db.saveReel(const Reel(url: 'https://youtu.be/e2', app: 'youtube', title: 'B', summary: 's', savedAt: 2, seenAt: 3, archived: true));
+    await db.saveChat(null, ['q1?', 'a1.'], 5);
+    await db.saveChat(null, ['q2?', 'a2.'], 6);
+    final first = exportJson(await db.reels(), await db.chats());
+    final second = exportJson(await db.reels(), await db.chats());
+    expect(second, first, reason: 'an earlier export must not change what the next one holds');
+    final data = jsonDecode(second) as Map;
+    expect((data['reels'] as List).length, 2, reason: 'archived notes are exported too');
+    expect((data['chats'] as List).length, 2);
+  });
+
   test('T-EXP-01 export, wipe, import (notes and chats); import twice adds nothing', () async {
     await db.saveReel(const Reel(url: 'https://youtu.be/u1', app: 'youtube', title: 'A', summary: 's', tags: ['x'], savedAt: 1));
     await db.saveReel(const Reel(url: 'https://www.instagram.com/reel/u2/', app: 'instagram', title: 'B', summary: 's', savedAt: 2));

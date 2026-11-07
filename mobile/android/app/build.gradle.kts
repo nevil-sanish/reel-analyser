@@ -36,11 +36,20 @@ android {
     }
 
     // `full`: every feature, with the optional Accessibility counter, Usage access, notifications and update banner.
-    // `private`: no sensitive permission and no access beyond the internet (see src/private and lib/flavor.dart).
+    // `semi`: no sensitive permission and no access beyond the internet (see src/semi and lib/flavor.dart).
     flavorDimensions += "dist"
+    // The semi build has its own application id and launcher icon, so both can be installed on one phone. The full build keeps
+    // `app.reelbrain` (existing installs and their updates). Each has its own notes, keys and settings.
     productFlavors {
-        create("full") { dimension = "dist" }
-        create("private") { dimension = "dist" }
+        create("full") {
+            dimension = "dist"
+            manifestPlaceholders["appLabel"] = "Reel Analyser"
+        }
+        create("semi") {
+            dimension = "dist"
+            applicationIdSuffix = ".semi"
+            manifestPlaceholders["appLabel"] = "Reel Analyser Semi"
+        }
     }
 
     signingConfigs {

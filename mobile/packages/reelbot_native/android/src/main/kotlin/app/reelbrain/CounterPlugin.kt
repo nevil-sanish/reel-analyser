@@ -38,15 +38,15 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         ctx = binding.applicationContext
         channel = MethodChannel(binding.binaryMessenger, "reelbot/counter")
         channel.setMethodCallHandler(this)
-        if (privateBuild) {
-            // The private build posts no notifications: drop a digest an earlier (full) install had scheduled.
+        if (semiBuild) {
+            // The semi build posts no notifications: drop a digest an earlier (full) install had scheduled.
             androidx.work.WorkManager.getInstance(ctx).cancelUniqueWork("reelbot_digest")
         } else {
             DigestWorker.schedule(ctx)
         }
     }
 
-    private val privateBuild get() = ctx.resources.getBoolean(R.bool.reelbot_private)
+    private val semiBuild get() = ctx.resources.getBoolean(R.bool.reelbot_semi)
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
@@ -92,7 +92,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 result.success(null)
             }
             "notifyNotes" -> {
-                if (!privateBuild) DigestWorker.post(ctx, 3, "reelbot_notes", "Notes ready",
+                if (!semiBuild) DigestWorker.post(ctx, 3, "reelbot_notes", "Notes ready",
                     call.argument<String>("title")!!, call.argument<String>("text")!!)
                 result.success(null)
             }

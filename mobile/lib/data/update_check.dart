@@ -19,9 +19,9 @@ Future<(String, String)?> newerRelease(http.Client client, String current) async
   return u == null ? null : (u.tag, u.apkUrl);
 }
 
-/// Same check, with the checksum file too. A release carries a `-full` and a `-private` APK; this build takes its own
+/// Same check, with the checksum file too. A release carries a `-full` and a `-semi` APK; this build takes its own
 /// (a release with one unlabelled APK still works).
-Future<UpdateInfo?> latestUpdate(http.Client client, String current, {bool private = kPrivateBuild}) async {
+Future<UpdateInfo?> latestUpdate(http.Client client, String current, {bool semi = kSemiBuild}) async {
   try {
     final r = await client.get(Uri.parse('https://api.github.com/repos/nevil-sanish/reel-analyser/releases?per_page=1'),
         headers: {'Accept': 'application/vnd.github+json'}).timeout(const Duration(seconds: 10));
@@ -30,7 +30,7 @@ Future<UpdateInfo?> latestUpdate(http.Client client, String current, {bool priva
     final tag = rel['tag_name'] as String;
     final assets = [for (final a in rel['assets'] as List) (name: '${a['name']}', url: '${a['browser_download_url']}')];
     final apks = assets.where((a) => a.name.endsWith('.apk')).toList();
-    final mine = apks.where((a) => a.name.contains(private ? '-private' : '-full')).toList();
+    final mine = apks.where((a) => a.name.contains(semi ? '-semi' : '-full')).toList();
     final apk = mine.isNotEmpty ? mine.first : (apks.length == 1 ? apks.first : null);
     if (apk == null || !isNewer(tag, current)) return null;
     final sums = assets.where((a) => a.name == 'SHA256SUMS').toList();

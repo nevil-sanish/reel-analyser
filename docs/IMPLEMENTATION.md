@@ -442,7 +442,7 @@ A checklist that re-checks `status` on resume:
 
 The full catalogue, with IDs, levels, fixture rules and commands, is [TESTS.md](TESTS.md). Each section above names the endpoints it implements; [ENDPOINTS.md](ENDPOINTS.md) lists the tests for each endpoint.
 
-Before every commit that changes code: `flutter analyze`, `flutter test`, `./gradlew :app:testDebugUnitTest`. Before every release: also `flutter build apk --release --flavor full` and `--flavor private --dart-define=PRIVATE_BUILD=true` and the live and manual checks in TESTS.md §6–7.
+Before every commit that changes code: `flutter analyze`, `flutter test`, `./gradlew :app:testDebugUnitTest`. Before every release: also `flutter build apk --release --flavor full` and `--flavor semi --dart-define=SEMI_BUILD=true` and the live and manual checks in TESTS.md §6–7.
 
 ---
 

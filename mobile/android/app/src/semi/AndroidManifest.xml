@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!--
-      Private build: nothing that reads the phone beyond the app's own data. Removed here:
+      Semi build: nothing that reads the phone beyond the app's own data. Removed here:
       - the Accessibility service (reads other apps' screens);
       - Usage access (PACKAGE_USAGE_STATS) and the battery-optimisation exemption;
       - installing updates from inside the app (REQUEST_INSTALL_PACKAGES; the update button opens the download page instead);

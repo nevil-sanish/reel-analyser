@@ -20,10 +20,10 @@ flutter build apk --release --flavor full
 ```
 
 ```bash
-flutter build appbundle --release --flavor private --dart-define=PRIVATE_BUILD=true
+flutter build appbundle --release --flavor semi --dart-define=SEMI_BUILD=true
 ```
 
-The bundle is `build/app/outputs/bundle/privateRelease/app-private-release.aab`. Same package id and signing key as the APK. Use Play App Signing: upload this key as the **upload key**.
+The bundle is `build/app/outputs/bundle/semiRelease/app-semi-release.aab`. Same signing key as the APK; its package id is `app.reelbrain.semi`. Use Play App Signing: upload this key as the **upload key**.
 
 ## 2. Documents (done)
 

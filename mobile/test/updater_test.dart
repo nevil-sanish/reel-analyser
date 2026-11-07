@@ -48,21 +48,21 @@ void main() {
     await expectLater(downloadUpdate(host(sums: good), http1, dir, (_) {}), throwsA(isA<UpdateException>()));
   });
 
-  test('each build is offered its own APK', () async {
+  test('each build is offered its own APK (full or semi)', () async {
     final gh = MockClient((_) async => http.Response(
         jsonEncode([
           {
             'tag_name': 'v2.0.0.0',
             'assets': [
               {'name': 'SHA256SUMS', 'browser_download_url': 'https://github.com/s'},
-              {'name': 'r-private.apk', 'browser_download_url': 'https://github.com/p.apk'},
+              {'name': 'r-semi.apk', 'browser_download_url': 'https://github.com/p.apk'},
               {'name': 'r-full.apk', 'browser_download_url': 'https://github.com/f.apk'},
             ],
           }
         ]),
         200));
-    expect((await latestUpdate(gh, '1.0.0.0', private: false))!.apkUrl, 'https://github.com/f.apk');
-    expect((await latestUpdate(gh, '1.0.0.0', private: true))!.apkUrl, 'https://github.com/p.apk');
+    expect((await latestUpdate(gh, '1.0.0.0', semi: false))!.apkUrl, 'https://github.com/f.apk');
+    expect((await latestUpdate(gh, '1.0.0.0', semi: true))!.apkUrl, 'https://github.com/p.apk');
     expect((await latestUpdate(gh, '1.0.0.0'))!.sumsUrl, 'https://github.com/s');
   });
 }

@@ -192,9 +192,9 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 child: Column(children: [
                   const BrandMark(size: 80),
                   const SizedBox(height: 24),
-                  Text('Nothing saved yet', style: t.textTheme.titleLarge),
+                  Text(_query.trim().isEmpty ? 'Nothing saved yet' : 'No notes match', style: t.textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text('In Instagram or YouTube, tap Share → Reel Analyser on a reel or short.',
+                  Text(_query.trim().isEmpty ? 'In Instagram or YouTube, tap Share → Reel Analyser on a reel or short.' : 'Nothing saved matches “${_query.trim()}”. Try another word.',
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),

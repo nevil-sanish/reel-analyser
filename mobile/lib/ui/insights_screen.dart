@@ -101,7 +101,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
                 child: ListTile(
                   leading: const Icon(Icons.insights_rounded),
                   title: const Text('Insights are optional'),
-                  subtitle: Text(kPrivateBuild
+                  subtitle: Text(kSemiBuild
                       ? 'Allow usage access to see your time in Instagram and YouTube.'
                       : 'Allow usage access to see your time in Instagram and YouTube, '
                           'and turn on Accessibility to count reels and Shorts. Either one is enough.'),

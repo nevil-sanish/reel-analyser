@@ -47,6 +47,7 @@ android {
 
     defaultConfig {
         minSdk = 29
+        manifestPlaceholders["appLabel"] = "Reel Analyser" // the app's flavours set their own; this is for the plugin's own tests
     }
 
     testOptions {

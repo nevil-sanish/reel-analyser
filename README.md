@@ -162,7 +162,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 
 ## Install
 
-1. Pick a version. **Full** (`reel-analyser-vX.Y.Z-full.apk`) has every feature, including Insights and reel counting. **Private** (`reel-analyser-vX.Y.Z-private.apk`) asks for no permission beyond the internet: no Insights, no notifications. Download it from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
+1. Pick a version. **Full** (`reel-analyser-vX.Y.Z-full.apk`) has every feature, including Insights and reel counting. **Semi** (`reel-analyser-vX.Y.Z-semi.apk`) asks for no permission beyond the internet: no Insights, no notifications, no in-app updating. It has its own app id and icon, so it installs next to the full build and keeps its own notes and keys. Download it from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
 2. Slide to unlock through the intro, then open **Ask → ⚙ Settings** and paste a free Gemini key from [aistudio.google.com](https://aistudio.google.com/apikey). Optionally add OpenAI, Claude or Groq keys.
 3. Share a reel to Reel Analyser. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
 4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts (optional): on Android 13+, *Allow restricted settings* first, then Accessibility, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
@@ -186,7 +186,7 @@ cd mobile && flutter build apk --release --flavor full
 ```
 
 ```bash
-cd mobile && flutter build apk --release --flavor private --dart-define=PRIVATE_BUILD=true
+cd mobile && flutter build apk --release --flavor semi --dart-define=SEMI_BUILD=true
 ```
 
 `full` has every feature. `private` asks Android for nothing: no Accessibility, Usage access, notifications or battery exemption, no Insights, no update check.

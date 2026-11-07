@@ -7,10 +7,10 @@ import '../data/update_check.dart';
 import '../data/updater.dart';
 import '../flavor.dart';
 
-/// Update button: the full build downloads the APK, checks it and opens Android's installer; the private build has no
+/// Update button: the full build downloads the APK, checks it and opens Android's installer; the semi build has no
 /// install permission, so it opens that version's release page on GitHub.
 Future<void> runUpdate(BuildContext context, AppServices s, UpdateInfo info) async {
-  if (kPrivateBuild) {
+  if (kSemiBuild) {
     await s.bridge.openUrl('https://github.com/nevil-sanish/reel-analyser/releases/tag/${info.tag}');
     return;
   }
@@ -65,10 +65,10 @@ Future<void> checkForUpdate(BuildContext context, AppServices s) async {
     context: context,
     builder: (c) => AlertDialog(
       title: Text('Reel Analyser ${info.tag} is out'),
-      content: Text(kPrivateBuild ? 'This opens the release page on GitHub, where you download the APK.' : 'It is downloaded, checked against the release checksum, and handed to Android to install. Your notes and keys stay.'),
+      content: Text(kSemiBuild ? 'This opens the release page on GitHub, where you download the APK.' : 'It is downloaded, checked against the release checksum, and handed to Android to install. Your notes and keys stay.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Later')),
-        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(kPrivateBuild ? 'Open page' : 'Update')),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(kSemiBuild ? 'Open page' : 'Update')),
       ],
     ),
   );
