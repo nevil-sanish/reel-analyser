@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path/path.dart' as p;
+import 'package:sqflite/sqflite.dart' show getDatabasesPath;
 
 /// The user's own API keys, in the Android Keystore-backed secure storage. Never in the APK.
 class KeyStore {
@@ -8,7 +13,11 @@ class KeyStore {
   static const _s = FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: false));
 
   /// Erase all my data: every key, flag and counter this class holds.
-  Future<void> eraseAll() => _s.deleteAll();
+  Future<void> eraseAll() async {
+    await _s.deleteAll();
+    final f = await _flagFile();
+    if (await f.exists()) await f.delete();
+  }
 
   /// Every key the user entered, as one map: what an encrypted backup holds.
   Future<Map<String, Object?>> all() async => {
@@ -57,16 +66,47 @@ class KeyStore {
   Future<void> setApify(String v) => _write('apify', v);
 
   /// When the update check last ran (GH-RELEASE-LATEST: at most once a day).
-  Future<int> get updateCheckedAt async => int.tryParse(await _read('update_checked') ?? '') ?? 0;
-  Future<void> setUpdateCheckedAt(int v) => _write('update_checked', '$v');
+  Future<int> get updateCheckedAt async => int.tryParse(await _readPlain('update_checked') ?? '') ?? 0;
+  Future<void> setUpdateCheckedAt(int v) => _writePlain('update_checked', '$v');
 
   Future<bool> get introSeen => flag('intro_seen');
   Future<void> setIntroSeen() => setFlag('intro_seen');
 
-  /// One-time markers (intro shown, a migration done).
-  Future<bool> flag(String k) async => await _read(k) != null;
-  Future<void> setFlag(String k) => _write(k, '1');
-  Future<void> setFlagTo(String k, bool on) => _write(k, on ? '1' : '');
+  /// One-time markers (intro shown, terms agreed, a migration done). They hold no secret, so they live in a plain
+  /// file: a Keystore hiccup used to read them as "never set" and bring the intro and the terms back at every start.
+  Future<bool> flag(String k) async => await _readPlain(k) == '1';
+  Future<void> setFlag(String k) => _writePlain(k, '1');
+  Future<void> setFlagTo(String k, bool on) => _writePlain(k, on ? '1' : '0');
+
+  Future<File> _flagFile() async => File(p.join(await getDatabasesPath(), 'reel_flags.json'));
+
+  Future<Map<String, String>> _flags() async {
+    try {
+      final f = await _flagFile();
+      if (!await f.exists()) return {};
+      return {for (final e in (jsonDecode(await f.readAsString()) as Map).entries) '${e.key}': '${e.value}'};
+    } on Object {
+      return {};
+    }
+  }
+
+  /// The file first; a value an older version kept in secure storage is read once and copied over.
+  Future<String?> _readPlain(String k) async {
+    final v = (await _flags())[k];
+    if (v != null) return v;
+    final old = await _read(k);
+    if (old != null) await _writePlain(k, old);
+    return old;
+  }
+
+  Future<void> _writePlain(String k, String v) async {
+    final all = await _flags();
+    all[k] = v;
+    final f = await _flagFile();
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(jsonEncode(all), flush: true);
+    await tmp.rename(f.path);
+  }
 
   Future<String?> _read(String k) async {
     for (var i = 0; i < 2; i++) {

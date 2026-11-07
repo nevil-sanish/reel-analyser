@@ -39,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _saveNote = '';
   List<String> _lastGemini = const [];
   final _lastOther = <TextEditingController, String>{};
-  Timer? _saveTimer;
+  Future<void> _saving = Future.value();
 
   TextEditingController _watched(String text) => TextEditingController(text: text)..addListener(_changed);
 
@@ -75,32 +75,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ..addAll({for (final c in boxes) c: c.text.trim()});
       _loaded = true;
       if (KeyStore.readFailed) {
-        _saveNote = 'The phone could not read some saved keys, so nothing is changed automatically. '
-            'Close and reopen the app; if this stays, enter the keys again.';
+        _saveNote = 'The phone could not read some saved keys. Close and reopen the app; '
+            'if this stays, enter the keys again. Anything you type is still saved.';
       }
     });
   }
 
   @override
   void dispose() {
-    _saveTimer?.cancel();
-    if (_loaded) unawaited(_persist()); // leaving the screen never loses what was just typed
+    if (_loaded) unawaited(_save()); // leaving the screen never loses what was just typed
     super.dispose();
   }
 
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  /// Keys are saved as you type (a moment after you stop), so there is no Save button to forget.
+  /// Keys are saved the instant they change, one write after another, so there is no Save button to forget and
+  /// leaving the screen straight after typing loses nothing.
   void _changed() {
-    if (!_loaded || KeyStore.readFailed) return; // a failed read looks like an empty box: never save over it
-    _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(milliseconds: 700), _persist);
+    if (_loaded) unawaited(_save());
   }
+
+  Future<void> _save({bool removeGemini = false}) => _saving = _saving.then((_) => _persist(removeGemini: removeGemini));
 
   /// Writes every key box to secure storage. Emptying the last Gemini box does not delete the saved keys;
   /// removing it with its minus button ([removeGemini]) does.
   Future<void> _persist({bool removeGemini = false}) async {
-    if (KeyStore.readFailed) return;
     final entered = _enteredGemini;
     // Only the boxes that changed are written, so one key that failed to load is never overwritten by another edit.
     final writes = <Future<void> Function()>[
@@ -230,8 +229,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (ok != true) return;
-    _saveTimer?.cancel();
     _loaded = false; // leaving this screen must not write the key boxes back
+    await _saving; // a write still in flight must land before the erase, not after it
     try {
       await s.eraseEverything();
     } on Object catch (e) {
@@ -331,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _gemini.removeAt(i);
                         if (_gemini.isEmpty) _gemini.add(_watched(''));
                       });
-                      _persist(removeGemini: true);
+                      _save(removeGemini: true);
                     },
                   )),
             TextButton.icon(

@@ -58,9 +58,13 @@ class _ReelBotAppState extends State<ReelBotApp> {
         home: AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
           child: _intro
-              ? IntroScreen(onDone: () {
-                  widget.services.keys.setIntroSeen();
-                  setState(() => _intro = false);
+              ? IntroScreen(onDone: () async {
+                  try {
+                    await widget.services.keys.setIntroSeen();
+                  } on Object catch (e) {
+                    debugPrint('Could not remember the intro: $e');
+                  }
+                  if (mounted) setState(() => _intro = false);
                 })
               : HomeScreen(widget.services),
         ),
@@ -109,7 +113,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     );
     if (ok == true) {
-      await k.setFlag('legal_v1');
+      try {
+        await k.setFlag('legal_v1');
+      } on Object catch (e) {
+        debugPrint('Could not remember the agreement: $e');
+      }
     } else {
       await SystemNavigator.pop();
     }
