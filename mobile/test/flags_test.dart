@@ -26,4 +26,29 @@ void main() {
     expect(await KeyStore().flag('dark'), isFalse);
     expect(File(p.join(dir.path, 'reel_flags.json')).existsSync(), isTrue);
   });
+
+  test('API keys are read back from the file when the Keystore is empty or broken', () async {
+    final k = KeyStore();
+    await k.setOpenai('sk-test-1');
+    await k.setGeminiKeys(['a', ' b ', '']);
+    expect(await KeyStore().openai, 'sk-test-1');
+    expect(await KeyStore().geminiKeys, ['a', 'b']);
+    await k.setOpenai('');
+    expect(await KeyStore().openai, isNull);
+  });
+
+  test('quick writes in a row all land', () async {
+    final k = KeyStore();
+    await Future.wait([for (var i = 0; i < 20; i++) k.setFlag('f$i')]);
+    for (var i = 0; i < 20; i++) {
+      expect(await k.flag('f$i'), isTrue);
+    }
+  });
+
+  test('a damaged file reads as empty instead of crashing', () async {
+    File(p.join(dir.path, 'reel_flags.json')).writeAsStringSync('{not json');
+    expect(await KeyStore().flag('intro_seen'), isFalse);
+    await KeyStore().setIntroSeen();
+    expect(await KeyStore().introSeen, isTrue);
+  });
 }

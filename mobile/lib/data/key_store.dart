@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' show getDatabasesPath;
 
-/// The user's own API keys, in the Android Keystore-backed secure storage. Never in the APK.
+/// The user's own API keys and the app's one-time flags. Never in the APK.
 class KeyStore {
   // resetOnError: false. The plugin's default wipes every stored value whenever one read fails to decrypt (a
   // Keystore hiccup, two engines opening it at once), which is how a saved key could vanish. A failed read now
@@ -14,9 +14,18 @@ class KeyStore {
 
   /// Erase all my data: every key, flag and counter this class holds.
   Future<void> eraseAll() async {
-    await _s.deleteAll();
-    final f = await _flagFile();
-    if (await f.exists()) await f.delete();
+    await _serial(() async {
+      final f = await _flagFile();
+      if (await f.exists()) await f.delete();
+      final tmp = File('${f.path}.tmp');
+      if (await tmp.exists()) await tmp.delete();
+    });
+    try {
+      await _s.deleteAll();
+    } on Object {
+      // A broken Keystore holds nothing readable, and nothing reads it again.
+    }
+    await _serial(() async => _store({_migrated: '1'}));
   }
 
   /// Every key the user entered, as one map: what an encrypted backup holds.
@@ -78,7 +87,25 @@ class KeyStore {
   Future<void> setFlag(String k) => _writePlain(k, '1');
   Future<void> setFlagTo(String k, bool on) => _writePlain(k, on ? '1' : '0');
 
+  // ---- storage ----
+  // Everything lives in one small JSON file in the app's private folder (no other app can read it, and backups are
+  // off). The Android Keystore plugin is not used any more: on some phones it throws "Migration failed after
+  // algorithm change" on every read and write, which is how saved keys vanished and could not be saved. Values an
+  // older version kept there are copied over once ([_migrate]). An empty value in the file is a tombstone.
+
+  static const _migrated = 'secure_migrated';
+  static const _oldKeys = ['gemini', 'openai', 'claude', 'groq', 'apify', 'update_checked', 'intro_seen', 'legal_v1', 'dark', 'reduce_effects', 'retried_062'];
+
   Future<File> _flagFile() async => File(p.join(await getDatabasesPath(), 'reel_flags.json'));
+
+  /// Writes are queued so two quick changes never read the same old file and drop one of them.
+  static Future<void> _queue = Future.value();
+
+  static Future<T> _serial<T>(Future<T> Function() job) {
+    final done = _queue.then((_) => job());
+    _queue = done.then((_) {}, onError: (Object _) {});
+    return done;
+  }
 
   Future<Map<String, String>> _flags() async {
     try {
@@ -90,36 +117,54 @@ class KeyStore {
     }
   }
 
-  /// The file first; a value an older version kept in secure storage is read once and copied over.
-  Future<String?> _readPlain(String k) async {
-    final v = (await _flags())[k];
-    if (v != null) return v;
-    final old = await _read(k);
-    if (old != null) await _writePlain(k, old);
-    return old;
+  /// Once: copies whatever an older version kept in secure storage into the file. A broken Keystore just means
+  /// nothing is copied; it is never asked again.
+  Future<void> _migrate() async {
+    if ((await _flags()).containsKey(_migrated)) return;
+    final old = <String, String>{};
+    for (final k in _oldKeys) {
+      try {
+        final v = (await _s.read(key: k))?.trim();
+        if (v != null && v.isNotEmpty) old[k] = v;
+      } on Object {
+        readFailed = true;
+        break; // every read fails the same way
+      }
+    }
+    await _serial(() async {
+      final all = await _flags();
+      if (all.containsKey(_migrated)) return;
+      for (final e in old.entries) {
+        all.putIfAbsent(e.key, () => e.value);
+      }
+      all[_migrated] = '1';
+      await _store(all);
+    });
   }
 
-  Future<void> _writePlain(String k, String v) async {
-    final all = await _flags();
-    all[k] = v;
+  Future<void> _store(Map<String, String> all) async {
     final f = await _flagFile();
     final tmp = File('${f.path}.tmp');
     await tmp.writeAsString(jsonEncode(all), flush: true);
     await tmp.rename(f.path);
   }
 
-  Future<String?> _read(String k) async {
-    for (var i = 0; i < 2; i++) {
-      try {
-        final v = (await _s.read(key: k))?.trim();
-        return (v == null || v.isEmpty) ? null : v;
-      } on Object {
-        readFailed = true;
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-      }
-    }
-    return null;
+  Future<String?> _readPlain(String k) async {
+    await _migrate();
+    final v = (await _flags())[k];
+    return v == null || v.trim().isEmpty ? null : v.trim();
   }
 
-  Future<void> _write(String k, String v) => v.trim().isEmpty ? _s.delete(key: k) : _s.write(key: k, value: v.trim());
+  Future<void> _writePlain(String k, String v) async {
+    await _migrate();
+    await _serial(() async {
+      final all = await _flags();
+      all[k] = v;
+      await _store(all);
+    });
+  }
+
+  Future<String?> _read(String k) => _readPlain(k);
+
+  Future<void> _write(String k, String v) => _writePlain(k, v.trim());
 }

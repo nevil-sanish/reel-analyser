@@ -75,8 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ..addAll({for (final c in boxes) c: c.text.trim()});
       _loaded = true;
       if (KeyStore.readFailed) {
-        _saveNote = 'The phone could not read some saved keys. Close and reopen the app; '
-            'if this stays, enter the keys again. Anything you type is still saved.';
+        _saveNote = 'Keys saved by an older version could not be recovered on this phone. '
+            'Enter them once more; from now on they are kept.';
       }
     });
   }
@@ -86,6 +86,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_loaded) unawaited(_save()); // leaving the screen never loses what was just typed
     super.dispose();
   }
+
+  /// The tick next to a key: saves everything now and says so (typing already saves; this is for certainty).
+  Future<void> _saveNow() async {
+    await _save();
+    if (mounted) _say(_saveNote.startsWith('Could not') ? _saveNote : 'Saved on this phone ✓');
+  }
+
+  Widget get _saveButton => IconButton(tooltip: 'Save this key', icon: const Icon(Icons.check_circle_outline), onPressed: _saveNow);
 
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
@@ -187,7 +195,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final f = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['json']);
     if (f == null) return;
     try {
-      final text = utf8.decode(await f.readAsBytes());
+      final bytes = await f.readAsBytes();
+      if (bytes.length > 50 * 1024 * 1024) throw const FormatException('the file is larger than 50 MB');
+      final text = utf8.decode(bytes);
       final (notes, chats) = await importJson(s.library, text);
       var restored = 0;
       final blob = encryptedKeysOf(text);
@@ -282,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: TextField(
           controller: c,
           obscureText: true,
-          decoration: InputDecoration(labelText: label, helperText: helper, suffixIcon: trailing),
+          decoration: InputDecoration(labelText: label, helperText: helper, suffixIcon: trailing ?? _saveButton),
         ),
       );
 
@@ -322,17 +332,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             for (var i = 0; i < _gemini.length; i++)
               _key(_gemini[i], 'Gemini key ${i + 1}',
                   helper: i == 0 ? 'Free at aistudio.google.com → Get API key' : null,
-                  trailing: IconButton(
-                    tooltip: 'Remove this key',
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () {
-                      setState(() {
-                        _gemini.removeAt(i);
-                        if (_gemini.isEmpty) _gemini.add(_watched(''));
-                      });
-                      _save(removeGemini: true);
-                    },
-                  )),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    _saveButton,
+                    IconButton(
+                      tooltip: 'Remove this key',
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () {
+                        setState(() {
+                          _gemini.removeAt(i);
+                          if (_gemini.isEmpty) _gemini.add(_watched(''));
+                        });
+                        _save(removeGemini: true);
+                      },
+                    ),
+                  ])),
             TextButton.icon(
               onPressed: () => setState(() => _gemini.add(_watched(''))),
               icon: const Icon(Icons.add),

@@ -26,6 +26,15 @@ Map<String, Object?>? encryptedKeysOf(String json) {
   return k is Map ? Map<String, Object?>.from(k) : null;
 }
 
+/// A note's link is later opened or read as a file, so an imported one must be a web link or a photo inside the app's own photos folder.
+bool _importableUrl(String url) {
+  if (url.startsWith('photo:')) {
+    final path = url.substring('photo:'.length);
+    return path.contains('/photos/') && !path.contains('..');
+  }
+  return url.startsWith('https://') || url.startsWith('http://');
+}
+
 /// Merges notes by URL and chats by (first question, last update): what's already here is left as it is.
 /// Returns how many notes and chats were added.
 Future<(int, int)> importJson(LibraryDb db, String json) async {
@@ -35,7 +44,7 @@ Future<(int, int)> importJson(LibraryDb db, String json) async {
   var notes = 0;
   for (final j in list) {
     final r = Reel.fromJson(Map<String, Object?>.from(j as Map));
-    if (await db.has(r.url)) continue;
+    if (!_importableUrl(r.url) || await db.has(r.url)) continue;
     await db.saveReel(r);
     notes++;
   }

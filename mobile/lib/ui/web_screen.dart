@@ -26,8 +26,8 @@ class _WebScreenState extends State<WebScreen> {
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        // Pages may move around Instagram and YouTube (login, consent), but never to intent:, file: or javascript: links.
-        onNavigationRequest: (r) => r.url.startsWith('https://') || r.url.startsWith('http://') || r.url == 'about:blank'
+        // Pages may move around Instagram and YouTube (login, consent), but only over https: never http:, intent:, file: or javascript: links.
+        onNavigationRequest: (r) => r.url.startsWith('https://') || r.url == 'about:blank'
             ? NavigationDecision.navigate
             : NavigationDecision.prevent,
         onProgress: (p) => setState(() => _progress = p),

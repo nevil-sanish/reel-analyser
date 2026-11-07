@@ -69,4 +69,18 @@ void main() {
       await expectLater(KeyBackup.decrypt(forged, 'a-long-passphrase'), throwsA(isA<WrongPassphrase>()));
     }
   });
+
+  test('an imported note cannot point at a file outside the photos folder or at a non-web link', () async {
+    final urls = [
+      'photo:/data/user/0/app.reelbrain/databases/reel_flags.json',
+      'photo:/data/user/0/app.reelbrain/files/photos/../../databases/reel_flags.json',
+      'file:///etc/passwd',
+      'javascript:alert(1)',
+      'intent://x#Intent;end',
+    ];
+    final (notes, _) = await importJson(db, jsonEncode({'reels': [for (final u in urls) {'url': u, 'title': 't'}]}));
+    expect(notes, 0);
+    final (ok, _) = await importJson(db, jsonEncode({'reels': [{'url': 'photo:/data/user/0/app.reelbrain/files/photos/1.jpg', 'title': 't'}]}));
+    expect(ok, 1);
+  });
 }

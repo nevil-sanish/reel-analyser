@@ -395,12 +395,12 @@ void main() {
   });
 
   test('T-EXP-01 export, wipe, import (notes and chats); import twice adds nothing', () async {
-    await db.saveReel(const Reel(url: 'u1', app: 'youtube', title: 'A', summary: 's', tags: ['x'], savedAt: 1));
-    await db.saveReel(const Reel(url: 'u2', app: 'instagram', title: 'B', summary: 's', savedAt: 2));
+    await db.saveReel(const Reel(url: 'https://youtu.be/u1', app: 'youtube', title: 'A', summary: 's', tags: ['x'], savedAt: 1));
+    await db.saveReel(const Reel(url: 'https://www.instagram.com/reel/u2/', app: 'instagram', title: 'B', summary: 's', savedAt: 2));
     final chat = await db.saveChat(null, ['q?', 'a.'], 5);
     final json = exportJson(await db.reels(), await db.chats());
-    await db.delete('u1');
-    await db.delete('u2');
+    await db.delete('https://youtu.be/u1');
+    await db.delete('https://www.instagram.com/reel/u2/');
     await db.deleteChat(chat);
     expect(await importJson(db, json), (2, 1));
     expect(await importJson(db, json), (0, 0));
@@ -409,7 +409,7 @@ void main() {
     expect(turns, ['q?', 'a.']);
     expect(await importJson(db, '{"version":1,"reels":[]}'), (0, 0), reason: 'v1 files have no chats');
     final r = await db.reels();
-    expect(r.map((e) => e.url), ['u2', 'u1']);
+    expect(r.map((e) => e.url), ['https://www.instagram.com/reel/u2/', 'https://youtu.be/u1']);
     expect(r.last.tags, ['x']);
     expect(markdownName(r.first), endsWith('-b.md'));
   });
