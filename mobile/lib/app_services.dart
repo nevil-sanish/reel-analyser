@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
+import 'package:sqflite/sqflite.dart';
 
 import 'core/models.dart';
 import 'data/key_store.dart';
@@ -16,7 +19,9 @@ class AppServices {
   final http.Client client;
   final Runner runner;
 
-  AppServices._(this.keys, this.library, this.bridge, this.client)
+  final Directory sharedDir;
+
+  AppServices._(this.keys, this.library, this.bridge, this.client, this.sharedDir)
       : runner = Runner(
           bridge: bridge,
           library: library,
@@ -25,12 +30,13 @@ class AppServices {
           apifyKey: () => keys.apify,
           readTurn: library.geminiTurn,
           saveTurn: library.setGeminiTurn,
+          sharedDir: sharedDir,
         );
 
   static Future<AppServices> create() async =>
-      AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
+      AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client(), Directory(await getDatabasesPath()));
 
-  static const version = '1.0.3.0';
+  static const version = '1.0.4.0';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.

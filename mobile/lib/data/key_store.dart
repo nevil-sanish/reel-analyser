@@ -18,7 +18,7 @@ class KeyStore {
     await _serial(() async {
       final f = await _flagFile();
       if (await f.exists()) await f.delete();
-      final tmp = File('${f.path}.tmp');
+      final tmp = File('${f.path}.$pid.tmp');
       if (await tmp.exists()) await tmp.delete();
     });
     try {
@@ -132,20 +132,43 @@ class KeyStore {
     return done;
   }
 
-  Future<Map<String, String>> _flags() async {
-    try {
-      final f = await _flagFile();
-      if (!await f.exists()) return {};
-      return {for (final e in (jsonDecode(await f.readAsString()) as Map).entries) '${e.key}': '${e.value}'};
-    } on Object {
+  /// The app and the background task are separate engines sharing this file, so a read can catch it mid-swap. It is
+  /// retried; if it still fails, a reader sees "nothing" but a writer ([strict]) throws instead of writing back an
+  /// empty file over the keys.
+  Future<Map<String, String>> _flags({bool strict = false}) async {
+    Object? last;
+    for (var i = 0; i < 4; i++) {
+      try {
+        final f = await _flagFile();
+        if (!await f.exists()) return {};
+        return {for (final e in (jsonDecode(await f.readAsString()) as Map).entries) '${e.key}': '${e.value}'};
+      } on Object catch (e) {
+        last = e;
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      }
+    }
+    if (!strict) return {};
+    if (last is FormatException || last is TypeError) {
+      // Really damaged, not mid-swap: keep it aside and start a fresh file.
+      try {
+        final f = await _flagFile();
+        await f.rename('${f.path}.corrupt');
+      } on Object {
+        throw StateError('settings file unreadable: $last');
+      }
       return {};
     }
+    throw StateError('settings file unreadable: $last');
   }
 
   /// Once: copies whatever an older version kept in secure storage into the file. A broken Keystore just means
   /// nothing is copied; it is never asked again.
   Future<void> _migrate() async {
-    if ((await _flags()).containsKey(_migrated)) return;
+    try {
+      if ((await _flags(strict: true)).containsKey(_migrated)) return;
+    } on Object {
+      return; // unreadable right now: do not mark the migration done or write anything
+    }
     final old = <String, String>{};
     for (final k in _oldKeys) {
       try {
@@ -158,7 +181,7 @@ class KeyStore {
     }
     final sealedOld = {for (final e in old.entries) if (_secret.contains(e.key)) e.key: await _seal(e.value)};
     await _serial(() async {
-      final all = await _flags();
+      final all = await _flags(strict: true);
       if (all.containsKey(_migrated)) return;
       for (final e in old.entries) {
         all.putIfAbsent(e.key, () => _secret.contains(e.key) ? sealedOld[e.key]! : e.value);
@@ -170,7 +193,7 @@ class KeyStore {
 
   Future<void> _store(Map<String, String> all) async {
     final f = await _flagFile();
-    final tmp = File('${f.path}.tmp');
+    final tmp = File('${f.path}.$pid.tmp');
     await tmp.writeAsString(jsonEncode(all), flush: true);
     await tmp.rename(f.path);
   }
@@ -183,7 +206,13 @@ class KeyStore {
     final plain = await _unseal(v);
     if (plain != null && !v.startsWith(_sealed)) {
       final sealed = await _seal(plain); // a key saved before encryption existed is encrypted on its first read
-      if (sealed.startsWith(_sealed)) await _serial(() async => _store((await _flags())..[k] = sealed));
+      if (sealed.startsWith(_sealed)) {
+        try {
+          await _serial(() async => _store((await _flags(strict: true))..[k] = sealed));
+        } on Object {
+          // the key is still readable as it is; it is sealed on a later read
+        }
+      }
     }
     return plain == null || plain.isEmpty ? null : plain;
   }
@@ -192,7 +221,7 @@ class KeyStore {
     await _migrate();
     final stored = _secret.contains(k) && v.isNotEmpty ? await _seal(v) : v;
     await _serial(() async {
-      final all = await _flags();
+      final all = await _flags(strict: true);
       all[k] = stored;
       await _store(all);
     });

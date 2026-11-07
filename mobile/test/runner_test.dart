@@ -107,6 +107,7 @@ void main() {
             k,
             pollEvery: Duration.zero),
         tempDir: tmp,
+        sharedDir: tmp,
         rateWait: Duration.zero,
       );
 
@@ -392,6 +393,24 @@ void main() {
     await db.unlock();
     expect(await db.tryLock(t), isTrue);
     expect(await db.tryLock(t + const Duration(minutes: 6).inMilliseconds), isTrue, reason: 'stale lock expires');
+  });
+
+  test('T-PIPE-11 another engine sees a run and can stop a reel in it', () async {
+    final b = FakeBridge([yt]);
+    final gate = Completer<http.Response>();
+    final run = runner(b, (_) => gate.future).processQueue();
+    List<Job> seen = const [];
+    for (var i = 0; i < 50 && seen.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      seen = await Runner.sharedJobs(tmp, DateTime.now().millisecondsSinceEpoch);
+    }
+    expect(seen.single.id, 1);
+    expect(seen.single.state, JobState.running);
+    await Runner.requestStop(tmp, 1);
+    await Future<void>.delayed(const Duration(seconds: 3));
+    gate.complete(http.Response(_gemOk(), 200));
+    await run;
+    expect(b.statuses[1], 'cancelled');
   });
 
   test('T-EXP-01 export, wipe, import (notes and chats); import twice adds nothing', () async {

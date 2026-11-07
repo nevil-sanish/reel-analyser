@@ -34,6 +34,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
   int _waiting = 0;
   List<PendingItem> _queued = [];
+  List<Job> _shared = [];
   DateTime _lastRun = DateTime.fromMillisecondsSinceEpoch(0);
   bool _hasKey = true;
   bool _busy = false;
@@ -47,7 +48,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     _process();
     // Reels shared while this screen is open, or left queued by a rate limit, are picked up without a restart.
     // While the background task works through the queue, the list refreshes every few seconds so its progress shows.
-    _poll = Timer.periodic(const Duration(seconds: 4), (_) async {
+    _poll = Timer.periodic(const Duration(seconds: 2), (_) async {
       if (!mounted || _busy) return;
       await _reload();
       final due = DateTime.now().difference(_lastRun) > const Duration(seconds: 30);
@@ -71,11 +72,13 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     await s.library.archiveOld(DateTime.now().millisecondsSinceEpoch);
     final reels = await s.library.reels(query: _query, archived: false);
     final queued = await s.bridge.pendingItems(status: 'queued');
+    final shared = s.runner.lockBusy ? await Runner.sharedJobs(s.sharedDir, DateTime.now().millisecondsSinceEpoch) : <Job>[];
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
     if (!mounted) return;
     setState(() {
       _reels = reels;
       _queued = queued;
+      _shared = shared;
       _waiting = queued.length;
       _hasKey = hasKey;
     });
@@ -168,8 +171,16 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               builder: (context, jobs, _) => jobs.isEmpty ? const SizedBox.shrink() : _JobsCard(jobs, s.runner.cancel),
             ),
             if (_waiting > 0 && s.runner.jobs.value.isEmpty)
-              s.runner.lockBusy
-                  ? _BackgroundCard(_queued)
+              s.runner.lockBusy && _shared.isNotEmpty
+                  ? _JobsCard(_shared, (id) async {
+                      await Runner.requestStop(s.sharedDir, id);
+                      await _reload();
+                    })
+                  : s.runner.lockBusy
+                  ? _BackgroundCard(_queued, (id) async {
+                      await s.bridge.setPendingStatus(id, 'cancelled');
+                      await _reload();
+                    })
                   : _Banner(
                       icon: _busy ? null : Icons.schedule,
                       text: '$_waiting waiting to be analysed',
@@ -204,7 +215,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
 /// queued with a moving bar. Reels leave the list as they finish.
 class _BackgroundCard extends StatelessWidget {
   final List<PendingItem> items;
-  const _BackgroundCard(this.items);
+  final Future<void> Function(int id) onStop;
+  const _BackgroundCard(this.items, this.onStop);
 
   @override
   Widget build(BuildContext context) {
@@ -220,17 +232,58 @@ class _BackgroundCard extends StatelessWidget {
             ClipRRect(borderRadius: BorderRadius.circular(4), child: const LinearProgressIndicator(minHeight: 5)),
             const SizedBox(height: 8),
             for (final i in items.take(4))
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(Job.labelFor(i), maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-              ),
+              Row(children: [
+                Expanded(
+                  child: Text(Job.labelFor(i), maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                ),
+                IconButton(
+                  tooltip: 'Stop analysing this reel',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    onStop(i.id);
+                  },
+                ),
+              ]),
             if (items.length > 4)
               Text('and ${items.length - 4} more', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
           ]),
         ),
       ),
     );
+  }
+}
+
+/// Fetch, Analyse and Save for one reel, each shown as done, in progress or still to come, with the overall percent.
+/// The runner reports 0.12 while fetching, 0.35 once it has the video or post, 0.55 while the AI works and 0.95 on save.
+class _Steps extends StatelessWidget {
+  final double progress;
+  const _Steps(this.progress);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    const names = ['Fetch', 'Analyse', 'Save'];
+    final current = progress < 0.35 ? 0 : progress < 0.95 ? 1 : 2;
+    return Row(children: [
+      for (var i = 0; i < names.length; i++) ...[
+        Icon(
+          i < current ? Icons.check_circle_rounded : i == current ? Icons.timelapse_rounded : Icons.radio_button_unchecked,
+          size: 14,
+          color: i <= current ? t.colorScheme.primary : t.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(names[i],
+            style: t.textTheme.labelSmall?.copyWith(
+              color: i == current ? t.colorScheme.onSurface : t.colorScheme.onSurfaceVariant,
+              fontWeight: i == current ? FontWeight.w700 : null,
+            )),
+        if (i < names.length - 1) const SizedBox(width: 12),
+      ],
+      const Spacer(),
+      Text('${(progress * 100).round()}%', style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+    ]);
   }
 }
 
@@ -273,6 +326,11 @@ class _JobsCard extends StatelessWidget {
                       Text(j.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.textTheme.bodyLarge),
                       Text(j.stage, maxLines: 4, overflow: TextOverflow.ellipsis,
                           style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                      if (j.state == JobState.running)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _Steps(j.progress),
+                        ),
                       if (j.state == JobState.running || j.state == JobState.waiting)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),

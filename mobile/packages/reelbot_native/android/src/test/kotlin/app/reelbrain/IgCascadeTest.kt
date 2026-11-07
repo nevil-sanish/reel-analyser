@@ -44,23 +44,23 @@ class IgCascadeTest {
     }
 
     // T-IG-U05
-    @Test fun requestsAreOneAndAHalfSecondsApart() {
+    @Test fun requestsAreOneSecondApart() {
         val c = cascade()
         c.throttle()
-        now += 1_000
+        now += 400
         c.throttle()
-        assertEquals(listOf(500L), slept)
+        assertEquals(listOf(600L), slept)
     }
 
-    @Test fun rateLimitPausesInstagramForTenMinutes() {
+    @Test fun rateLimitPausesInstagramForTwoMinutes() {
         val c = cascade()
         try { c.run("a", listOf { _ -> StepResult.Limited }); fail() } catch (_: RateLimitedException) {}
         val calls = AtomicInteger()
-        now += 9 * 60_000
+        now += 90_000
         try { c.run("b", listOf { _ -> calls.incrementAndGet(); video }); fail() } catch (_: RateLimitedException) {}
         try { c.throttle(); fail() } catch (_: RateLimitedException) {}
         assertEquals(0, calls.get())
-        now += 2 * 60_000
+        now += 60_000
         assertEquals(1, c.run("b", listOf { _ -> calls.incrementAndGet(); video }).step)
     }
 
@@ -83,12 +83,12 @@ class IgCascadeTest {
     }
 
     // T-IG-U06
-    @Test fun privatePostIsNotRetriedForAnHour() {
+    @Test fun privatePostIsNotRetriedForTenMinutes() {
         val c = cascade()
         val calls = AtomicInteger()
         val steps = listOf { _: String -> calls.incrementAndGet(); StepResult.Gone }
         c.run("priv", steps)
-        now += 59 * 60_000
+        now += 9 * 60_000
         c.run("priv", steps)
         assertEquals(1, calls.get())
         c.run("other", steps)

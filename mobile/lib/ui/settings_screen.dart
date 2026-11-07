@@ -184,11 +184,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     final reels = await s.library.reels();
     final chats = await s.library.chats();
-    await s.bridge.saveDownload('library.json', exportJson(reels, chats, encrypted));
-    for (final r in reels) {
-      await s.bridge.saveDownload(markdownName(r), r.toMarkdown());
-    }
-    if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats${encrypted == null ? '' : ', with your keys encrypted,'} to Downloads/ReelBot');
+    final n = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    final name = 'library-${n.year}-${two(n.month)}-${two(n.day)}-${two(n.hour)}${two(n.minute)}.json';
+    await s.bridge.saveDownload(name, exportJson(reels, chats, encrypted));
+    if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats${encrypted == null ? '' : ', with your keys encrypted,'} to one file, Downloads/ReelBot/$name');
   }
 
   Future<void> _import() async {

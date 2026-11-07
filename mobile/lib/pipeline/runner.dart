@@ -114,6 +114,10 @@ class Runner {
   final Directory tempDir;
   final int Function() now;
 
+  /// A folder both engines (the app and the background task) can see. The run writes where each reel is there and
+  /// reads stop requests from it, so the open app can show and stop a run that lives in the other engine.
+  final Directory? sharedDir;
+
   /// How long to wait before the second pass over the keys after a Gemini 429.
   final Duration rateWait;
 
@@ -150,6 +154,7 @@ class Runner {
     Gemini Function(String key)? makeGemini,
     Directory? tempDir,
     int Function()? now,
+    this.sharedDir,
     this.rateWait = const Duration(seconds: 12),
   }) : readTurn = readTurn ?? (() async => 0),
        saveTurn = saveTurn ?? ((_) async {}),
@@ -180,7 +185,11 @@ class Runner {
     }
 
     unawaited(heartbeat());
-    final beat = Timer.periodic(const Duration(seconds: 30), (_) => heartbeat());
+    final beat = Timer.periodic(const Duration(seconds: 30), (_) {
+      heartbeat();
+      unawaited(_writeShared());
+    });
+    final stops = Timer.periodic(const Duration(seconds: 2), (_) => _applyStopRequests());
     var finished = 0;
     lastProblem = null;
     finishedTitles.clear();
@@ -226,6 +235,7 @@ class Runner {
       await Future.wait(active); // a bad key stops new work; reels already running finish
     } finally {
       beat.cancel();
+      stops.cancel();
       try {
         await bridge.disarmWatchdog();
       } on Object {
@@ -248,7 +258,67 @@ class Runner {
     return n.clamp(1, 4);
   }
 
-  void _ping() => jobs.value = List.of(_jobById.values);
+  void _ping() {
+    jobs.value = List.of(_jobById.values);
+    unawaited(_writeShared());
+  }
+
+  File? _shared(String name) => sharedDir == null ? null : File('${sharedDir!.path}/$name');
+
+  Future<void> _writeShared() async {
+    final f = _shared('run_state.json');
+    if (f == null) return;
+    try {
+      final tmp = File('${f.path}.$pid.tmp');
+      await tmp.writeAsString(jsonEncode({
+        'at': now(),
+        'jobs': [
+          for (final j in _jobById.values)
+            {'id': j.id, 'app': j.app, 'label': j.label, 'state': j.state.name, 'stage': j.stage, 'progress': j.progress},
+        ],
+      }), flush: true);
+      await tmp.rename(f.path);
+    } on Object {
+      // progress for the other engine is a convenience; the run itself must never fail on it
+    }
+  }
+
+  /// The reels another engine is working on right now, or empty when its state is missing or stale.
+  static Future<List<Job>> sharedJobs(Directory dir, int nowMs) async {
+    try {
+      final m = jsonDecode(await File('${dir.path}/run_state.json').readAsString()) as Map;
+      if (nowMs - (m['at'] as int) > 150000) return const [];
+      return [
+        for (final j in m['jobs'] as List)
+          Job(j['id'] as int, '${j['app']}', '${j['label']}')
+            ..state = JobState.values.byName('${j['state']}')
+            ..stage = '${j['stage']}'
+            ..progress = (j['progress'] as num).toDouble(),
+      ];
+    } on Object {
+      return const [];
+    }
+  }
+
+  /// Asks whichever engine is running to stop this reel.
+  static Future<void> requestStop(Directory dir, int id) async {
+    final f = File('${dir.path}/run_stop.txt');
+    await f.writeAsString('$id\n', mode: FileMode.append, flush: true);
+  }
+
+  Future<void> _applyStopRequests() async {
+    final f = _shared('run_stop.txt');
+    if (f == null || !await f.exists()) return;
+    try {
+      final ids = (await f.readAsString()).split('\n').map(int.tryParse).whereType<int>().toList();
+      await f.delete();
+      for (final id in ids) {
+        await cancel(id);
+      }
+    } on Object {
+      // read again on the next tick
+    }
+  }
 
   /// Stops one reel: a waiting one is taken off the queue, a running one stops at its next step (its AI request,
   /// if already sent, is simply ignored), and one that is waiting for a retry is dropped. The reel is not analysed.
@@ -275,6 +345,22 @@ class Runner {
     job.stage = 'Stopped';
     await bridge.setPendingStatus(id, 'cancelled');
     _ping();
+  }
+
+  /// Waits for a slow network step but gives up the moment this reel is stopped; the abandoned request's own
+  /// result or error is ignored.
+  Future<T> _stoppable<T>(Future<T> work) {
+    final id = _ctx.job.id;
+    final out = Completer<T>();
+    final poll = Timer.periodic(const Duration(milliseconds: 400), (_) {
+      if (_cancelled.contains(id) && !out.isCompleted) out.completeError(_Cancelled());
+    });
+    work.then((v) {
+      if (!out.isCompleted) out.complete(v);
+    }, onError: (Object e, StackTrace st) {
+      if (!out.isCompleted) out.completeError(e, st);
+    });
+    return out.future.whenComplete(poll.cancel);
   }
 
   /// Records where the current reel is, and stops it here if the user asked to.
@@ -363,7 +449,7 @@ class Runner {
             'Analysing with Gemini${ks.length > 1 ? ' key ${ks.indexOf(k) + 1}' : ''}',
             0.55,
           );
-          return await f(makeGemini(k));
+          return await _stoppable(f(makeGemini(k)));
         } on GeminiException catch (e) {
           if (e.kind == GeminiFailure.rejected) rethrow;
           if (e.kind == GeminiFailure.badKey) _badKeys.add(k);
@@ -395,7 +481,7 @@ class Runner {
     for (final m in _others) {
       try {
         _step('Analysing with ${m.label}', 0.55);
-        return await m.analyse(context, images);
+        return await _stoppable(m.analyse(context, images));
       } on GeminiException catch (e) {
         if (e.kind == GeminiFailure.rejected) rethrow;
         last = e;
@@ -581,7 +667,7 @@ class Runner {
     IgFetch f;
     _step('Fetching from Instagram', 0.12);
     try {
-      f = await bridge.fetchInstagram(item.url);
+      f = await _stoppable(bridge.fetchInstagram(item.url));
     } on PlatformException {
       f = const IgFetch();
     }
