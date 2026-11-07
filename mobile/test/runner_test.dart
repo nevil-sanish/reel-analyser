@@ -350,6 +350,25 @@ void main() {
     expect(r.jobs.value.single.stage, contains('no video, picture, caption or author'));
   });
 
+  test('reels shared while one is being analysed start at once on the other keys', () async {
+    var live = 0, peak = 0;
+    final b = FakeBridge([yt]);
+    final run = runner(b, (r) async {
+      if (!isGenerate(r)) return http.Response('', 404);
+      peak = ++live > peak ? live : peak;
+      await Future<void>.delayed(const Duration(milliseconds: 2500));
+      live--;
+      return http.Response(_gemOk(), 200);
+    }, gemini: ['K1', 'K2', 'K3']);
+    final done = run.processQueue();
+    await Future<void>.delayed(const Duration(milliseconds: 300)); // the first is already running
+    b.items.add(const PendingItem(id: 5, url: 'https://www.youtube.com/shorts/lateA123', app: 'youtube', createdAt: 8));
+    b.items.add(const PendingItem(id: 6, url: 'https://www.youtube.com/shorts/lateB123', app: 'youtube', createdAt: 9));
+    await done;
+    expect(peak, 3);
+    expect(b.statuses.keys, containsAll([1, 5, 6]));
+  });
+
   test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {
     final f = File('${tmp.path}/v.mp4')..writeAsBytesSync([0]);
     final b = FakeBridge([ig], fetch: (_) => IgFetch(step: 1, videoPath: f.path));

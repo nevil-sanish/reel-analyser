@@ -192,32 +192,38 @@ class Runner {
     _cancelled.clear();
     _ping();
     try {
-      // Re-read the queue after each pass: reels shared while this run was busy are picked up in the same run,
-      // and an item that asked to retry later is not tried again until the next run.
+      // Up to one worker per key, all pulling from one queue. The queue is re-read every second, so reels shared while
+      // others are being analysed start at once on a free worker instead of waiting for the whole batch to end.
+      // An item that asked to retry later is not tried again until the next run.
       _stop = false;
       final base = _turn;
-      final workers = _workerCount;
-      while (!_stop) {
-        final batch = [
-          for (final i in await bridge.pendingItems(status: 'queued'))
-            if (!tried.contains(i.id)) i,
-        ];
-        if (batch.isEmpty) break;
-        _pending
-          ..clear()
-          ..addAll(batch);
-        for (final i in batch) {
+      final limit = _workerCount;
+      final active = <Future<void>>[];
+      final known = <int>{};
+      var slot = 0;
+      Future<void> refill() async {
+        for (final i in await bridge.pendingItems(status: 'queued')) {
+          if (tried.contains(i.id) || !known.add(i.id)) continue;
+          _pending.add(i);
           _jobById[i.id] = Job(i.id, i.app, Job.labelFor(i));
         }
         _ping();
-        // One worker per key, all pulling from the same queue: with 3 Gemini keys, 3 reels are analysed at once,
-        // each worker starting on its own key so they don't share one key's per-minute limit.
-        final counts = await Future.wait([
-          for (var w = 0; w < workers && w < batch.length; w++)
-            _worker(base + w, tried),
-        ]);
-        finished += counts.fold(0, (a, b) => a + b);
       }
+
+      while (!_stop) {
+        await refill();
+        while (active.length < limit && _pending.isNotEmpty) {
+          late Future<void> w;
+          w = _worker(base + slot++, tried).then((n) {
+            finished += n;
+            active.remove(w);
+          });
+          active.add(w);
+        }
+        if (active.isEmpty) break;
+        await Future.any([...active, Future<void>.delayed(const Duration(seconds: 1))]);
+      }
+      await Future.wait(active); // a bad key stops new work; reels already running finish
     } finally {
       beat.cancel();
       try {
