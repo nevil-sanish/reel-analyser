@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- BrandMark's glyph: Material's rounded play arrow, centred in the 66dp safe zone. -->
+<!-- A note card with a play button: a reel turned into a note. Kept inside the 66dp safe zone (21..87). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-  <group android:scaleX="1.9" android:scaleY="1.9" android:translateX="31.2" android:translateY="31.2">
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M8,6.82v10.36c0,0.79 0.87,1.27 1.54,0.84l8.14,-5.18c0.62,-0.39 0.62,-1.29 0,-1.69L9.54,5.98C8.87,5.55 8,6.03 8,6.82z"/>
-  </group>
+  <path android:fillColor="#FFFFFFFF"
+      android:pathData="M39,26h30a9,9 0 0 1 9,9v38a9,9 0 0 1 -9,9h-30a9,9 0 0 1 -9,-9v-38a9,9 0 0 1 9,-9z"/>
+  <path android:fillColor="#FF059669" android:strokeColor="#FF059669" android:strokeWidth="3" android:strokeLineJoin="round"
+      android:pathData="M49,36.5v15l13,-7.5z"/>
+  <path android:fillColor="#FF86EFAC"
+      android:pathData="M40,62h28a1.5,1.5 0 0 1 0,3h-28a1.5,1.5 0 0 1 0,-3zM40,69h18a1.5,1.5 0 0 1 0,3h-18a1.5,1.5 0 0 1 0,-3z"/>
 </vector>

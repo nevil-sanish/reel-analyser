@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon silhouette of ic_launcher_foreground: the card with the play button and lines cut out. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+  <path android:fillColor="#FF000000" android:fillType="evenOdd"
+      android:pathData="M39,26h30a9,9 0 0 1 9,9v38a9,9 0 0 1 -9,9h-30a9,9 0 0 1 -9,-9v-38a9,9 0 0 1 9,-9zM49,36.5v15l13,-7.5zM40,62h28a1.5,1.5 0 0 1 0,3h-28a1.5,1.5 0 0 1 0,-3zM40,69h18a1.5,1.5 0 0 1 0,3h-18a1.5,1.5 0 0 1 0,-3z"/>
+</vector>
