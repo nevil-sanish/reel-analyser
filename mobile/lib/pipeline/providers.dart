@@ -134,7 +134,7 @@ class ChatModel {
 
   /// A note from frames or a thumbnail, for providers without video input.
   Future<Analysis> analyse(String context, List<List<int>> images) async {
-    final out = await complete('${Gemini.prompt}\nReply with only a JSON object with those six keys.',
+    final out = await complete('${Gemini.prompt}\nReply with only a JSON object with those keys. There is no audio here, so transcript is an empty string.',
         ['${images.isEmpty ? 'No pictures.' : '${images.length} frames from the video, in order.'}\n$context'],
         images: seesImages ? images : const []);
     return Gemini.parseAnalysis(out);

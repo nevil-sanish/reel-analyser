@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,6 +33,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   int _waiting = 0;
   bool _hasKey = true;
   bool _busy = false;
+  Timer? _poll;
   String _query = '';
 
   @override
@@ -39,10 +41,17 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _process();
+    // Reels shared while this screen is open, or left queued by a rate limit, are picked up without a restart.
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!mounted || _busy) return;
+      await _reload();
+      if (mounted && _waiting > 0) _process();
+    });
   }
 
   @override
   void dispose() {
+    _poll?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -362,6 +371,7 @@ PreferredSizeWidget selectionBar({
       actions: [
         IconButton(tooltip: 'Select all', icon: const Icon(Icons.select_all_rounded), onPressed: onAll),
         IconButton(tooltip: 'Mark read', icon: const Icon(Icons.done_all_rounded), onPressed: () => onAction('read')),
+        IconButton(tooltip: 'Mark unread', icon: const Icon(Icons.mark_email_unread_outlined), onPressed: () => onAction('unread')),
         IconButton(
           tooltip: archived ? 'Restore' : 'Archive',
           icon: Icon(archived ? Icons.unarchive_outlined : Icons.archive_outlined),
@@ -379,6 +389,8 @@ Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, S
     switch (action) {
       case 'read':
         await s.library.markSeen(r.url, now);
+      case 'unread':
+        await s.library.markUnseen(r.url);
       case 'archive' || 'restore':
         await s.library.setArchived(r.url, action == 'archive');
       case 'delete':
@@ -390,12 +402,14 @@ Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, S
   final n = reels.length == 1 ? '1 note' : '${reels.length} notes';
   showUndo(
     ScaffoldMessenger.of(context),
-    switch (action) { 'read' => '$n marked read', 'archive' => '$n archived', 'restore' => '$n restored', _ => '$n deleted' },
+    switch (action) { 'read' => '$n marked read', 'unread' => '$n marked unread', 'archive' => '$n archived', 'restore' => '$n restored', _ => '$n deleted' },
     () async {
       for (final r in reels) {
         switch (action) {
           case 'read':
             if (r.seenAt == 0) await s.library.markUnseen(r.url); // only the ones that were unread
+          case 'unread':
+            if (r.seenAt > 0) await s.library.markSeen(r.url, r.seenAt); // only the ones that were read
           case 'archive' || 'restore':
             await s.library.setArchived(r.url, r.archived);
           case 'delete':

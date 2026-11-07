@@ -48,6 +48,17 @@ class _ReelScreenState extends State<ReelScreen> {
               },
             ),
           IconButton(
+            tooltip: 'Mark as unread',
+            icon: const Icon(Icons.mark_email_unread_outlined),
+            onPressed: () async {
+              HapticFeedback.selectionClick();
+              final m = ScaffoldMessenger.of(context);
+              await services.library.markUnseen(reel.url);
+              if (context.mounted) Navigator.pop(context);
+              showUndo(m, 'Marked unread', () => services.library.markSeen(reel.url, DateTime.now().millisecondsSinceEpoch), widget.onChanged);
+            },
+          ),
+          IconButton(
             tooltip: reel.archived ? 'Move back to library' : 'Archive',
             icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
             onPressed: () async {
@@ -162,6 +173,18 @@ class _ReelScreenState extends State<ReelScreen> {
                       Wrap(spacing: 8, runSpacing: 8, children: [for (final m in reel.mentions) Chip(label: Text(m))]),
                       const SizedBox(height: 18),
                     ],
+                    for (final (label, text) in [('Transcript', reel.transcript), ('On-screen text', reel.onScreenText), ('Caption', reel.caption)])
+                      if (text.isNotEmpty) ...[
+                        Text(label, style: t.titleMedium),
+                        const SizedBox(height: 6),
+                        SelectableText(text, style: t.bodyLarge?.copyWith(height: 1.45)),
+                        const SizedBox(height: 18),
+                      ],
+                    if (reel.transcript.isEmpty && reel.analysis == 'done' && reel.app != 'photo')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: Text('No transcript saved. Notes made before v0.9.6 don\'t have one; Re-analyse below to get it.', style: t.bodySmall),
+                      ),
                     if (reel.tags.isNotEmpty)
                       Wrap(spacing: 8, children: [
                         for (final tag in reel.tags) Text('#$tag', style: t.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary)),

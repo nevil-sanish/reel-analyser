@@ -15,6 +15,10 @@ class Reel {
   final List<String> mentions;
   final String author;
   final String caption;
+
+  /// v0.9.6: the speech word for word and all on-screen text. Empty on older notes and on frame-only notes.
+  final String transcript;
+  final String onScreenText;
   final String analysis;
   final int step;
   final int savedAt;
@@ -41,6 +45,8 @@ class Reel {
     this.mentions = const [],
     this.author = '',
     this.caption = '',
+    this.transcript = '',
+    this.onScreenText = '',
     this.analysis = 'done',
     this.step = 0,
     required this.savedAt,
@@ -59,6 +65,8 @@ class Reel {
         'mentions': mentions,
         'author': author,
         'caption': caption,
+        'transcript': transcript,
+        'onScreenText': onScreenText,
         'analysis': analysis,
         'step': step,
         'savedAt': savedAt,
@@ -77,6 +85,8 @@ class Reel {
         mentions: _strings(j['mentions']),
         author: j['author'] as String? ?? '',
         caption: j['caption'] as String? ?? '',
+        transcript: j['transcript'] as String? ?? '',
+        onScreenText: j['onScreenText'] as String? ?? '',
         analysis: j['analysis'] as String? ?? 'done',
         step: (j['step'] as num?)?.toInt() ?? 0,
         savedAt: (j['savedAt'] as num?)?.toInt() ?? 0,
@@ -111,6 +121,9 @@ class Reel {
         summary,
         if (keyPoints.isNotEmpty) ...['', '## Key points', for (final k in keyPoints) '- $k'],
         if (mentions.isNotEmpty) ...['', '## Mentioned', mentions.join(', ')],
+        if (transcript.isNotEmpty) ...['', '## Transcript', transcript],
+        if (onScreenText.isNotEmpty) ...['', '## On-screen text', onScreenText],
+        if (caption.isNotEmpty) ...['', '## Caption', caption],
         if (tags.isNotEmpty) ...['', tags.map((t) => '#$t').join(' ')],
         '',
       ].join('\n');

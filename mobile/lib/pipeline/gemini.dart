@@ -37,7 +37,13 @@ class Analysis {
 
   /// v0.9.2: tools, apps, products, people, books, sites or links named in the reel.
   final List<String> mentions;
-  const Analysis(this.title, this.summary, this.keyPoints, this.tags, {this.overview = const [], this.mentions = const []});
+
+  /// v0.9.6: everything said in the video, word for word (empty when there's no speech or no audio),
+  /// and all text shown on screen.
+  final String transcript;
+  final String onScreenText;
+  const Analysis(this.title, this.summary, this.keyPoints, this.tags,
+      {this.overview = const [], this.mentions = const [], this.transcript = '', this.onScreenText = ''});
 }
 
 /// GEM-GENERATE, GEM-UPLOAD / GEM-FILE-GET / GEM-FILE-DELETE (ENDPOINTS §3).
@@ -71,6 +77,8 @@ Use the speech, on-screen text and visuals. Return JSON:
 - keyPoints: every concrete takeaway, step, tip, number, example or claim, as many as there are (up to 12), each a clear sentence.
 - mentions: tools, apps, products, people, books, websites or links named (empty if none).
 - tags: 3-5 lowercase single words.
+- transcript: everything spoken in the video, word for word, in its original language (empty if nobody speaks or you have no audio).
+- onScreenText: all the text shown on screen or in the pictures, in reading order (empty if none).
 If you only have a caption, a thumbnail or frames, work from those and say so in the summary.''';
 
   /// The note from a model's JSON reply; tolerates text or a code fence around the object.
@@ -85,7 +93,10 @@ If you only have a caption, a thumbnail or frames, work from those and say so in
     }
     List<String> list(Object? v) => v is List ? v.map((e) => '$e').toList() : [];
     return Analysis('${j['title'] ?? ''}', '${j['summary'] ?? ''}', list(j['keyPoints']), list(j['tags']),
-        overview: list(j['overview']), mentions: list(j['mentions']));
+        overview: list(j['overview']),
+        mentions: list(j['mentions']),
+        transcript: '${j['transcript'] ?? ''}'.trim(),
+        onScreenText: '${j['onScreenText'] ?? ''}'.trim());
   }
 
   static final _schema = {
@@ -97,8 +108,10 @@ If you only have a caption, a thumbnail or frames, work from those and say so in
       'keyPoints': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
       'mentions': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
       'tags': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+      'transcript': {'type': 'STRING'},
+      'onScreenText': {'type': 'STRING'},
     },
-    'required': ['title', 'overview', 'summary', 'keyPoints', 'mentions', 'tags'],
+    'required': ['title', 'overview', 'summary', 'keyPoints', 'mentions', 'tags', 'transcript', 'onScreenText'],
   };
 
   Map<String, String> get _headers => {'x-goog-api-key': key, 'Content-Type': 'application/json'};
