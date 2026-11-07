@@ -1,4 +1,4 @@
-/// True in the private build (`--dart-define=PRIVATE_BUILD=true`, flavor `private`): no Insights, no Accessibility,
-/// no Usage access, no notifications, no update check. It needs the internet to reach your AI and nothing else.
-/// The full build (flavor `full`) has every feature.
+/// True in the private build (`--dart-define=PRIVATE_BUILD=true`, flavor `private`). The two builds differ in only two
+/// ways: the private one has no Insights (usage and reel counting) and none of the permissions Insights needs
+/// (Accessibility, Usage access, battery exemption, notifications). Everything else is identical.
 const bool kPrivateBuild = bool.fromEnvironment('PRIVATE_BUILD');

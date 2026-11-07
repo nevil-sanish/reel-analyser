@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
+import '../native/counter_bridge.dart';
 import '../pipeline/runner.dart';
 import 'archive_screen.dart';
 import 'reel_screen.dart';
@@ -32,6 +33,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   void _toggle(Reel r) => setState(() => _selected.contains(r.url) ? _selected.remove(r.url) : _selected.add(r.url));
   static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
   int _waiting = 0;
+  List<PendingItem> _queued = [];
+  DateTime _lastRun = DateTime.fromMillisecondsSinceEpoch(0);
   bool _hasKey = true;
   bool _busy = false;
   Timer? _poll;
@@ -43,10 +46,12 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     WidgetsBinding.instance.addObserver(this);
     _process();
     // Reels shared while this screen is open, or left queued by a rate limit, are picked up without a restart.
-    _poll = Timer.periodic(const Duration(seconds: 30), (_) async {
+    // While the background task works through the queue, the list refreshes every few seconds so its progress shows.
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) async {
       if (!mounted || _busy) return;
       await _reload();
-      if (mounted && _waiting > 0) _process();
+      final due = DateTime.now().difference(_lastRun) > const Duration(seconds: 30);
+      if (mounted && _waiting > 0 && (due || s.runner.lockBusy)) _process();
     });
   }
 
@@ -65,12 +70,13 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   Future<void> _reload() async {
     await s.library.archiveOld(DateTime.now().millisecondsSinceEpoch);
     final reels = await s.library.reels(query: _query, archived: false);
-    final waiting = (await s.bridge.pendingItems(status: 'queued')).length;
+    final queued = await s.bridge.pendingItems(status: 'queued');
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
     if (!mounted) return;
     setState(() {
       _reels = reels;
-      _waiting = waiting;
+      _queued = queued;
+      _waiting = queued.length;
       _hasKey = hasKey;
     });
   }
@@ -78,6 +84,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   Future<void> _process() async {
     await _reload();
     if (_busy) return;
+    _lastRun = DateTime.now();
     setState(() => _busy = true);
     try {
       await s.runner.processQueue();
@@ -161,11 +168,13 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               builder: (context, jobs, _) => jobs.isEmpty ? const SizedBox.shrink() : _JobsCard(jobs, s.runner.cancel),
             ),
             if (_waiting > 0 && s.runner.jobs.value.isEmpty)
-              _Banner(
-                icon: _busy ? null : Icons.schedule,
-                text: '$_waiting waiting to be analysed',
-                detail: s.runner.lastProblem,
-              ),
+              s.runner.lockBusy
+                  ? _BackgroundCard(_queued)
+                  : _Banner(
+                      icon: _busy ? null : Icons.schedule,
+                      text: '$_waiting waiting to be analysed',
+                      detail: s.runner.lastProblem,
+                    ),
             if (_reels.isEmpty && _waiting == 0)
               Padding(
                 padding: const EdgeInsets.only(top: 48),
@@ -185,6 +194,40 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r, onChanged: _reload)) : _toggle(r),
                   onChanged: _reload),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown while the background task holds the queue: its stages live in another engine, so this lists what is still
+/// queued with a moving bar. Reels leave the list as they finish.
+class _BackgroundCard extends StatelessWidget {
+  final List<PendingItem> items;
+  const _BackgroundCard(this.items);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Analysing ${items.length} ${items.length == 1 ? 'reel' : 'reels'} in the background', style: t.textTheme.titleMedium),
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(4), child: const LinearProgressIndicator(minHeight: 5)),
+            const SizedBox(height: 8),
+            for (final i in items.take(4))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(Job.labelFor(i), maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+              ),
+            if (items.length > 4)
+              Text('and ${items.length - 4} more', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+          ]),
         ),
       ),
     );

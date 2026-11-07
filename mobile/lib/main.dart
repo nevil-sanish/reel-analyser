@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (!kPrivateBuild) _checkUpdate(); // the private build makes no request but the ones you ask for
+    _checkUpdate();
     WidgetsBinding.instance.addPostFrameCallback((_) => _askConsent());
   }
 
