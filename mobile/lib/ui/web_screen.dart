@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app_services.dart';
+import '../core/models.dart';
 
 /// A reel's link opened inside the app, so you can watch the original without leaving it.
 class WebScreen extends StatefulWidget {
@@ -25,13 +26,17 @@ class _WebScreenState extends State<WebScreen> {
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
+        // Pages may move around Instagram and YouTube (login, consent), but never to intent:, file: or javascript: links.
+        onNavigationRequest: (r) => r.url.startsWith('https://') || r.url.startsWith('http://') || r.url == 'about:blank'
+            ? NavigationDecision.navigate
+            : NavigationDecision.prevent,
         onProgress: (p) => setState(() => _progress = p),
         onPageStarted: (_) => setState(() => _failed = false),
         onWebResourceError: (e) {
           if (e.isForMainFrame ?? false) setState(() => _failed = true);
         },
       ))
-      ..loadRequest(Uri.parse(widget.url));
+      ..loadRequest(Uri.parse(isReelLink(widget.url) ? widget.url : 'about:blank'));
   }
 
   @override
@@ -53,7 +58,7 @@ class _WebScreenState extends State<WebScreen> {
               IconButton(
                 tooltip: 'Open in the Instagram or YouTube app',
                 icon: const Icon(Icons.open_in_new),
-                onPressed: () => widget.services.bridge.openUrl(widget.url),
+                onPressed: isReelLink(widget.url) ? () => widget.services.bridge.openUrl(widget.url) : null,
               ),
             ],
             bottom: _progress < 100

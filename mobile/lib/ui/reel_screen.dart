@@ -39,7 +39,7 @@ class _ReelScreenState extends State<ReelScreen> {
     return LiquidScaffold(
       appBar: AppBar(
         actions: [
-          if (reel.app != 'photo' && reel.url.startsWith('http'))
+          if (reel.app != 'photo' && isReelLink(reel.url))
             IconButton(
               tooltip: 'Open the link here',
               icon: const Icon(Icons.play_circle_outline),

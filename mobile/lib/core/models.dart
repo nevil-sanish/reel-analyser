@@ -131,6 +131,14 @@ class Reel {
   static List<String> _strings(Object? v) => v is List ? v.map((e) => '$e').toList() : const [];
 }
 
+/// A note's link may come from an imported file, so only Instagram and YouTube https links are ever opened.
+bool isReelLink(String url) {
+  final u = Uri.tryParse(url);
+  if (u == null || u.scheme != 'https') return false;
+  final h = u.host.toLowerCase();
+  return h == 'instagram.com' || h.endsWith('.instagram.com') || h == 'youtube.com' || h.endsWith('.youtube.com') || h == 'youtu.be';
+}
+
 const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /// Card label for when a note was saved: "just now", "5m ago", "3h ago", "yesterday", "3 Nov", "3 Nov 2025".

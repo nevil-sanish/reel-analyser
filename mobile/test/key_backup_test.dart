@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:reelbrain/core/models.dart';
 import 'package:reelbrain/data/export.dart';
 import 'package:reelbrain/data/key_backup.dart';
 
@@ -34,5 +35,14 @@ void main() {
     expect(encryptedKeysOf(exportJson(const [], const [], blob)), isNotNull);
     expect(encryptedKeysOf(exportJson(const [])), isNull);
     expect(encryptedKeysOf('[]'), isNull);
+  });
+
+  test('only Instagram and YouTube https links are opened', () {
+    expect(isReelLink('https://www.instagram.com/reel/abc/'), isTrue);
+    expect(isReelLink('https://youtu.be/abcdefg'), isTrue);
+    expect(isReelLink('https://www.youtube.com/shorts/abcdefg'), isTrue);
+    for (final bad in ['http://www.instagram.com/reel/a/', 'https://evil.com/?u=instagram.com', 'https://instagram.com.evil.com/x', 'javascript:alert(1)', 'file:///etc/passwd', 'intent://x#Intent;end', 'photo:/data/x.jpg']) {
+      expect(isReelLink(bad), isFalse, reason: bad);
+    }
   });
 }
