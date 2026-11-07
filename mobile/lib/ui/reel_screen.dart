@@ -8,6 +8,7 @@ import '../core/models.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
 import 'theme.dart';
+import 'web_screen.dart';
 
 class ReelScreen extends StatefulWidget {
   final AppServices services;
@@ -38,6 +39,15 @@ class _ReelScreenState extends State<ReelScreen> {
     return LiquidScaffold(
       appBar: AppBar(
         actions: [
+          if (reel.app != 'photo' && reel.url.startsWith('http'))
+            IconButton(
+              tooltip: 'Open the link here',
+              icon: const Icon(Icons.play_circle_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => WebScreen(services, url: reel.url, title: reel.title)),
+              ),
+            ),
           if (reel.app != 'photo')
             IconButton(
               tooltip: 'Copy link',

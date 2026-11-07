@@ -7,6 +7,34 @@ class KeyStore {
   // just reads as "not set" and nothing is deleted.
   static const _s = FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: false));
 
+  /// Every key the user entered, as one map: what an encrypted backup holds.
+  Future<Map<String, Object?>> all() async => {
+        'gemini': await geminiKeys,
+        'openai': await openai,
+        'claude': await claude,
+        'groq': await groq,
+        'apify': await apify,
+      };
+
+  /// Puts back the keys of [all]. Only keys present in the backup are written; none is ever deleted.
+  /// Returns how many keys were restored.
+  Future<int> restore(Map<String, Object?> m) async {
+    var n = 0;
+    final gemini = [for (final k in (m['gemini'] as List?) ?? const []) '$k'.trim()].where((k) => k.isNotEmpty).toList();
+    if (gemini.isNotEmpty) {
+      await setGeminiKeys(gemini);
+      n += gemini.length;
+    }
+    for (final (name, write) in [('openai', setOpenai), ('claude', setClaude), ('groq', setGroq), ('apify', setApify)]) {
+      final v = '${m[name] ?? ''}'.trim();
+      if (v.isNotEmpty) {
+        await write(v);
+        n++;
+      }
+    }
+    return n;
+  }
+
   /// True once a read threw, so Settings can say the key may still be there instead of showing an empty box.
   static bool readFailed = false;
 

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
+import '../data/key_backup.dart';
 import '../data/key_store.dart';
 import 'debug_screen.dart';
 import 'liquid.dart';
@@ -42,27 +44,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    () async {
-      final g = await s.keys.geminiKeys;
-      _openai.text = await s.keys.openai ?? '';
-      _claude.text = await s.keys.claude ?? '';
-      _groq.text = await s.keys.groq ?? '';
-      _apify.text = await s.keys.apify ?? '';
-      if (!mounted) return;
-      setState(() {
-        _gemini.addAll([for (final k in g.isEmpty ? [''] : g) _watched(k)]);
-        for (final c in [_openai, _claude, _groq, _apify]) {
-          c.addListener(_changed);
-        }
-        _lastGemini = g;
-        _lastOther.addAll({for (final c in [_openai, _claude, _groq, _apify]) c: c.text.trim()});
-        _loaded = true;
-        if (KeyStore.readFailed) {
-          _saveNote = 'The phone could not read some saved keys, so nothing is changed automatically. '
-              'Close and reopen the app; if this stays, enter the keys again.';
-        }
-      });
-    }();
+    _applyStored();
+  }
+
+  /// Fills the key boxes from secure storage (at start, and after a backup restored keys).
+  Future<void> _applyStored() async {
+    final g = await s.keys.geminiKeys;
+    final others = [await s.keys.openai ?? '', await s.keys.claude ?? '', await s.keys.groq ?? '', await s.keys.apify ?? ''];
+    if (!mounted) return;
+    setState(() {
+      final first = !_loaded;
+      for (final c in _gemini) {
+        c.dispose();
+      }
+      _gemini
+        ..clear()
+        ..addAll([for (final k in g.isEmpty ? [''] : g) _watched(k)]);
+      final boxes = [_openai, _claude, _groq, _apify];
+      for (var i = 0; i < boxes.length; i++) {
+        boxes[i].text = others[i];
+        if (first) boxes[i].addListener(_changed);
+      }
+      _lastGemini = g;
+      _lastOther
+        ..clear()
+        ..addAll({for (final c in boxes) c: c.text.trim()});
+      _loaded = true;
+      if (KeyStore.readFailed) {
+        _saveNote = 'The phone could not read some saved keys, so nothing is changed automatically. '
+            'Close and reopen the app; if this stays, enter the keys again.';
+      }
+    });
   }
 
   @override
@@ -112,22 +124,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Whether the next Export also carries the API keys, encrypted with a passphrase.
+  bool _withKeys = false;
+
+  /// Asks for a passphrase; [confirm] asks twice (when choosing one). Null if cancelled.
+  Future<String?> _askPassphrase({required bool confirm}) {
+    final a = TextEditingController(), b = TextEditingController();
+    String? error;
+    return showDialog<String>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, set) => AlertDialog(
+          title: Text(confirm ? 'Choose a passphrase' : 'Backup passphrase'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(confirm
+                ? 'Your keys are encrypted with it. It is never stored; if you forget it, the keys in this backup cannot be opened.'
+                : 'This backup has encrypted API keys. Enter the passphrase you chose when you exported it.'),
+            const SizedBox(height: 12),
+            TextField(controller: a, obscureText: true, autofocus: true, decoration: const InputDecoration(labelText: 'Passphrase')),
+            if (confirm) TextField(controller: b, obscureText: true, decoration: const InputDecoration(labelText: 'Again')),
+            if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                if (confirm && a.text.length < 8) return set(() => error = 'Use at least 8 characters.');
+                if (confirm && a.text != b.text) return set(() => error = 'The two do not match.');
+                if (a.text.isEmpty) return set(() => error = 'Enter the passphrase.');
+                Navigator.pop(c, a.text);
+              },
+              child: Text(confirm ? 'Encrypt' : 'Open'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _export() async {
+    Map<String, Object?>? encrypted;
+    if (_withKeys) {
+      final pass = await _askPassphrase(confirm: true);
+      if (pass == null) return;
+      _say('Encrypting your keys…');
+      final keys = await s.keys.all();
+      encrypted = await Isolate.run(() => KeyBackup.encrypt(keys, pass));
+    }
     final reels = await s.library.reels();
     final chats = await s.library.chats();
-    await s.bridge.saveDownload('library.json', exportJson(reels, chats));
+    await s.bridge.saveDownload('library.json', exportJson(reels, chats, encrypted));
     for (final r in reels) {
       await s.bridge.saveDownload(markdownName(r), r.toMarkdown());
     }
-    if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats to Downloads/ReelBot');
+    if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats${encrypted == null ? '' : ', with your keys encrypted,'} to Downloads/ReelBot');
   }
 
   Future<void> _import() async {
     final f = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['json']);
     if (f == null) return;
     try {
-      final (notes, chats) = await importJson(s.library, utf8.decode(await f.readAsBytes()));
-      if (mounted) _say('Imported $notes new notes and $chats chats');
+      final text = utf8.decode(await f.readAsBytes());
+      final (notes, chats) = await importJson(s.library, text);
+      var restored = 0;
+      final blob = encryptedKeysOf(text);
+      while (blob != null && mounted) {
+        final pass = await _askPassphrase(confirm: false);
+        if (pass == null) break;
+        try {
+          restored = await s.keys.restore(await Isolate.run(() => KeyBackup.decrypt(blob, pass)));
+          await _applyStored();
+          break;
+        } on WrongPassphrase {
+          if (mounted) _say('That passphrase does not open this backup. Try again.');
+        }
+      }
+      if (mounted) _say('Imported $notes new notes and $chats chats${restored > 0 ? ', and restored $restored keys' : ''}');
     } on FormatException catch (e) {
       if (mounted) _say('Could not import: ${e.message}');
     } on Object catch (e) {
@@ -273,7 +345,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then.'),
-            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Include my API keys'),
+              subtitle: const Text('Encrypted with a passphrase you choose. The app decrypts them when you import this backup.'),
+              value: _withKeys,
+              onChanged: (v) => setState(() => _withKeys = v),
+            ),
+            const SizedBox(height: 4),
             Wrap(spacing: 8, runSpacing: 8, children: [
               OutlinedButton.icon(onPressed: _export, icon: const Icon(Icons.download), label: const Text('Export')),
               OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.upload), label: const Text('Import')),
