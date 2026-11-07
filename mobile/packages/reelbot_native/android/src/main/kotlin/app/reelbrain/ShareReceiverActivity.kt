@@ -16,12 +16,13 @@ class ShareReceiverActivity : Activity() {
         val i = intent?.takeIf { it.action == Intent.ACTION_SEND || it.action == Intent.ACTION_SEND_MULTIPLE }
         // The typed getParcelable*Extra calls are Android 13+; minSdk is 29.
         @Suppress("DEPRECATION")
-        val images: List<Uri> = when {
+        val images: List<Uri> = (when {
             i?.type?.startsWith("image/") != true -> emptyList()
             i.action == Intent.ACTION_SEND_MULTIPLE -> i.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM).orEmpty()
             else -> listOfNotNull(i.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-        }
-        val text = i?.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+        }).take(10)
+        // Any app can share to us, so one share is capped: a few photos and a link-sized text, never a flood.
+        val text = i?.getStringExtra(Intent.EXTRA_TEXT).orEmpty().take(10_000)
         val now = System.currentTimeMillis()
         // Decoding several photos can take seconds, so it runs off the main thread; we finish once it's done.
         Thread {

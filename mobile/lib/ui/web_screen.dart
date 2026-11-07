@@ -4,6 +4,17 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../app_services.dart';
 import '../core/models.dart';
 
+const _pageHosts = ['instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net', 'youtube.com', 'youtu.be', 'ytimg.com', 'google.com', 'gstatic.com', 'googlevideo.com', 'googleusercontent.com'];
+
+/// Whether the in-app page may go to [url]: https only, on a host of Instagram, YouTube or the login and consent pages they use.
+bool allowedPage(String url) {
+  if (url == 'about:blank') return true;
+  final u = Uri.tryParse(url);
+  if (u == null || u.scheme != 'https') return false;
+  final h = u.host.toLowerCase();
+  return _pageHosts.any((d) => h == d || h.endsWith('.$d'));
+}
+
 /// A reel's link opened inside the app, so you can watch the original without leaving it.
 class WebScreen extends StatefulWidget {
   final AppServices services;
@@ -26,10 +37,8 @@ class _WebScreenState extends State<WebScreen> {
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        // Pages may move around Instagram and YouTube (login, consent), but only over https: never http:, intent:, file: or javascript: links.
-        onNavigationRequest: (r) => r.url.startsWith('https://') || r.url == 'about:blank'
-            ? NavigationDecision.navigate
-            : NavigationDecision.prevent,
+        // Pages may move around Instagram and YouTube (login, consent), but only over https and only to Instagram, YouTube, Facebook (Instagram's login) and Google (consent) hosts.
+        onNavigationRequest: (r) => allowedPage(r.url) ? NavigationDecision.navigate : NavigationDecision.prevent,
         onProgress: (p) => setState(() => _progress = p),
         onPageStarted: (_) => setState(() => _failed = false),
         onWebResourceError: (e) {

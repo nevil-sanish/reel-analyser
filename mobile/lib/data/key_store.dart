@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' show getDatabasesPath;
@@ -94,6 +95,30 @@ class KeyStore {
   // older version kept there are copied over once ([_migrate]). An empty value in the file is a tombstone.
 
   static const _migrated = 'secure_migrated';
+  static const _native = MethodChannel('reelbot/counter');
+  static const _secret = {'gemini', 'openai', 'claude', 'groq', 'apify'};
+  static const _sealed = 'enc1:';
+
+  /// API keys are encrypted with a Keystore key of our own before they touch the file. If the phone's Keystore
+  /// will not encrypt, the key is still saved (plain, in the private file) so typing a key never fails.
+  Future<String> _seal(String v) async {
+    try {
+      return _sealed + (await _native.invokeMethod<String>('seal', {'text': v}))!;
+    } on Object {
+      return v;
+    }
+  }
+
+  /// Null when a sealed value cannot be opened (the Keystore key is gone); the caller then reads "not set".
+  Future<String?> _unseal(String v) async {
+    if (!v.startsWith(_sealed)) return v;
+    try {
+      return await _native.invokeMethod<String>('unseal', {'text': v.substring(_sealed.length)});
+    } on Object {
+      readFailed = true;
+      return null;
+    }
+  }
   static const _oldKeys = ['gemini', 'openai', 'claude', 'groq', 'apify', 'update_checked', 'intro_seen', 'legal_v1', 'dark', 'reduce_effects', 'retried_062'];
 
   Future<File> _flagFile() async => File(p.join(await getDatabasesPath(), 'reel_flags.json'));
@@ -131,11 +156,12 @@ class KeyStore {
         break; // every read fails the same way
       }
     }
+    final sealedOld = {for (final e in old.entries) if (_secret.contains(e.key)) e.key: await _seal(e.value)};
     await _serial(() async {
       final all = await _flags();
       if (all.containsKey(_migrated)) return;
       for (final e in old.entries) {
-        all.putIfAbsent(e.key, () => e.value);
+        all.putIfAbsent(e.key, () => _secret.contains(e.key) ? sealedOld[e.key]! : e.value);
       }
       all[_migrated] = '1';
       await _store(all);
@@ -151,15 +177,23 @@ class KeyStore {
 
   Future<String?> _readPlain(String k) async {
     await _migrate();
-    final v = (await _flags())[k];
-    return v == null || v.trim().isEmpty ? null : v.trim();
+    final v = (await _flags())[k]?.trim();
+    if (v == null || v.isEmpty) return null;
+    if (!_secret.contains(k)) return v;
+    final plain = await _unseal(v);
+    if (plain != null && !v.startsWith(_sealed)) {
+      final sealed = await _seal(plain); // a key saved before encryption existed is encrypted on its first read
+      if (sealed.startsWith(_sealed)) await _serial(() async => _store((await _flags())..[k] = sealed));
+    }
+    return plain == null || plain.isEmpty ? null : plain;
   }
 
   Future<void> _writePlain(String k, String v) async {
     await _migrate();
+    final stored = _secret.contains(k) && v.isNotEmpty ? await _seal(v) : v;
     await _serial(() async {
       final all = await _flags();
-      all[k] = v;
+      all[k] = stored;
       await _store(all);
     });
   }

@@ -68,6 +68,8 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                     "images" to r.media.images.take(10),
                 )
             }
+            "seal" -> offMain(result) { SecretBox.seal(call.argument<String>("text")!!) }
+            "unseal" -> offMain(result) { SecretBox.unseal(call.argument<String>("text")!!) }
             "sweepPhotos" -> offMain(result) {
                 val keep = call.argument<List<String>>("keep").orEmpty().toSet()
                 java.io.File(ctx.filesDir, "photos").listFiles()?.filter { it.path !in keep }?.forEach { it.delete() }
