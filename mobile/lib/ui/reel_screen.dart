@@ -211,7 +211,7 @@ class _ReelScreenState extends State<ReelScreen> {
                           final ok = await services.retry(reel);
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share it to Reel Bot again to re-analyse.')));
+                              content: Text(ok ? 'Queued again. It will be analysed shortly.' : 'Share it to Reel Analyser again to re-analyse.')));
                           if (ok) Navigator.pop(context);
                         },
                       ),

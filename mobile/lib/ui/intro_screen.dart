@@ -23,7 +23,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   var _page = 0;
 
   static const _slides = [
-    (Icons.ios_share_rounded, 'Share a reel.\nGet the point.', 'Tap Share → Reel Bot on any reel or short. You get a short summary and the key takeaways.'),
+    (Icons.ios_share_rounded, 'Share a reel.\nGet the point.', 'Tap Share → Reel Analyser on any reel or short. You get a short summary and the key takeaways.'),
     (Icons.insights_rounded, 'Know your scroll', 'See how many reels you watch each day and for how long. Counted, never recorded.'),
     (Icons.lock_rounded, 'Only on your phone', 'No account, no server. Your notes stay here; a reel you share goes only to the AI you choose.'),
   ];
@@ -84,7 +84,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                   opacity: CurvedAnimation(parent: _enter, curve: const Interval(0.4, 1)),
                   child: ShaderMask(
                     shaderCallback: (r) => Brand.gradient.createShader(r),
-                    child: const Text('Reel Bot', style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                    child: const Text('Reel Analyser', style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
                   ),
                 ),
                 Expanded(

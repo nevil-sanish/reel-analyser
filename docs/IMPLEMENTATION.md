@@ -1,4 +1,4 @@
-# Reel Bot: implementation guide (file by file)
+# Reel Analyser: implementation guide (file by file)
 
 How to build what [PLAN.md](PLAN.md) describes. Network calls: [ENDPOINTS.md](ENDPOINTS.md). Tests: [TESTS.md](TESTS.md). **Phases 1 and 2 are specified in full.** Phases 3–4 list the files and their behaviour.
 
@@ -62,7 +62,7 @@ The old app had sign-in, credits, Play billing and a server. All of that goes.
 
 - Remove `google_sign_in` and `in_app_purchase`.
 - Add `workmanager` (background analysis, §2.4).
-- Set the description to "Reel Bot: turns the reels you share into searchable notes, and counts the Reels and Shorts you watch."
+- Set the description to "Reel Analyser: turns the reels you share into searchable notes, and counts the Reels and Shorts you watch."
 
 ### 1.3 Edit these files
 
@@ -76,7 +76,7 @@ The old app had sign-in, credits, Play billing and a server. All of that goes.
 | `lib/ui/home_screen.dart` | Rename to `library_screen.dart` / `LibraryScreen`. Remove sync, account and the credits banner. Show an "Add your Gemini key" banner when there's no key, and a "N waiting to be analysed" line when items are queued. The app bar has *Ask your library* and *Your AI keys*. |
 | `lib/ui/settings_screen.dart` | Remove the "server fetch" switch and any credits wording. Add the optional Apify key. |
 | `lib/ui/reel_screen.dart` | Remove "Report wrong summary" (it called the server). Show a "Summary from caption + thumbnail" label when `analysis = "caption+thumbnail"`. |
-| `lib/main.dart` | No sign-in. Phase 1 root is `LibraryScreen`; Phase 2 makes it a `NavigationBar` with **Today** and **Library**. App title "Reel Bot". |
+| `lib/main.dart` | No sign-in. Phase 1 root is `LibraryScreen`; Phase 2 makes it a `NavigationBar` with **Today** and **Library**. App title "Reel Analyser". |
 
 ---
 
@@ -107,7 +107,7 @@ A transparent activity (no Flutter) for `ACTION_SEND` `text/plain`.
 2. If the newest `pending_items` row has no URL and is under 2 min old (a bubble Save from Phase 3; 10 s before v0.5.0, which was too short to share by hand), fill in its URL; otherwise insert a new row.
 3. Toast "Saved ✓" and `finish()`, so you stay in Instagram/YouTube.
 
-*Not in v0.1.0:* `res/xml/shortcuts.xml` + `ShortcutManagerCompat.pushDynamicShortcut` for the Direct Share row. Reel Bot shows in the normal share list; add the shortcut if it's hard to find.
+*Not in v0.1.0:* `res/xml/shortcuts.xml` + `ShortcutManagerCompat.pushDynamicShortcut` for the Direct Share row. Reel Analyser shows in the normal share list; add the shortcut if it's hard to find.
 
 ### 2.3 `CounterPlugin.kt`: the `reelbot/counter` channel
 
@@ -331,7 +331,7 @@ CREATE VIEW daily_counts AS
    - every 3 s, write `debug_state["tree_<app>"]` (up to 400 lines of `V/- id Class [l,t,r,b] label`).
 
 **Unknown alert**
-- After each `addUnknown`, read today's totals for that app. If `unknown ≥ 5` and `unknown ≥ 30%` of `reels + unknown`, and no alert was posted today (`debug_state["alerted_<date>"]`), post a notification: "Reel Bot can't read Instagram/YouTube any more. An app update probably changed the screen. Open the debug screen." Tapping it opens the app (v0.2.0: the plugin can't route to a screen, so the Today screen's warning card links to the debug screen).
+- After each `addUnknown`, read today's totals for that app. If `unknown ≥ 5` and `unknown ≥ 30%` of `reels + unknown`, and no alert was posted today (`debug_state["alerted_<date>"]`), post a notification: "Reel Analyser can't read Instagram/YouTube any more. An app update probably changed the screen. Open the debug screen." Tapping it opens the app (v0.2.0: the plugin can't route to a screen, so the Today screen's warning card links to the debug screen).
 - Needs `POST_NOTIFICATIONS` (asked for in the setup checklist).
 
 **Rules**
@@ -371,7 +371,7 @@ CREATE VIEW daily_counts AS
 
 **`AndroidManifest.xml`**
 - Add `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` and `POST_NOTIFICATIONS`.
-- v0.2.0: these live in the `reelbot_native` plugin's manifest (IMPLEMENTATION §0.1), with the label written as "Reel Bot".
+- v0.2.0: these live in the `reelbot_native` plugin's manifest (IMPLEMENTATION §0.1), with the label written as "Reel Analyser".
 - Add the service:
 
 ```xml
@@ -425,7 +425,7 @@ A thin wrapper over the `reelbot/counter` channel.
 ### 4.3 `lib/ui/setup_screen.dart`
 A checklist that re-checks `status` on resume:
 1. *(Android 13+)* **Allow restricted settings.** Button: `openAppInfo`. Text: "⋮ → Allow restricted settings".
-2. **Turn on Reel Bot in Accessibility.** Button: `openAccessibilitySettings`.
+2. **Turn on Reel Analyser in Accessibility.** Button: `openAccessibilitySettings`.
 3. *(Android 13+)* **Allow notifications** (for the unknown alert and digest).
 4. **Battery: unrestricted.** Button: `requestBatteryExemption`.
 5. *(Xiaomi, Redmi, Poco, Oppo, Realme, OnePlus, Vivo, iQOO, Huawei, Honor)* **Allow Autostart.** Button: `openAutostart`.
@@ -451,21 +451,21 @@ Before every commit that changes code: `flutter analyze`, `flutter test`, `./gra
 | File | Behaviour |
 |---|---|
 | `OverlayBubble.kt` | A `TYPE_ACCESSIBILITY_OVERLAY` bubble you can drag, shown while `tracker.active`. Tapping it expands to **[Today: N]** and **[Save]**. |
-| Bubble **Save** (default) | Insert a `pending_items` row (author, caption, on-screen text, no URL) and show "Now tap Share → Reel Bot". The share receiver attaches the URL to this row (§2.2). |
-| `SaveAutomator.kt` | **Off by default** (setting "Auto-Save (experimental)"). Steps below. Each step has a 1.5 s timeout; on a miss, press Back, keep the row, and show "Tap Share → Reel Bot to attach the link". |
+| Bubble **Save** (default) | Insert a `pending_items` row (author, caption, on-screen text, no URL) and show "Now tap Share → Reel Analyser". The share receiver attaches the URL to this row (§2.2). |
+| `SaveAutomator.kt` | **Off by default** (setting "Auto-Save (experimental)"). Steps below. Each step has a 1.5 s timeout; on a miss, press Back, keep the row, and show "Tap Share → Reel Analyser to attach the link". |
 
 `SaveAutomator.kt` steps:
 1. Insert a `pending_items` row (author, caption, on-screen text, no URL).
 2. Click the reel's **Share** button, found by the rules.
 3. Instagram only: click **Share to…** / **More**, which opens the system share sheet.
-4. In the system share sheet (`com.android.intentresolver`), click the **Reel Bot** node. If it isn't visible, scroll once and retry.
+4. In the system share sheet (`com.android.intentresolver`), click the **Reel Analyser** node. If it isn't visible, scroll once and retry.
 
 Log each attempt's result in `debug_state`; the debug screen shows the success rate. **If it stays below 90% on your phones, delete `SaveAutomator.kt`.**
 
 **Never** automate anything else: no scrolling, likes, follows or opening profiles.
 
 **v0.3.0 as built:**
-- Step 3 runs for both apps: if "Reel Bot" isn't in the sheet, it presses "Share to…" / "More" once (YouTube's own sheet can need it too), then scrolls once.
+- Step 3 runs for both apps: if "Reel Analyser" isn't in the sheet, it presses "Share to…" / "More" once (YouTube's own sheet can need it too), then scrolls once.
 - The share button is found by guessed ids (`clips_share_button`, `direct_share_button`, `row_feed_button_share` / `reel_dyn_share`, `share_button`, `reel_share_button`), then by its "Share" / "Send" description. Replace the ids from a capture, as for §3.2.
 - The system share sheet (`com.android.intentresolver`, `com.google.android.intentresolver`, `android`) is on the tracker's ignored list, so opening it doesn't end the session.
 - The switch is in Settings (`setAutoSave`); attempts are counted in `debug_state` (`autosave_tries`, `autosave_ok`, `autosave_last`).
@@ -476,7 +476,7 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 - **Tokens:** first Gemini attempt sends `thinkingLevel: minimal`, `mediaResolution: LOW` and video at 0.5 fps; a 400 retries without them. Shorter prompt, 1–2 sentence summary.
 - **Chat** (`ui/chat_screen.dart`) replaces *Ask your library*: any provider with a key, all notes in the system prompt, last 10 turns.
 - **Privacy:** watched reels are counted by fingerprint only (§3.3). Feedback is the only thing sent on purpose, as a GitHub issue the user submits.
-- **Look:** `ui/theme.dart` (v0.6.0: the purple→pink→orange→yellow Reels gradient on black/white surfaces; Reel Bot keeps its own play mark, never Instagram's logo), first-run `ui/intro_screen.dart` (spinning gradient ring, three pages, *Slide to unlock* that bursts the gradient across the screen), library cards with the short summary.
+- **Look:** `ui/theme.dart` (v0.6.0: the purple→pink→orange→yellow Reels gradient on black/white surfaces; Reel Analyser keeps its own play mark, never Instagram's logo), first-run `ui/intro_screen.dart` (spinning gradient ring, three pages, *Slide to unlock* that bursts the gradient across the screen), library cards with the short summary.
 - **Home (v0.6.0):** tabs are Ask (chat, with a provider + model picker), Today, Library.
 - **Seen / archive (v0.6.0):** `reel_brain.db` version 2 adds `seenAt` and `archived`. Opening a note marks it seen; unseen notes show a gradient dot. On each library load, seen notes saved more than 3 days ago move to the Archive (searchable, restorable, still used by chat and export). Unseen notes never auto-archive.
 - **Notifications (v0.6.0):** after a background run that finished notes, "Note ready: <title>" (`notifyNotes`). The 9 pm digest on an empty day nudges instead of showing zeros.
@@ -485,8 +485,8 @@ Log each attempt's result in `debug_state`; the debug screen shows the success r
 - **v0.9.3:** search covers `overview` and `mentions`; Settings → Notes → *Re-analyse old notes* re-queues every note without an overview (`AppServices.reanalyseOld`, through `retry`); on each start `sweepPhotos` deletes files in `files/photos` that no note or queued item uses (new channel method); Insights' time-of-day blocks and peak hour are ranked by minutes watched.
 - **v0.9.2:** richer notes: the prompt and Gemini schema add `overview` (3–6 short, simple bullets that together hold every important point) and `mentions` (tools, people, products, links), and ask for 2–4 sentence summaries and every key point (≤ 12). `reel_brain.db` v4 adds both columns. The note shows the overview bullets with no toggle; *Show full analysis* opens the detail, every numbered point, mentions, tags, source and **Re-analyse** (older notes get the new format this way). Library cards show the first two overview bullets. Chat context: every non-deleted note (archive included); the 12 best matches send overview, points, mentions and link, the next 40 title + overview. Insights: reels per day with numbers on the bars, a faint line for empty days, the average per active day, four time-of-day blocks (Night / Morning / Afternoon / Evening) with share bars, and the weekday chart only after 7 active days. Ask opens with a greeting, the today strip, a *Recently saved* row and suggestions built from your top tags.
 - **v0.9.1:** the cascade no longer pauses all of Instagram on a login wall. `StepResult.Limited` (HTTP 429) still pauses 30 min; `LoginWall` (login redirect, `require_login`) only skips that step, so the embed player and the other steps still run. If every step walls and nothing is found, the reel is retried after 10 min, up to 3 runs, then the runner makes do with what it has.
-- **v0.9.0:** the bubble, its Save and the experimental auto-Save are removed (`OverlayBubble.kt`, `SaveAutomator.kt`, `addBubbleSave`, `ShareUrls.shouldAttach`, `setAutoSave`). Saving is only Share → Reel Bot (links, posts, photos); the counter is read-only again. Phase 3 (§6) is withdrawn. Library and Archive gain multi-select: long-press a note, tap others, then Mark read, Archive / Restore or Delete (with Undo).
-- **v0.8.2:** fixes tabs drawing over each other: `FadingTabs` keeps each tab's fade outside its `TickerMode` (v0.8.1 put it inside, so a hidden tab's fade-out froze half-way). Fewer controls: the theme toggle lives only in Settings; Settings opens from Ask; Set up counting and Counter debug moved into Settings; library cards lost their delete and fallback icons (delete is a swipe or on the note), the swipe hint is gone, and empty filter chips are hidden. Repo renamed to `nevil-sanish/reel-brain`.
+- **v0.9.0:** the bubble, its Save and the experimental auto-Save are removed (`OverlayBubble.kt`, `SaveAutomator.kt`, `addBubbleSave`, `ShareUrls.shouldAttach`, `setAutoSave`). Saving is only Share → Reel Analyser (links, posts, photos); the counter is read-only again. Phase 3 (§6) is withdrawn. Library and Archive gain multi-select: long-press a note, tap others, then Mark read, Archive / Restore or Delete (with Undo).
+- **v0.8.2:** fixes tabs drawing over each other: `FadingTabs` keeps each tab's fade outside its `TickerMode` (v0.8.1 put it inside, so a hidden tab's fade-out froze half-way). Fewer controls: the theme toggle lives only in Settings; Settings opens from Ask; Set up counting and Counter debug moved into Settings; library cards lost their delete and fallback icons (delete is a swipe or on the note), the swipe hint is gone, and empty filter chips are hidden. Repo renamed to `nevil-sanish/reel-analyser`.
 - **v0.8.1 (layout):** tabs are **Ask** (today strip, chat with the ask bar at the bottom, saved chats in `reel_brain.db` v3 `chats`, history sheet, model picker), **Insights** (`ui/insights_screen.dart`: Week/Month, minutes per day, reels by hour from `seen_items.first_seen` via the new `hourly` channel method, weekday averages) and **Library** (All / Reels / Shorts / Posts / Photos filters; cards show title and summary only). Notes show the summary first and *Show full analysis* expands points, tags, source and fallback details. Palette is greens only (`Brand.forest … lime`), light by default, dark via the sun/moon button or Settings (saved as the `dark` flag). Pages open with a fade-and-swell "liquid" transition; tabs cross-fade.
 - **v0.8.0 (photos and posts):** the share receiver also takes `image/*`: the picture is copied into `files/photos/<time>.jpg` (≤ 1280 px JPEG), queued as `photo:<path>` with app `photo`, analysed as an image and shown on its note. Instagram parsers now fill `IgMedia.images` (every still of a photo post or carousel, carousel videos left out); a post with no video sends up to 10 of them in one request and makes a full note instead of a caption + thumbnail one.
 - **v0.7.0 (liquid glass):** `ui/liquid.dart`: `LiquidBackground` (four slowly drifting radial-gradient blobs in the brand colours, one `CustomPaint`), `Glass` (backdrop blur 24, tint, hairline edge, top highlight), `LiquidScaffold` (pushed screens draw their own background; the home draws one behind all tabs), `GlassTabBar` (floating frosted pill, gradient on the selected tab). Theme: glass-tinted cards, search bars, chips and inputs; stadium buttons; floating snackbars; Cupertino page transitions; heavier, tighter titles. Chat opens on a large glass ask bar mid-screen with the title and suggestions; sending glides the bar to the bottom and the conversation takes over.
@@ -509,7 +509,7 @@ One page, one screenshot per step:
 1. Download the APK from GitHub Releases.
 2. If Play Protect blocks it: pause Play Protect while installing (or `adb install`).
 3. *(Android 13+)* App info → ⋮ → Allow restricted settings.
-4. Accessibility → Reel Bot → On.
+4. Accessibility → Reel Analyser → On.
 5. Notifications, battery unrestricted, Autostart (Xiaomi/Realme/Oppo/Vivo).
 6. Get a free Gemini key at aistudio.google.com and paste it in Settings.
-7. Test: share one reel to Reel Bot and check it appears in the Library.
+7. Test: share one reel to Reel Analyser and check it appears in the Library.

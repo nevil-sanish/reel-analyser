@@ -1,5 +1,5 @@
 name: reelbot_native
-description: "Reel Bot's Kotlin side: share receiver, counter.db, Instagram fetcher and the reelbot/counter channel."
+description: "Reel Analyser's Kotlin side: share receiver, counter.db, Instagram fetcher and the reelbot/counter channel."
 version: 0.1.0
 publish_to: 'none'
 

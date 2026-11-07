@@ -30,7 +30,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.9.6';
+  static const version = '0.9.7';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -111,8 +111,8 @@ class AppServices {
   /// One chat turn from the user's saved notes. Gemini tries each saved key in turn on a rate limit.
   Future<String> chat(String provider, List<String> turns, {String? model}) async {
     final notes = await notesContext(turns.last);
-    if (notes.isEmpty) return 'Your library is empty. Share a reel to Reel Bot first.';
-    final system = 'You are Reel Bot. Answer from the user\'s saved reel notes below. Cite note titles you used. '
+    if (notes.isEmpty) return 'Your library is empty. Share a reel to Reel Analyser first.';
+    final system = 'You are Reel Analyser. Answer from the user\'s saved reel notes below. Cite note titles you used. '
         'If the notes do not cover it, say so briefly. Keep answers short.\n\nSaved notes:\n$notes';
     final ks = switch (provider) {
       'gemini' => await keys.geminiKeys,

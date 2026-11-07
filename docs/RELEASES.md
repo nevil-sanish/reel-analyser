@@ -1,4 +1,4 @@
-# Reel Bot: commits, docs and releases
+# Reel Analyser: commits, docs and releases
 
 How work lands in this repo. Applies to people and to coding agents.
 
@@ -27,7 +27,7 @@ A commit that changes code but leaves a covering test row at **planned** is inco
 
 ## 3. Versions
 
-`v<major>.<minor>.<patch>`, pre-1.0 while Reel Bot is personal:
+`v<major>.<minor>.<patch>`, pre-1.0 while Reel Analyser is personal:
 
 | Version | Meaning |
 |---|---|
@@ -42,10 +42,10 @@ A commit that changes code but leaves a covering test row at **planned** is inco
 
 ## 4. GitHub Releases
 
-Every version is a GitHub Release on `nevil-sanish/reel-brain`:
+Every version is a GitHub Release on `nevil-sanish/reel-analyser`:
 - **Tag** `vX.Y.Z` on `main`, created by the release itself.
 - **Pre-release** flag on while `< v1.0.0`.
-- **Assets** (from `v0.1.0`): `reel-bot-vX.Y.Z.apk` (release build, signed with the private key kept outside the repo) and `SHA256SUMS`.
+- **Assets** (from `v0.1.0`): `reel-analyser-vX.Y.Z.apk` (release build, signed with the private key kept outside the repo) and `SHA256SUMS`.
 - **Notes**, in this order:
   1. What changed (from the commits since the last tag).
   2. Live checks ([TESTS.md](TESTS.md) §6): which Instagram step won for each test URL, and the T-LIVE-10 video rate.
@@ -59,7 +59,7 @@ git tag --list 'v*' --sort=-v:refname | head -1
 ```
 
 ```bash
-gh release create vX.Y.Z --target main --prerelease --title "vX.Y.Z: <summary>" --notes-file notes.md reel-bot-vX.Y.Z.apk SHA256SUMS
+gh release create vX.Y.Z --target main --prerelease --title "vX.Y.Z: <summary>" --notes-file notes.md reel-analyser-vX.Y.Z.apk SHA256SUMS
 ```
 
 Release checklist:
@@ -94,3 +94,4 @@ Release checklist:
 | 2026-11-06 | v0.9.4 | Export/Import include saved chats; share several photos at once; update banner; INSTALL.md; PLAN.md up to date. *Built but never published; its changes ship in v0.9.5.* |
 | 2026-11-06 | v0.9.5 | Everything from v0.9.4, plus: re-sharing a saved reel brings it back unread instead of re-analysing; Undo on every note action; time in Instagram and YouTube from Usage access (optional), reel counting optional, Reduce effects, new app icon; fixes found on a phone (background job closed the app's database, setup said Accessibility was off, private posts shown as a rate limit, app time ~20% low). |
 | 2026-11-07 | v0.9.6 | Saved API keys no longer vanish (Save blocked until keys load, plugin reset-on-error off, background job no longer writes to secure storage, auto-backup off); reels shared while a run is busy are picked up in the same run; Instagram pacing 1.5 s, pause 10 min after a rate limit; one Gemini 429 retry per run; transcript, on-screen text and caption in the full analysis; Mark unread (note screen and multi-select); new app icon. *Not yet checked on a phone: multi-share, transcript, keys surviving a force-stop.* |
+| 2026-11-07 | v0.9.7 | Parallel analysis: one reel per Gemini key at the same time (up to 4), each worker starting on its own key; native job pool 2 → 4 threads; the Library lists every reel being analysed with its own progress bar and a Stop button (a stopped reel is not analysed); app and repo renamed to Reel Analyser (package id unchanged, so it installs over v0.9.6). *Not yet checked on a phone.* |

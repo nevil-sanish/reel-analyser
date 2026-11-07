@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'liquid.dart';
 
-/// Reel Bot's look (v0.8.1): greens only, from deep emerald to fresh lime, on white by default or near-black.
+/// Reel Analyser's look (v0.8.1): greens only, from deep emerald to fresh lime, on white by default or near-black.
 class Brand {
   static const forest = Color(0xFF047857);
   static const emerald = Color(0xFF10B981);

@@ -1,4 +1,4 @@
-# Installing Reel Bot
+# Installing Reel Analyser
 
 One page, for a friend installing it for the first time. Android 10 or newer. About 5 minutes.
 
@@ -6,7 +6,7 @@ One page, for a friend installing it for the first time. Android 10 or newer. Ab
 
 ## 1. Download
 
-On the phone, open [the releases page](https://github.com/nevil-sanish/reel-brain/releases) and tap `reel-bot-vX.Y.Z.apk` under the newest release. Open the file when it finishes.
+On the phone, open [the releases page](https://github.com/nevil-sanish/reel-analyser/releases) and tap `reel-analyser-vX.Y.Z.apk` under the newest release. Open the file when it finishes.
 
 If the browser asks, allow it to *install unknown apps*.
 
@@ -18,20 +18,20 @@ Play Protect may say the app is unknown, because it isn't from the Play Store. T
 
 1. Open the app, swipe through the intro and *Slide to unlock*.
 2. On a computer or the phone, go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey), sign in with Google and tap **Create API key**. Copy it.
-3. In Reel Bot, tap **⚙** on the Ask tab, paste the key under *Gemini*, and tap **Save keys**. You can add more Gemini keys, or OpenAI, Claude and Groq keys, later.
+3. In Reel Analyser, tap **⚙** on the Ask tab, paste the key under *Gemini*, and tap **Save keys**. You can add more Gemini keys, or OpenAI, Claude and Groq keys, later.
 
-The key stays on your phone. Reel Bot has no server.
+The key stays on your phone. Reel Analyser has no server.
 
 ## 4. Save your first reel
 
-In Instagram or YouTube, tap **Share → Reel Bot** (in Instagram it's under *Share to…*). You'll see *Saved ✓* and stay where you were. The note appears in the Library when you open Reel Bot, or within about 15 minutes in the background. Photos and screenshots can be shared the same way.
+In Instagram or YouTube, tap **Share → Reel Analyser** (in Instagram it's under *Share to…*). You'll see *Saved ✓* and stay where you were. The note appears in the Library when you open Reel Analyser, or within about 15 minutes in the background. Photos and screenshots can be shared the same way.
 
 For **Insights** (optional; notes and chat work without it), open **⚙ → Set up Insights**:
 
-- **Usage access:** tap **Open** next to *Allow usage access* and turn on Reel Bot. This shows your time in Instagram and YouTube. It's Android's own usage data; nothing is read from the screen.
+- **Usage access:** tap **Open** next to *Allow usage access* and turn on Reel Analyser. This shows your time in Instagram and YouTube. It's Android's own usage data; nothing is read from the screen.
 - **Notifications:** tap **Open** next to *Allow notifications*.
 
-The steps below are **optional**: only if you also want Reel Bot to **count** the reels and Shorts you watch.
+The steps below are **optional**: only if you also want Reel Analyser to **count** the reels and Shorts you watch.
 
 ## 5. Allow restricted settings (Android 13+)
 
@@ -39,7 +39,7 @@ Android greys out Accessibility for apps installed from a file. In the checklist
 
 ## 6. Accessibility
 
-Tap **Open** next to *Turn on Reel Bot in Accessibility*, then **Installed apps → Reel Bot → On**. Reel Bot only reads the Reels and Shorts screens. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
+Tap **Open** next to *Turn on Reel Analyser in Accessibility*, then **Installed apps → Reel Analyser → On**. Reel Analyser only reads the Reels and Shorts screens. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
 
 ## 7. Battery
 
@@ -47,7 +47,7 @@ Tap **Allow** next to *Battery: unrestricted*, so Android doesn't stop the count
 
 ## 8. Autostart (Xiaomi, Realme, Oppo, Vivo)
 
-These phones stop background apps unless Autostart is on. Tap **Open** next to *Allow Autostart* and turn on Reel Bot. The step only appears on those phones.
+These phones stop background apps unless Autostart is on. Tap **Open** next to *Allow Autostart* and turn on Reel Analyser. The step only appears on those phones.
 
 ## Afterwards
 

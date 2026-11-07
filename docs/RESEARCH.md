@@ -1,4 +1,4 @@
-# Reel Bot: open-source survey (Instagram + YouTube fetching)
+# Reel Analyser: open-source survey (Instagram + YouTube fetching)
 
 **Checked:** 5 Nov 2026, by reading each project's source (not just its README).
 **Feeds:** [PLAN.md](PLAN.md) §3, [ENDPOINTS.md](ENDPOINTS.md), [TESTS.md](TESTS.md).
@@ -29,7 +29,7 @@ Confidence tags as in PLAN: **[Certain]** = seen in code, **[Likely]** = strong 
 | [embetter](https://github.com/everettsouthwick/embetter) | 19 | 2026-10-28 | GPL-3.0 | JS | Rewrites links to ddinstagram/kkinstagram-style hosts | No (third-party hosts) |
 | [n8n-instagram-scrapper-with-transcription](https://github.com/1ordo/n8n-instagram-scrapper-with-transcription) | 5 | 2025-04-16 | MIT | Python | Apify actor → `videoUrl` → Whisper | Same as our optional Apify step |
 | [mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer) | 111 | 2026-11-02 | MIT | TS | yt-dlp for download, then transcript + key frames + OCR for an LLM; Puppeteer for some sites | Good model for the **analysis** side (frames + transcript); too heavy for a phone |
-| [social-knowledge-base](https://github.com/guimatheus92/social-knowledge-base) | 12 | 2026-06-29 | MIT | TS | gallery-dl with **login cookies** of a throwaway account → faster-whisper → LLM notes → RAG | Same product idea as Reel Bot, server/desktop and login-based. Confirms the market gap: "no open-source tool does the full flow" |
+| [social-knowledge-base](https://github.com/guimatheus92/social-knowledge-base) | 12 | 2026-06-29 | MIT | TS | gallery-dl with **login cookies** of a throwaway account → faster-whisper → LLM notes → RAG | Same product idea as Reel Analyser, server/desktop and login-based. Confirms the market gap: "no open-source tool does the full flow" |
 
 ## 2. YouTube projects
 

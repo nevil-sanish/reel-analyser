@@ -27,7 +27,7 @@ object Digest {
      */
     fun text(reels: Long?, ms: Long?, saved: Int, titles: List<String>): String {
         if ((reels ?: 0L) == 0L && (ms ?: 0L) < 60000 && saved == 0) {
-            return "Nothing saved today. Saw a reel worth keeping? Share it to Reel Bot for the key points."
+            return "Nothing saved today. Saw a reel worth keeping? Share it to Reel Analyser for the key points."
         }
         val counts = listOfNotNull(reels?.let { "$it reels" }, ms?.let { "${it / 60000} min" }, "$saved saved").joinToString(" · ")
         return if (titles.isEmpty()) counts else "$counts: ${titles.take(3).joinToString(", ")}"

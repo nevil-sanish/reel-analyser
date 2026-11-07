@@ -80,7 +80,7 @@ class _DebugScreenState extends State<DebugScreen> {
                 children: [SelectableText(tree, style: mono)],
               ),
           const Divider(),
-          Text('Seen today: ${_seen.length} reels. Reel Bot keeps only an anonymous fingerprint of each, never what it was.',
+          Text('Seen today: ${_seen.length} reels. Reel Analyser keeps only an anonymous fingerprint of each, never what it was.',
               style: Theme.of(context).textTheme.bodySmall),
         ],
       ),

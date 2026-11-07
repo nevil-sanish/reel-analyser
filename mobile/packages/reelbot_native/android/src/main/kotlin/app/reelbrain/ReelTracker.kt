@@ -130,7 +130,7 @@ class ReelTracker(
     }
 }
 
-/** "Reel Bot can't read Instagram/YouTube any more": at least 5 unknown and 30% of the day's items, once a day. */
+/** "Reel Analyser can't read Instagram/YouTube any more": at least 5 unknown and 30% of the day's items, once a day. */
 object UnknownAlert {
     fun shouldAlert(reels: Long, unknown: Long, alreadyAlerted: Boolean) =
         !alreadyAlerted && unknown >= 5 && unknown * 10 >= (reels + unknown) * 3

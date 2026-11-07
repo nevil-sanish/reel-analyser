@@ -1,4 +1,4 @@
-# Reel Bot: project status
+# Reel Analyser: project status
 
 Written 2026-11-06; current as of **v0.9.5**. This page says what has been built, how it was checked, and what work is left, in detail. The other docs go deeper: [PLAN.md](PLAN.md) for intent, [IMPLEMENTATION.md](IMPLEMENTATION.md) file by file (with a per-version log), [ENDPOINTS.md](ENDPOINTS.md) for every network call, and [TESTS.md](TESTS.md) for every test ID.
 
@@ -15,14 +15,14 @@ Written 2026-11-06; current as of **v0.9.5**. This page says what has been built
 
 | | |
 |---|---|
-| **Latest release** | [v0.9.5](https://github.com/nevil-sanish/reel-brain/releases/tag/v0.9.5): a signed APK for Android 10+, marked pre-release |
+| **Latest release** | [v0.9.5](https://github.com/nevil-sanish/reel-analyser/releases/tag/v0.9.5): a signed APK for Android 10+, marked pre-release |
 | **Releases so far** | 18 published (v0.1.0 to v0.9.3, then v0.9.5), each with an APK and `SHA256SUMS`. v0.9.4 was built and logged but never published; its changes ship in v0.9.5 |
-| **Repository** | `nevil-sanish/reel-brain` (renamed from `reel-notes-bot`; the old links redirect) |
+| **Repository** | `nevil-sanish/reel-analyser` (renamed from `reel-notes-bot`; the old links redirect) |
 | **Code** | Flutter app ~4,200 lines in `mobile/lib`; Kotlin plugin ~1,600 lines in 11 files |
 | **Automated tests** | 36 Dart and 61 Kotlin, all passing; `flutter analyze` clean |
 | **Seen on a real phone** | Yes, from the user's screenshots on 2026-11-06: the counter counted 41 reels and shorts in a day, an Instagram reel became a full note from its video, and the Ask, Insights and Library tabs render. Since then, checked over ADB on a Nothing A059 (Android 16, 90 Hz): the first Instagram run (item 2), scrolling (item 11), the setup checklist (item 4) and surviving a kill (item 5). It found and fixed four bugs (§2.1, v0.9.5). |
 
-**Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Bot. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
+**Product in one line.** You share Instagram Reels, Instagram posts, YouTube Shorts or photos to Reel Analyser. It turns each into a short AI note using your own key, lets you chat with all your notes, and (optionally) counts how many reels and shorts you watch. Everything stays on the phone.
 
 ---
 
@@ -45,7 +45,7 @@ Written 2026-11-06; current as of **v0.9.5**. This page says what has been built
 | **v0.8.0** | Shared **photos and screenshots** are analysed. Instagram **photo posts and carousels** send every image (up to 10). |
 | **v0.8.1** | A green theme (light by default, dark toggle). Liquid page and tab transitions. Saved chats with a history sheet. A full **Insights** tab. Library filters. A compact note with a full-analysis toggle. |
 | **v0.8.2** | **Fix:** the tabs drew on top of each other (with a regression test). Fewer buttons. The README explains the workflow. The repo was renamed. |
-| **v0.9.0** | The bubble, Save and auto-Save were **removed** at the user's request; saving is Share → Reel Bot only. **Multi-select** in the Library and Archive (mark read, archive or restore, delete with Undo). |
+| **v0.9.0** | The bubble, Save and auto-Save were **removed** at the user's request; saving is Share → Reel Analyser only. **Multi-select** in the Library and Archive (mark read, archive or restore, delete with Undo). |
 | **v0.9.1** | **Fix:** a login page no longer pauses all Instagram fetching for 30 min. It skips that one step; only HTTP 429 pauses; a reel where every step was walled is retried after 10 min, up to 3 times. |
 | **v0.9.2** | **Richer notes**: overview bullets in simple words that cover every important point, plus the full detail behind a toggle (summary, every key point, mentions, tags) and **Re-analyse**. Chat uses full notes, archive included. **Readable Insights** (labelled bars, time-of-day blocks, average per active day). A new **Ask home** (greeting, today strip, *Recently saved*, suggestions built from your tags). |
 | **v0.9.3** | Search covers the overview and mentions. Settings → Notes → *Re-analyse old notes* brings pre-v0.9.2 notes to the new format. Photo files from deleted notes are cleaned up on start. *When you watch* is ranked by minutes watched. |
@@ -194,7 +194,7 @@ Written 2026-11-06; current as of **v0.9.5**. This page says what has been built
 | `flutter analyze` | clean at v0.9.5 |
 | Dart tests (`mobile/test`, 36) | passing. They cover the background task body, the channel mapping (pending items, Instagram results and errors), Reduce effects, the runner (YouTube, Instagram video, inline vs Files API, caption fallback, 429 handling, key rotation, the OpenAI frames fallback, photos, carousels, retry, Apify), export/import (with chats), the update check, the archive, saved chats, search over overview and mentions, the Insights helpers, the intro unlock with its haptic, tab fading, the multi-select card, and saved-time labels |
 | Kotlin tests (`:reelbot_native:testDebugUnitTest`, 61) | passing. They cover the plugin through a real `MethodChannel` (Robolectric), share-URL parsing, the Instagram parsers (synthetic fixtures, login wall included), the cascade rules (throttle, pauses, login walls, single-flight), fingerprints, the tracker, detection rules, the unknown alert and the digest rules |
-| Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Bot, O=nevil-sanish`), and published with a SHA-256 |
+| Release builds | every APK built with `flutter build apk --release`, checked with `apksigner` (signer `CN=Reel Analyser, O=nevil-sanish`), and published with a SHA-256 |
 | On a phone | only what the user's screenshots show (§1). No live checks (`T-LIVE-*`) or manual checks (`T-MAN-*`) have been run |
 
 ---

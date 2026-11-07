@@ -19,7 +19,7 @@ import org.json.JSONObject
 
 /**
  * Counts reels and shorts by reading the screen (IMPLEMENTATION §3.4). Read-only: no taps, no gestures.
- * v0.9.0 removed the bubble and auto-Save; saving is only Share → Reel Bot.
+ * v0.9.0 removed the bubble and auto-Save; saving is only Share → Reel Analyser.
  */
 class ReelCounterService : AccessibilityService() {
     companion object {
@@ -150,9 +150,9 @@ class ReelCounterService : AccessibilityService() {
         val name = if (app == "youtube") "YouTube" else "Instagram"
         nm.notify(1, Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_reelbot)
-            .setContentTitle("Reel Bot can't read $name any more")
+            .setContentTitle("Reel Analyser can't read $name any more")
             .setStyle(Notification.BigTextStyle().bigText(
-                "An app update probably changed the screen. Open Reel Bot → Today → Debug to capture the new layout."))
+                "An app update probably changed the screen. Open Reel Analyser → Today → Debug to capture the new layout."))
             .setContentIntent(open?.let { PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE) })
             .setAutoCancel(true)
             .build())

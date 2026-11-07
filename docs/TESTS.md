@@ -1,4 +1,4 @@
-# Reel Bot: test catalogue
+# Reel Analyser: test catalogue
 
 Every test the app must have, by ID. Code doesn't exist yet: all tests are **planned**. When a test is written, set its status to **written** and fill in its file; when it runs in CI or a release check, **passing**. **Update this file in the same commit as the code or doc change it tests** ([RELEASES.md](RELEASES.md) §2). Endpoint IDs refer to [ENDPOINTS.md](ENDPOINTS.md).
 
@@ -133,9 +133,9 @@ Status values: **planned** · **written** · **passing** · **retired** (keep th
 
 | ID | Level | Covers | Given → Expect | Status |
 |---|---|---|---|---|
-| T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Bot attaches the URL | removed (v0.9.0: no bubble) |
+| T-SAVE-01 | manual | bubble Save | Tap Save → row with on-screen text; Share → Reel Analyser attaches the URL | removed (v0.9.0: no bubble) |
 | T-SAVE-02 | manual | SaveAutomator | 30 automated Saves (15 IG, 15 YT) on 2 phones → success rate; < 90% → delete auto-Save | removed (v0.9.0: no bubble) |
-| T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Bot", else "Share to…" / "More"; invisible nodes skipped | removed (v0.9.0: no bubble) |
+| T-SAVE-03 | unit | SaveAutomator | Share button found by id, then by description; sheet finds "Reel Analyser", else "Share to…" / "More"; invisible nodes skipped | removed (v0.9.0: no bubble) |
 | T-DIG-01 | integration | WM-DIGEST | App not opened today, 2 analysed items → notification with titles | passing (unit: rule and text; worker needs a device) |
 | T-DIG-02 | integration | WM-DIGEST | Nothing analysed → counts only; app opened today → no notification | passing (unit: rule and text; worker needs a device) |
 | T-REL-01 | unit | GH-RELEASE-LATEST | Newer `tag_name` → update banner with the `.apk` asset; same/older → nothing; 403 → silent | passing (v0.9.4) |

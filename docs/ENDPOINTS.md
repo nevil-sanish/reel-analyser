@@ -1,4 +1,4 @@
-# Reel Bot: endpoint reference
+# Reel Analyser: endpoint reference
 
 Every network call and every app-internal interface, in one place. **Update this file in the same commit as any change to a request** (see [RELEASES.md](RELEASES.md) §2). Each endpoint lists the tests that cover it ([TESTS.md](TESTS.md)).
 
@@ -160,7 +160,7 @@ Rules for every `IG-*` call:
 
 ### GH-RELEASE-LATEST: update check
 - **Phase** "before friends" ([PLAN.md](PLAN.md) §6) · owner `lib/data/update_check.dart` (v0.9.4)
-- **Request:** `GET https://api.github.com/repos/nevil-sanish/reel-brain/releases?per_page=1`, header `Accept: application/vnd.github+json`. No token. At most once a day (`KeyStore.updateCheckedAt`). Not `/releases/latest`: it skips pre-releases and every release so far is one (404).
+- **Request:** `GET https://api.github.com/repos/nevil-sanish/reel-analyser/releases?per_page=1`, header `Accept: application/vnd.github+json`. No token. At most once a day (`KeyStore.updateCheckedAt`). Not `/releases/latest`: it skips pre-releases and every release so far is one (404).
 - **Use:** `tag_name` (compare with the app's `versionName`), `html_url`, the asset whose name ends in `.apk`.
 - **Fails when:** 403 rate limit (60/h per IP) or offline → silently skip.
 - **Tests:** `T-REL-01`
@@ -192,7 +192,7 @@ Rules for every `IG-*` call:
 - **Tests:** `T-PIPE-12`
 
 ### FEEDBACK: GitHub issue (v0.5.0)
-- Settings → Send feedback opens `https://github.com/nevil-sanish/reel-brain/issues/new?title=Feedback&body=…` in the browser with only the typed text and the app version. The user submits it on GitHub. Nothing else leaves the phone except reels the user shares to an AI provider.
+- Settings → Send feedback opens `https://github.com/nevil-sanish/reel-analyser/issues/new?title=Feedback&body=…` in the browser with only the typed text and the app version. The user submits it on GitHub. Nothing else leaves the phone except reels the user shares to an AI provider.
 
 ### CH-COUNTER: method channel `reelbot/counter`
 - Owner `CounterPlugin.kt` (Kotlin) and `lib/native/counter_bridge.dart` (Dart). Registered as a plugin, so it exists in background engines too.

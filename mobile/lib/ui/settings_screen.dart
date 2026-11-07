@@ -141,8 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (ok != true || text.text.trim().isEmpty) return;
-    final body = Uri.encodeQueryComponent('${text.text.trim()}\n\n— Reel Bot ${AppServices.version}');
-    await s.bridge.openUrl('https://github.com/nevil-sanish/reel-brain/issues/new?title=Feedback&body=$body');
+    final body = Uri.encodeQueryComponent('${text.text.trim()}\n\n— Reel Analyser ${AppServices.version}');
+    await s.bridge.openUrl('https://github.com/nevil-sanish/reel-analyser/issues/new?title=Feedback&body=$body');
   }
 
   Widget _key(TextEditingController c, String label, {String? helper, Widget? trailing}) => Padding(
@@ -263,7 +263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             FilledButton.tonalIcon(onPressed: _feedback, icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
           ]),
-          Center(child: Text('Reel Bot ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
+          Center(child: Text('Reel Analyser ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
     );

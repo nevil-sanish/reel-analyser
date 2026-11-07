@@ -1,4 +1,4 @@
-# Reel Bot: feasibility review and plan
+# Reel Analyser: feasibility review and plan
 
 **Written:** 4 Nov 2026 · **Revised:** 5 Nov 2026 (Share → summary first; see §6) · 6 Nov 2026 (matches v0.9.4: no bubble or auto-Save; photos, posts, chat and Insights added)
 **Read with:** [IMPLEMENTATION.md](IMPLEMENTATION.md) (file-by-file guide), [ENDPOINTS.md](ENDPOINTS.md) (every network call), [TESTS.md](TESTS.md) (test catalogue), [RESEARCH.md](RESEARCH.md) (open-source survey), [RELEASES.md](RELEASES.md) (commits and releases).
@@ -16,7 +16,7 @@ An Android-only app that:
 3. counts how many Instagram Reels and YouTube Shorts you watch each day, and for how long, and shows it in **Insights**;
 4. at the end of the day, if you didn't open the app, shows a short digest notification.
 
-Saving is only ever Share → Reel Bot. There's no floating bubble and no automation of other apps (removed in v0.9.0 at the user's request).
+Saving is only ever Share → Reel Analyser. There's no floating bubble and no automation of other apps (removed in v0.9.0 at the user's request).
 
 ## 2. Decisions taken
 
@@ -27,21 +27,21 @@ Saving is only ever Share → Reel Bot. There's no floating bubble and no automa
 | 3 | **Fully local.** All data stays on the phone, and every key is the user's own (Gemini; Apify is optional). There is no server, sign-in, credits or billing. |
 | 4 | **Analysis runs in the background.** A Save only queues an item. A background job (the `workmanager` plugin, every 15 min with network) and every app open both process the queue, so summaries are ready even if you never open the app. |
 | 5 | **No email in v1.** A local notification digest replaces it. |
-| 6 | **Build the real edge first.** The edge is Save → AI summary; Digital Wellbeing and reel blockers already count. So **Phase 1 is manual Share → Reel Bot → summary**, and the counter comes after. **Checkpoint after Phase 1:** if you aren't using it every day for a week, stop. |
+| 6 | **Build the real edge first.** The edge is Save → AI summary; Digital Wellbeing and reel blockers already count. So **Phase 1 is manual Share → Reel Analyser → summary**, and the counter comes after. **Checkpoint after Phase 1:** if you aren't using it every day for a week, stop. |
 | 7 | **Manual Share is the only Save flow.** The bubble and its auto-Save (Phase 3) shipped in v0.3.0 and were removed in v0.9.0: no overlay, no tapping inside Instagram. |
 
 ## 3. Feasibility by feature
 
 | Feature | Feasible? | How | Main risk |
 |---|---|---|---|
-| Save by Share | **Yes** | Share → **Reel Bot** in the system share sheet. The URL arrives as a normal `ACTION_SEND` intent | None significant; Instagram needs an extra "Share to…" tap |
+| Save by Share | **Yes** | Share → **Reel Analyser** in the system share sheet. The URL arrives as a normal `ACTION_SEND` intent | None significant; Instagram needs an extra "Share to…" tap |
 | YouTube Shorts | **Easy** | Pass the public URL straight to Gemini as `file_data`; nothing is downloaded. If Gemini rejects it, YouTube's keyless oEmbed gives title, channel and thumbnail for a caption+thumbnail summary | [Certain] Doesn't work for private or unlisted videos. [Certain] Free tier: 8 h of YouTube video per day |
 | Instagram media | **Yes, mostly** | A logged-out cascade run **on the phone** (see §3.2): embed page → post page JSON → logged-out GraphQL → web GraphQL → oEmbed metadata → Apify if the user has a key → caption + thumbnail | [Likely] Instagram changes its page JSON and query ids every few months, so each step can break; the cascade means one break isn't fatal. [Certain] CDN links expire within hours |
 | Posts (images/carousels) | Yes | Images go to any vision model | None significant |
 | Background analysis | Yes | `workmanager` plugin runs the Dart pipeline in a background isolate | [Likely] OEM battery killers delay it; app open still catches up |
 | Count reels/shorts | **Yes, fragile, optional** | A Kotlin `AccessibilityService` counts **distinct reels**: a fingerprint of each reel's screen text, counted once it has been on screen ≥ 1.5 s, once per day | [Likely] Instagram and YouTube change their view ids with updates. Mitigated by an "unknown" alert (§4.1) |
 | Time spent | Yes | Time in Instagram and YouTube from `UsageStatsManager` events (Usage access, no Accessibility); the optional counter adds time on the Reels/Shorts screens | It is time in the whole app, not only Reels; events are kept by Android for about a week, so older days may show less |
-| Bubble / auto-Save | **Removed (v0.9.0)** | Was a `TYPE_ACCESSIBILITY_OVERLAY` bubble with an automated Share | Not wanted: saving is Share → Reel Bot only |
+| Bubble / auto-Save | **Removed (v0.9.0)** | Was a `TYPE_ACCESSIBILITY_OVERLAY` bubble with an automated Share | Not wanted: saving is Share → Reel Analyser only |
 | Photos and screenshots | Yes (v0.8.0) | Shared `image/*` (one or several) is shrunk to ≤ 1280 px and sent as an image | None significant |
 | Gemini / OpenAI / Anthropic | **All three** (v0.5.0) | [Certain] Gemini takes video and audio natively. OpenAI and Claude get 6 frames (no audio) or the images | Each provider is a separate request shape |
 | Chat over notes | Yes (v0.5.0) | Keyword-matched notes go into the prompt of the chosen provider (Gemini, OpenAI, Claude, Groq) | Keyword overlap, not embeddings |

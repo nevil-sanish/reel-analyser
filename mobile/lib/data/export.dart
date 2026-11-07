@@ -23,7 +23,7 @@ String markdownName(Reel r) {
 Future<(int, int)> importJson(LibraryDb db, String json) async {
   final data = jsonDecode(json);
   final list = data is Map ? data['reels'] : data;
-  if (list is! List) throw const FormatException('Not a Reel Bot library.json');
+  if (list is! List) throw const FormatException('Not a Reel Analyser library.json');
   var notes = 0;
   for (final j in list) {
     final r = Reel.fromJson(Map<String, Object?>.from(j as Map));

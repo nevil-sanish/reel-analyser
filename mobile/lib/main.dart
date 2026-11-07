@@ -42,7 +42,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
   Widget build(BuildContext context) => ValueListenableBuilder(
       valueListenable: Brand.mode,
       builder: (_, mode, _) => MaterialApp(
-        title: 'Reel Bot',
+        title: 'Reel Analyser',
         themeMode: mode,
         debugShowCheckedModeBanner: false,
         theme: Brand.theme(Brightness.light),
@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (rel == null || !mounted) return;
     final m = ScaffoldMessenger.of(context);
     m.showMaterialBanner(MaterialBanner(
-      content: Text('Reel Bot ${rel.$1} is out'),
+      content: Text('Reel Analyser ${rel.$1} is out'),
       actions: [
         TextButton(onPressed: m.hideCurrentMaterialBanner, child: const Text('Later')),
         FilledButton(

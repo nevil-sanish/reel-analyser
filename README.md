@@ -1,21 +1,21 @@
-# Reel Bot
+# Reel Analyser
 
 Android app that turns the Instagram Reels, YouTube Shorts, Instagram posts and photos you share to it into short AI notes you can search and chat with, and counts how many reels and shorts you watch. It uses your own AI keys. There is no account and no server: everything lives on your phone.
 
-**Download:** [latest APK](https://github.com/nevil-sanish/reel-brain/releases) (Android 10+).
+**Download:** [latest APK](https://github.com/nevil-sanish/reel-analyser/releases) (Android 10+).
 
 ## How it works
 
-### 1. Save: share anything to Reel Bot
+### 1. Save: share anything to Reel Analyser
 
 ```
-Instagram / YouTube / Gallery ──Share──▶ Reel Bot ──▶ "Saved ✓" (you stay where you were)
+Instagram / YouTube / Gallery ──Share──▶ Reel Analyser ──▶ "Saved ✓" (you stay where you were)
                                             │
                                             ▼
                                   queue on the phone (counter.db)
 ```
 
-- **Reels, Shorts and Instagram posts:** tap **Share → Reel Bot**. On Instagram, use *Share → Share to…*. The link is cleaned of tracking codes and queued.
+- **Reels, Shorts and Instagram posts:** tap **Share → Reel Analyser**. On Instagram, use *Share → Share to…*. The link is cleaned of tracking codes and queued.
 - **Photos and screenshots:** share one or several from any app. Each picture is copied into the app, shrunk to 1280 px, and queued as its own note.
 - That's the only way in: no floating button over the apps you watch.
 
@@ -25,7 +25,7 @@ Instagram / YouTube / Gallery ──Share──▶ Reel Bot ──▶ "Saved ✓
 queued item ──▶ get the media ──▶ AI makes a note ──▶ Library  (+ "Note ready" notification)
 ```
 
-| You shared | How Reel Bot gets it | What the AI sees |
+| You shared | How Reel Analyser gets it | What the AI sees |
 |---|---|---|
 | YouTube Short | the link goes straight to Gemini | the whole video and its audio |
 | Instagram reel | logged-out steps on your phone: embed page → embed player → post page → two web queries → oEmbed, then Apify if you added a token | the downloaded video, deleted after analysis |
@@ -53,7 +53,7 @@ Both are optional; notes and chat work without them.
 
 **Time in Instagram and YouTube** comes from Android's own app-usage data (Usage access). Nothing is read from the screen, and it's time in the whole app, not only Reels or Shorts.
 
-**Counting reels and Shorts is optional.** Turn on Accessibility as well, and Reel Bot reads the Reels and Shorts screens to count what you watch and the time on those screens:
+**Counting reels and Shorts is optional.** Turn on Accessibility as well, and Reel Analyser reads the Reels and Shorts screens to count what you watch and the time on those screens:
 - a reel counts after 1.5 seconds on screen;
 - swipe-backs and rewatches the same day don't count twice;
 - it keeps only an anonymous fingerprint of each reel, never what it was;
@@ -67,7 +67,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **Instagram's public pages:** loaded logged out, from your phone, only for reels you shared.
 - **Feedback:** Settings → *Send feedback* opens a GitHub issue that you review before posting.
 
-Nothing else leaves the phone: no analytics, no tracking, no Reel Bot server.
+Nothing else leaves the phone: no analytics, no tracking, no Reel Analyser server.
 
 ## Technical workflow
 
@@ -162,9 +162,9 @@ Each question searches every note you haven't deleted, archive included: the 12 
 
 ## Install
 
-1. Download `reel-bot-vX.Y.Z.apk` from [Releases](https://github.com/nevil-sanish/reel-brain/releases) and open it. If Play Protect warns, choose *Install anyway*.
+1. Download `reel-analyser-vX.Y.Z.apk` from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
 2. Slide to unlock through the intro, then open **Ask → ⚙ Settings** and paste a free Gemini key from [aistudio.google.com](https://aistudio.google.com/apikey). Optionally add OpenAI, Claude or Groq keys.
-3. Share a reel to Reel Bot. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
+3. Share a reel to Reel Analyser. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
 4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts (optional): on Android 13+, *Allow restricted settings* first, then Accessibility, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
 
 Uninstalling deletes your notes, so use **Settings → Export** now and then. A banner tells you when a newer APK is out. The step-by-step guide for friends is [INSTALL.md](docs/INSTALL.md).

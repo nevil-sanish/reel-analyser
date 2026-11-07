@@ -78,7 +78,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                 if (s.sdkInt >= 33 && !s.serviceEnabled)
                   _step('Allow restricted settings', 'Android blocks Accessibility for apps installed from a file. '
                       'In App info, tap ⋮ → Allow restricted settings.', null, 'openAppInfo', 'App info'),
-                _step('Turn on Reel Bot in Accessibility', 'Installed apps → Reel Bot → On. It only reads the Reels and '
+                _step('Turn on Reel Analyser in Accessibility', 'Installed apps → Reel Analyser → On. It only reads the Reels and '
                     'Shorts screens, and never taps or scrolls.', s.serviceEnabled, 'openAccessibilitySettings', 'Open'),
                 _step('Battery: unrestricted', 'So Android doesn\'t stop the counter in the background.', s.batteryExempt,
                     'requestBatteryExemption', 'Allow'),

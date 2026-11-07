@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 /// and on any failure (offline, a 403 rate limit, an odd body), so the app stays silent.
 Future<(String, String)?> newerRelease(http.Client client, String current) async {
   try {
-    final r = await client.get(Uri.parse('https://api.github.com/repos/nevil-sanish/reel-brain/releases?per_page=1'),
+    final r = await client.get(Uri.parse('https://api.github.com/repos/nevil-sanish/reel-analyser/releases?per_page=1'),
         headers: {'Accept': 'application/vnd.github+json'}).timeout(const Duration(seconds: 10));
     if (r.statusCode != 200) return null;
     final rel = (jsonDecode(r.body) as List).first as Map;
