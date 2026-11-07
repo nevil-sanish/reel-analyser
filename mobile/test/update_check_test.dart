@@ -6,6 +6,12 @@ import 'package:http/testing.dart';
 import 'package:reelbrain/data/update_check.dart';
 
 void main() {
+  test('a fourth version number counts: 0.9.7.1 is newer than 0.9.7', () {
+    expect(isNewer('v0.9.7.1', '0.9.7'), isTrue);
+    expect(isNewer('v0.9.7', '0.9.7.1'), isFalse);
+    expect(isNewer('v0.9.7.1', '0.9.7.1'), isFalse);
+  });
+
   http.Client gh(int status, String tag) => MockClient((_) async => http.Response(
       jsonEncode([
         {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -116,18 +117,18 @@ void main() {
     final run = runner(b, (r) async => http.Response(_gemOk(), 200));
     expect(await run.processQueue(), 1);
     expect(run.finishedTitles, ['Rice']); // for the "note ready" notification
-    final part = body(requests.single)['contents'][0]['parts'][0];
+    final part = body(requests.where(isGenerate).single)['contents'][0]['parts'][0];
     expect(part['fileData']['fileUri'], 'https://www.youtube.com/watch?v=abcdefg');
     expect(part['videoMetadata']['fps'], 0.5); // token saver: half Gemini's default frame rate
-    expect(body(requests.single)['generationConfig']['thinkingConfig']['thinkingLevel'], 'minimal');
-    expect(requests.single.headers['x-goog-api-key'], 'KEY');
+    expect(body(requests.where(isGenerate).single)['generationConfig']['thinkingConfig']['thinkingLevel'], 'minimal');
+    expect(requests.where(isGenerate).single.headers['x-goog-api-key'], 'KEY');
     expect(b.statuses[1], 'done');
     expect((await db.reels()).single.title, 'Rice');
     expect(b.titles[1], 'Rice'); // for the digest
     final saved = (await db.reels()).single;
     expect(saved.overview, ['Rinse rice twice', 'Use 1:1.5 water']);
     expect(saved.mentions, ['Rice cooker']);
-    expect(body(requests.single)['generationConfig']['responseSchema']['required'], contains('overview'));
+    expect(body(requests.where(isGenerate).single)['generationConfig']['responseSchema']['required'], contains('overview'));
   });
 
   test('T-PIPE-02 rejected YouTube URL falls back to oEmbed', () async {
@@ -325,6 +326,24 @@ void main() {
     expect(b.statuses[3], 'cancelled');
     expect(await db.has('https://www.youtube.com/shorts/zzzzzzz'), isFalse);
     expect(seen.any((x) => x.startsWith('1:Analysing')), isTrue);
+  });
+
+  test('errors are explained in words, with the real cause', () {
+    expect(
+      describeError(GeminiException(GeminiFailure.retryLater, 'HTTP 429: {"error":{"code":429,"message":"Quota exceeded for this key.","status":"RESOURCE_EXHAUSTED"}}')),
+      'The AI is busy or rate-limited: Quota exceeded for this key.',
+    );
+    expect(describeError(const SocketException('Failed host lookup')), startsWith('No internet connection'));
+    expect(describeError(TimeoutException('x')), contains('timed out'));
+  });
+
+  test('a reel nothing can be fetched for fails with a reason shown in the list', () async {
+    final b = FakeBridge([ig]);
+    final r = runner(b, (_) async => http.Response(_gemOk(), 200));
+    await r.processQueue();
+    expect(b.statuses[2], 'failed');
+    expect(r.jobs.value.single.state, JobState.failed);
+    expect(r.jobs.value.single.stage, contains('no video, picture, caption or author'));
   });
 
   test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {

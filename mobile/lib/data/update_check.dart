@@ -24,7 +24,7 @@ Future<(String, String)?> newerRelease(http.Client client, String current) async
 bool isNewer(String tag, String current) {
   List<int> parts(String v) => [for (final p in v.replaceFirst('v', '').split('.')) int.tryParse(p) ?? 0];
   final a = parts(tag), b = parts(current);
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < (a.length > b.length ? a.length : b.length); i++) {
     final x = i < a.length ? a[i] : 0, y = i < b.length ? b[i] : 0;
     if (x != y) return x > y;
   }

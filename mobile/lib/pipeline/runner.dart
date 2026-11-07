@@ -30,6 +30,9 @@ class _ItemCtx {
   final int turn;
   final Job job;
   String title = '';
+
+  /// Why the reel ended as `failed`, shown in the progress list.
+  String fail = '';
   _ItemCtx(this.turn, this.job);
 }
 
@@ -39,7 +42,7 @@ enum JobState { waiting, running, done, retry, failed, stopped }
 class Job {
   final int id;
   final String app;
-  final String label;
+  String label;
   JobState state = JobState.waiting;
   String stage = 'Waiting for a free key';
   double progress = 0;
@@ -54,15 +57,39 @@ class Job {
     }
     if (i.app == 'photo') return 'Shared photo';
     if (i.author.isNotEmpty) return '@${i.author}';
-    final code = RegExp(r'(?:reel|reels|p|tv|shorts)/([A-Za-z0-9_-]+)')
-        .firstMatch(i.url)
-        ?.group(1);
-    return '${i.app == 'youtube' ? 'YouTube Short' : 'Instagram'} ${code ?? ''}'
-        .trim();
+    // Nothing known yet: say what it is and when it was shared; the name replaces this once it is fetched.
+    final t = DateTime.fromMillisecondsSinceEpoch(i.createdAt);
+    String two(int n) => n.toString().padLeft(2, '0');
+    final kind = i.app == 'youtube' ? 'YouTube Short' : i.url.contains('/p/') ? 'Instagram post' : 'Instagram reel';
+    return i.createdAt == 0 ? kind : '$kind shared ${two(t.hour)}:${two(t.minute)}';
   }
 }
 
 class _Cancelled implements Exception {}
+
+/// What went wrong, in words for the user: the real cause, not a class name.
+String describeError(Object e) {
+  String fromBody(String m) {
+    final j = RegExp(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"').firstMatch(m)?.group(1);
+    return (j ?? m).replaceAll(r'\n', ' ').replaceAll(r'\"', '"').trim();
+  }
+
+  if (e is GeminiException) {
+    final what = switch (e.kind) {
+      GeminiFailure.badKey => 'The AI key was rejected',
+      GeminiFailure.retryLater => 'The AI is busy or rate-limited',
+      GeminiFailure.rejected => 'The AI refused this reel',
+    };
+    return '$what: ${fromBody(e.message)}';
+  }
+  if (e is SocketException) return 'No internet connection (${e.message}).';
+  if (e is TimeoutException) return 'The request took too long and timed out.';
+  if (e is http.ClientException) return 'Network error: ${e.message}';
+  if (e is PlatformException) return 'The phone reported an error: ${e.message ?? e.code}';
+  if (e is FileSystemException) return 'Could not read or write a file: ${e.message}';
+  if (e is FormatException) return 'Got a reply it could not read: ${e.message}';
+  return '$e';
+}
 
 final _ctxKey = Object();
 _ItemCtx get _ctx => Zone.current[_ctxKey] as _ItemCtx;
@@ -143,7 +170,8 @@ class Runner {
     _badKeys.clear();
     _turn = await readTurn();
     final tried = <int>{};
-    _jobById.clear();
+    // Reels that failed or are waiting on a retry stay listed (with their reason) until dismissed.
+    _jobById.removeWhere((_, j) => j.state != JobState.failed && j.state != JobState.retry);
     _cancelled.clear();
     _ping();
     try {
@@ -202,6 +230,11 @@ class Runner {
         job.state == JobState.stopped) {
       return;
     }
+    if (job.state == JobState.failed) {
+      _jobById.remove(id); // dismissed from the list; the reel itself stays marked failed
+      _ping();
+      return;
+    }
     if (job.state == JobState.running) {
       _cancelled.add(id);
       job.stage = 'Stopping…';
@@ -247,12 +280,19 @@ class Runner {
           zoneValues: {_ctxKey: ctx},
         );
         await bridge.setPendingStatus(item.id, status, title: ctx.title);
-        if (ctx.title.isNotEmpty) finishedTitles.add(ctx.title);
-        job
-          ..state = JobState.done
-          ..stage = ctx.title.isEmpty ? 'Done' : 'Done: ${ctx.title}'
-          ..progress = 1;
-        done++;
+        if (status == 'failed') {
+          lastProblem = 'Failed: ${ctx.fail}';
+          job
+            ..state = JobState.failed
+            ..stage = ctx.fail;
+        } else {
+          if (ctx.title.isNotEmpty) finishedTitles.add(ctx.title);
+          job
+            ..state = JobState.done
+            ..stage = ctx.title.isEmpty ? 'Done' : 'Done: ${ctx.title}'
+            ..progress = 1;
+          done++;
+        }
       } on _Cancelled {
         await bridge.setPendingStatus(item.id, 'cancelled');
         job
@@ -266,11 +306,12 @@ class Runner {
         if (e.stopAll) _stop = true;
       } catch (e) {
         // Errors too, not just Exceptions: an uncaught one used to leave the item queued with no reason shown.
-        lastProblem = 'Failed: $e';
+        final why = describeError(e);
+        lastProblem = 'Failed: $why';
         await bridge.setPendingStatus(item.id, 'failed');
         job
           ..state = JobState.failed
-          ..stage = 'Failed: $e';
+          ..stage = why;
       }
       _ping();
     }
@@ -371,12 +412,25 @@ class Runner {
     );
   }
 
+  String _failed(String why) {
+    _ctx.fail = why;
+    return 'failed';
+  }
+
+  /// Names the reel in the progress list once something better than its link is known.
+  void _name(String? text) {
+    final first = (text ?? '').trim().split('\n').first.trim();
+    if (first.isEmpty) return;
+    _ctx.job.label = first.length > 48 ? '${first.substring(0, 48)}…' : first;
+    _ping();
+  }
+
   Future<String> _process(PendingItem item) async {
     if (item.url.isEmpty) {
       return item.author.isEmpty &&
               item.caption.isEmpty &&
               item.onScreenText.isEmpty
-          ? 'failed'
+          ? _failed('The share had no link, author or caption to work from.')
           : await _textOnly(item);
     }
     if (await library.has(item.url)) {
@@ -416,7 +470,7 @@ class Runner {
   /// v0.8: shared photos. The image stays in app storage, so the note can show it.
   Future<String> _photo(PendingItem item) async {
     final f = File(item.url.substring('photo:'.length));
-    if (!await f.exists()) return 'failed';
+    if (!await f.exists()) return _failed('The shared photo file is missing; it may have been deleted.');
     final context = item.caption.isEmpty ? '' : 'Shared with: ${item.caption}';
     await _save(
       item,
@@ -447,6 +501,19 @@ class Runner {
   }
 
   Future<String> _youtube(PendingItem item) async {
+    final ctx = _ctx;
+    // Just for the progress list: the video's title, fetched while Gemini works.
+    unawaited(client
+        .get(Uri.parse('https://www.youtube.com/oembed?url=${Uri.encodeComponent(item.url)}&format=json'))
+        .timeout(const Duration(seconds: 8))
+        .then((r) {
+      if (r.statusCode != 200 || ctx.title.isNotEmpty) return;
+      final t = '${(jsonDecode(utf8.decode(r.bodyBytes)) as Map)['title'] ?? ''}'.trim();
+      if (t.isNotEmpty && !_cancelled.contains(ctx.job.id)) {
+        ctx.job.label = t.length > 48 ? '${t.substring(0, 48)}…' : t;
+        _ping();
+      }
+    }).catchError((_) {}));
     try {
       await _save(item, await _gemini((g) => g.youtube(item.url)), 'done', 0);
       return 'done';
@@ -463,7 +530,7 @@ class Runner {
         'https://www.youtube.com/oembed?url=${Uri.encodeComponent(item.url)}&format=json',
       ),
     );
-    if (r.statusCode != 200) return 'failed';
+    if (r.statusCode != 200) return _failed('YouTube would not describe this video (HTTP ${r.statusCode}); it may be private or removed.');
     final o = jsonDecode(utf8.decode(r.bodyBytes)) as Map;
     final author = '${o['author_name'] ?? ''}';
     final a = await _captionAndThumbnail(
@@ -490,6 +557,7 @@ class Runner {
       f = const IgFetch();
     }
     _step(f.videoPath != null ? 'Got the video' : 'Got the post details', 0.35);
+    _name(f.caption.isNotEmpty ? f.caption : f.author.isNotEmpty ? '@${f.author}' : null);
     var author = f.author.isEmpty ? item.author : f.author;
     var caption = f.caption.isEmpty ? item.caption : f.caption;
     var thumb = f.thumbnailUrl;
@@ -574,7 +642,7 @@ class Runner {
     if (author.isNotEmpty || item.onScreenText.isNotEmpty) {
       return _textOnly(item, author: author, step: step);
     }
-    return 'failed';
+    return _failed('Instagram gave nothing for this link: no video, picture, caption or author. It may be private or deleted.');
   }
 
   /// Instagram posts where only the author could be found (and URL-less rows from before v0.9.0).
@@ -601,6 +669,7 @@ class Runner {
     String caption = '',
   }) async {
     _step('Saving the note', 0.95);
+    _name(a.title);
     await library.saveReel(
       Reel(
         url: item.url.isEmpty ? 'local:${item.id}' : item.url,

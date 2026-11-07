@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
+import '../data/key_store.dart';
 import 'debug_screen.dart';
 import 'liquid.dart';
 import 'setup_screen.dart';
@@ -26,9 +28,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _groq = TextEditingController();
   final _apify = TextEditingController();
 
-  /// Save stays off until the stored keys have been read: saving the still-empty boxes used to erase them.
+  /// Nothing is saved until the stored keys have been read: saving the still-empty boxes used to erase them.
   bool _loaded = false;
-  List<String> _storedGemini = const [];
+  String _saveNote = '';
+  List<String> _lastGemini = const [];
+  final _lastOther = <TextEditingController, String>{};
+  Timer? _saveTimer;
+
+  TextEditingController _watched(String text) => TextEditingController(text: text)..addListener(_changed);
+
+  List<String> get _enteredGemini => [for (final c in _gemini) c.text.trim()].where((k) => k.isNotEmpty).toList();
 
   @override
   void initState() {
@@ -41,39 +50,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _apify.text = await s.keys.apify ?? '';
       if (!mounted) return;
       setState(() {
+        _gemini.addAll([for (final k in g.isEmpty ? [''] : g) _watched(k)]);
+        for (final c in [_openai, _claude, _groq, _apify]) {
+          c.addListener(_changed);
+        }
+        _lastGemini = g;
+        _lastOther.addAll({for (final c in [_openai, _claude, _groq, _apify]) c: c.text.trim()});
         _loaded = true;
-        _storedGemini = g;
-        _gemini.addAll([for (final k in g.isEmpty ? [''] : g) TextEditingController(text: k)]);
+        if (KeyStore.readFailed) {
+          _saveNote = 'The phone could not read some saved keys, so nothing is changed automatically. '
+              'Close and reopen the app; if this stays, enter the keys again.';
+        }
       });
     }();
   }
 
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    if (_loaded) unawaited(_persist()); // leaving the screen never loses what was just typed
+    super.dispose();
+  }
+
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  Future<void> _save() async {
-    if (!_loaded) return;
-    final entered = [for (final c in _gemini) c.text.trim()].where((k) => k.isNotEmpty).toList();
-    if (entered.isEmpty && _storedGemini.isNotEmpty) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('Remove your Gemini keys?'),
-          content: const Text('The Gemini key boxes are empty, so saving will delete the keys stored on this phone.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep them')),
-            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
-          ],
-        ),
-      );
-      if (ok != true) return;
+  /// Keys are saved as you type (a moment after you stop), so there is no Save button to forget.
+  void _changed() {
+    if (!_loaded || KeyStore.readFailed) return; // a failed read looks like an empty box: never save over it
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 700), _persist);
+  }
+
+  /// Writes every key box to secure storage. Emptying the last Gemini box does not delete the saved keys;
+  /// removing it with its minus button ([removeGemini]) does.
+  Future<void> _persist({bool removeGemini = false}) async {
+    if (KeyStore.readFailed) return;
+    final entered = _enteredGemini;
+    // Only the boxes that changed are written, so one key that failed to load is never overwritten by another edit.
+    final writes = <Future<void> Function()>[
+      if ((entered.isNotEmpty || removeGemini) && '$entered' != '$_lastGemini') () => s.keys.setGeminiKeys(entered),
+      for (final (c, write) in [
+        (_openai, s.keys.setOpenai),
+        (_claude, s.keys.setClaude),
+        (_groq, s.keys.setGroq),
+        (_apify, s.keys.setApify),
+      ])
+        if (c.text.trim() != _lastOther[c]) () => write(c.text),
+    ];
+    if (writes.isEmpty) return;
+    try {
+      for (final w in writes) {
+        await w();
+      }
+      if (entered.isNotEmpty || removeGemini) _lastGemini = entered;
+      for (final c in _lastOther.keys) {
+        _lastOther[c] = c.text.trim();
+      }
+      if (mounted) setState(() => _saveNote = 'Saved on this phone ✓');
+    } on Object catch (e) {
+      if (mounted) setState(() => _saveNote = 'Could not save the keys: $e');
     }
-    _storedGemini = entered;
-    await s.keys.setGeminiKeys([for (final c in _gemini) c.text]);
-    await s.keys.setOpenai(_openai.text);
-    await s.keys.setClaude(_claude.text);
-    await s.keys.setGroq(_groq.text);
-    await s.keys.setApify(_apify.text);
-    if (mounted) _say('Keys saved on this phone');
   }
 
   Future<void> _export() async {
@@ -94,28 +130,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) _say('Imported $notes new notes and $chats chats');
     } on FormatException catch (e) {
       if (mounted) _say('Could not import: ${e.message}');
+    } on Object catch (e) {
+      if (mounted) _say('Could not import: the file is not a Reel Analyser export ($e)');
     }
-  }
-
-  Future<void> _reanalyseAll() async {
-    final old = await s.oldFormatNotes();
-    if (!mounted) return;
-    if (old.isEmpty) return _say('All notes are already in the new format');
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text('Re-analyse ${old.length} notes?'),
-        content: const Text('Each one is analysed again with your AI keys, so this uses tokens. '
-            'They leave the library until their new notes are ready.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Re-analyse')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final n = await s.reanalyseOld();
-    if (mounted) _say(n == old.length ? 'Queued $n notes' : 'Queued $n notes; ${old.length - n} have no saved link and were kept');
   }
 
   /// The one thing that leaves the phone on purpose: what you type here, as a GitHub issue you submit yourself.
@@ -190,11 +207,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             for (var i = 0; i < _gemini.length; i++)
               _key(_gemini[i], 'Gemini key ${i + 1}',
                   helper: i == 0 ? 'Free at aistudio.google.com → Get API key' : null,
-                  trailing: _gemini.length > 1
-                      ? IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () => setState(() => _gemini.removeAt(i)))
-                      : null),
+                  trailing: IconButton(
+                    tooltip: 'Remove this key',
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: () {
+                      setState(() {
+                        _gemini.removeAt(i);
+                        if (_gemini.isEmpty) _gemini.add(_watched(''));
+                      });
+                      _persist(removeGemini: true);
+                    },
+                  )),
             TextButton.icon(
-              onPressed: () => setState(() => _gemini.add(TextEditingController())),
+              onPressed: () => setState(() => _gemini.add(_watched(''))),
               icon: const Icon(Icons.add),
               label: const Text('Add another Gemini key'),
             ),
@@ -203,7 +228,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _key(_claude, 'Claude key', helper: 'Optional. Same as OpenAI: frames, no sound'),
             _key(_groq, 'Groq key', helper: 'Optional. Chat only'),
             _key(_apify, 'Apify token', helper: 'Optional. Only when Instagram won\'t give the video (~\$0.002 per reel)'),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: _loaded ? _save : null, child: const Text('Save keys'))),
+            Text(_loaded ? (_saveNote.isEmpty ? 'Keys are saved on this phone as you type.' : _saveNote) : 'Loading your keys…',
+                style: Theme.of(context).textTheme.bodySmall),
           ]),
           _section('Appearance', [
             ValueListenableBuilder(
@@ -244,11 +270,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
             ),
-          ]),
-          _section('Notes', [
-            const Text('Notes made before v0.9.2 only have a short summary. Re-analyse them to get the overview bullets and full detail.'),
-            const SizedBox(height: 8),
-            FilledButton.tonalIcon(onPressed: _reanalyseAll, icon: const Icon(Icons.auto_fix_high_rounded), label: const Text('Re-analyse old notes')),
           ]),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then.'),

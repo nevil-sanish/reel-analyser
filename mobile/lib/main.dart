@@ -15,10 +15,15 @@ import 'ui/insights_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final services = await AppServices.create();
-  await scheduleBackgroundAnalysis();
-  await services.bridge.markOpened();
-  await services.retryTextOnlyOnce();
-  unawaited(services.sweepPhotos());
+  // None of these is worth a blank screen at launch if the phone refuses one: the app opens without it.
+  for (final step in [scheduleBackgroundAnalysis, services.bridge.markOpened, services.retryTextOnlyOnce]) {
+    try {
+      await step();
+    } on Object catch (e) {
+      debugPrint('Reel Analyser startup step failed: $e');
+    }
+  }
+  unawaited(services.sweepPhotos().catchError((Object e) => debugPrint('sweepPhotos failed: $e')));
   if (await services.keys.flag('dark')) Brand.mode.value = ThemeMode.dark;
   Brand.mode.addListener(() => services.keys.setFlagTo('dark', Brand.mode.value == ThemeMode.dark));
   Brand.reduceEffects.value = await services.keys.flag('reduce_effects');

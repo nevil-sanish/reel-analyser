@@ -228,7 +228,7 @@ class _JobsCard extends StatelessWidget {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(j.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.textTheme.bodyLarge),
-                      Text(j.stage, maxLines: 2, overflow: TextOverflow.ellipsis,
+                      Text(j.stage, maxLines: 4, overflow: TextOverflow.ellipsis,
                           style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                       if (j.state == JobState.running || j.state == JobState.waiting)
                         Padding(
@@ -242,7 +242,7 @@ class _JobsCard extends StatelessWidget {
                   ),
                   if (j.state != JobState.done && j.state != JobState.stopped)
                     IconButton(
-                      tooltip: 'Stop analysing this reel',
+                      tooltip: j.state == JobState.failed ? 'Dismiss' : 'Stop analysing this reel',
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () {
                         HapticFeedback.selectionClick();
