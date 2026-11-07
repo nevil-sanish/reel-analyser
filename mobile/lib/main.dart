@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (!kPlayBuild) _checkUpdate(); // Play updates the app itself
+    if (!kPrivateBuild) _checkUpdate(); // the private build makes no request but the ones you ask for
     WidgetsBinding.instance.addPostFrameCallback((_) => _askConsent());
   }
 
@@ -151,24 +151,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        // The liquid background is drawn once here, behind all three tabs; the tab bar floats over it.
+        // The liquid background is drawn once here, behind the tabs; the tab bar floats over it.
         backgroundColor: Colors.transparent,
         extendBody: true,
         body: Stack(children: [
           const Positioned.fill(child: LiquidBackground()),
           FadingTabs(index: _tab, children: [
-            ChatScreen(widget.services, onInsights: () => setState(() => _tab = 1)),
-            InsightsScreen(widget.services),
+            ChatScreen(widget.services, onInsights: kPrivateBuild ? null : () => setState(() => _tab = 1)),
+            if (!kPrivateBuild) InsightsScreen(widget.services),
             LibraryScreen(widget.services),
           ]),
         ]),
         bottomNavigationBar: GlassTabBar(
           index: _tab,
           onTap: (i) => setState(() => _tab = i),
-          tabs: const [
-            (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Ask'),
-            (Icons.insights_outlined, Icons.insights, 'Insights'),
-            (Icons.video_library_outlined, Icons.video_library, 'Library'),
+          tabs: [
+            const (Icons.auto_awesome_outlined, Icons.auto_awesome, 'Ask'),
+            if (!kPrivateBuild) const (Icons.insights_outlined, Icons.insights, 'Insights'),
+            const (Icons.video_library_outlined, Icons.video_library, 'Library'),
           ],
         ),
       );

@@ -4,7 +4,9 @@ Prepared 7 November 2026 for v0.9.8+. This is a checklist and the answers to Pla
 
 ## 1. Two builds
 
-| | `direct` (GitHub) | `play` (Google Play) |
+*Decided 7 Nov 2026: the app is not going on Google Play; this document is kept in case that changes. The `private` build is the one that fits Play's rules.*
+
+| | `full` (GitHub) | `private` (also the base of a Play build) |
 |---|---|---|
 | Accessibility service (reel counting) | yes, optional | **removed** (Play restricts it to accessibility tools) |
 | Battery-optimisation exemption, Autostart, Counter debug | yes | removed |
@@ -14,14 +16,14 @@ Prepared 7 November 2026 for v0.9.8+. This is a checklist and the answers to Pla
 Build commands (flavors need `--flavor`):
 
 ```bash
-flutter build apk --release --flavor direct
+flutter build apk --release --flavor full
 ```
 
 ```bash
-flutter build appbundle --release --flavor play --dart-define=PLAY_BUILD=true
+flutter build appbundle --release --flavor private --dart-define=PRIVATE_BUILD=true
 ```
 
-The bundle is `build/app/outputs/bundle/playRelease/app-play-release.aab`. Same package id and signing key as the APK. Use Play App Signing: upload this key as the **upload key**.
+The bundle is `build/app/outputs/bundle/privateRelease/app-private-release.aab`. Same package id and signing key as the APK. Use Play App Signing: upload this key as the **upload key**.
 
 ## 2. Documents (done)
 

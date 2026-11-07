@@ -1,4 +1,4 @@
-/// True in the Google Play build (`--dart-define=PLAY_BUILD=true`, flavor `play`). Play policy rules out two things the
-/// download build does: reading other apps' screens with an Accessibility service, and updating itself from a file.
-/// So the Play build counts nothing from the screen (Usage access still gives time in the apps) and never offers an APK.
-const bool kPlayBuild = bool.fromEnvironment('PLAY_BUILD');
+/// True in the private build (`--dart-define=PRIVATE_BUILD=true`, flavor `private`): no Insights, no Accessibility,
+/// no Usage access, no notifications, no update check. It needs the internet to reach your AI and nothing else.
+/// The full build (flavor `full`) has every feature.
+const bool kPrivateBuild = bool.fromEnvironment('PRIVATE_BUILD');

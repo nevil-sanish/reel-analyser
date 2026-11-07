@@ -35,12 +35,12 @@ android {
         versionName = flutter.versionName
     }
 
-    // `direct`: the GitHub APK, with the optional Accessibility counter and the in-app update banner.
-    // `play`: the Google Play build (see src/play/AndroidManifest.xml and lib/flavor.dart).
+    // `full`: every feature, with the optional Accessibility counter, Usage access, notifications and update banner.
+    // `private`: no sensitive permission and no access beyond the internet (see src/private and lib/flavor.dart).
     flavorDimensions += "dist"
     productFlavors {
-        create("direct") { dimension = "dist" }
-        create("play") { dimension = "dist" }
+        create("full") { dimension = "dist" }
+        create("private") { dimension = "dist" }
     }
 
     signingConfigs {

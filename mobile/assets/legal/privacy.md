@@ -33,7 +33,7 @@ We do not receive any of it. It goes directly from your phone to these services,
 - **OpenAI, Anthropic (Claude), Groq**: the same kind of content, only if you add that provider's key and it is used as a fallback or for chat.
 - **Apify** (optional): the reel's link code, only if you add an Apify token and Instagram will not hand over the video.
 - **Instagram (Meta) and YouTube (Google)**: to read the reel you shared, the app requests the public page or video of that link, like a web browser. They see your IP address and device details, as with any browser, and their own policies apply. The in-app link view loads the same pages.
-- **GitHub**: the download version checks once a day whether a newer release exists (your IP address is visible to GitHub). "Send feedback" opens a GitHub issue page in your browser with only the text you wrote; you decide whether to post it.
+- **GitHub**: the full version checks once a day whether a newer release exists (your IP address is visible to GitHub). "Send feedback" opens a GitHub issue page in your browser with only the text you wrote; you decide whether to post it.
 
 Each AI provider handles what it receives under its own terms and privacy policy. Some providers treat free-tier and paid-tier data differently, including using free-tier content to improve their products. Check the terms of the key you use. We do not control this.
 
@@ -41,11 +41,13 @@ We do not collect your name, email, contacts, location, advertising ID or device
 
 ## 5. Permissions and why
 
+There are two versions. The **full** version has every feature. The **private** version has none of the optional permissions below (no Accessibility, no Usage access, no notifications, no battery exemption), has no Insights, and makes no network request except to the services you use. The private version never asks Android for anything.
+
 - **Internet**: to reach the services above.
 - **Notifications** (optional): "note ready", an evening digest, and an alert if reel counting stops working.
 - **Usage access** (optional, you turn it on in Android settings): reads Android's own app-usage statistics to show your time in Instagram and YouTube. Nothing is read from the screen.
-- **Accessibility service** (optional, download version only): lets the app notice when you are on an Instagram or YouTube Reels or Shorts screen so it can count them. It reads only those two apps, never types, taps or scrolls, and stores only an anonymous fingerprint and a count. It ignores every other app.
-- **Battery optimisation exemption and Autostart** (optional, download version only): so Android does not stop background counting.
+- **Accessibility service** (optional, full version only): lets the app notice when you are on an Instagram or YouTube Reels or Shorts screen so it can count them. It reads only those two apps, never types, taps or scrolls, and stores only an anonymous fingerprint and a count. It ignores every other app.
+- **Battery optimisation exemption and Autostart** (optional, full version only): so Android does not stop background counting.
 - **Share target**: so Reel Analyser appears in the Share menu.
 
 ## 6. Data retention

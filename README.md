@@ -162,7 +162,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 
 ## Install
 
-1. Download `reel-analyser-vX.Y.Z.apk` from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
+1. Pick a version. **Full** (`reel-analyser-vX.Y.Z-full.apk`) has every feature, including Insights and reel counting. **Private** (`reel-analyser-vX.Y.Z-private.apk`) asks for no permission beyond the internet: no Insights, no notifications. Download it from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
 2. Slide to unlock through the intro, then open **Ask → ⚙ Settings** and paste a free Gemini key from [aistudio.google.com](https://aistudio.google.com/apikey). Optionally add OpenAI, Claude or Groq keys.
 3. Share a reel to Reel Analyser. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
 4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts (optional): on Android 13+, *Allow restricted settings* first, then Accessibility, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
@@ -182,14 +182,24 @@ cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest
 ```
 
 ```bash
-cd mobile && flutter build apk --release --flavor direct
+cd mobile && flutter build apk --release --flavor full
 ```
+
+```bash
+cd mobile && flutter build apk --release --flavor private --dart-define=PRIVATE_BUILD=true
+```
+
+`full` has every feature. `private` asks Android for nothing: no Accessibility, Usage access, notifications or battery exemption, no Insights, no update check.
 
 The release build needs `mobile/android/key.properties` (gitignored) pointing at a keystore kept outside the repo.
 
 **Layout:**
 - **Flutter app** (`mobile/lib`): `pipeline/` holds the analysis runner and providers, `data/` the library database and keys, `ui/` the screens.
 - **Kotlin** (`mobile/packages/reelbot_native`): the share receiver, the Instagram fetcher, the counter's Accessibility service, and the digest.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
 
 ## Docs
 

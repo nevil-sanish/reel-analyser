@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../app_services.dart';
+import '../flavor.dart';
 import '../native/counter_bridge.dart';
 import 'runner.dart';
 
@@ -21,6 +22,7 @@ void callbackDispatcher() {
 /// The task's work once the stores are open; T-BG-01 runs it with fakes.
 Future<void> analyseAndNotify(Runner runner, CounterBridge bridge) async {
   if (await runner.processQueue() == 0) return;
+  if (kPrivateBuild) return; // the private build posts no notifications
   // Only from the background: with the app open, the library already shows the new notes.
   final t = runner.finishedTitles;
   await bridge.notifyNotes(

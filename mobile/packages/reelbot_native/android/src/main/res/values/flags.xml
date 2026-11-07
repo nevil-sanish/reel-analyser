@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The private build overrides this to true (app/src/private/res/values/flags.xml). -->
+    <bool name="reelbot_private">false</bool>
+</resources>

@@ -371,6 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ]),
+          if (!kPrivateBuild)
           _section('Insights', [
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -379,7 +380,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SetupScreen(s))),
             ),
-            if (!kPlayBuild)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.bug_report_outlined),
