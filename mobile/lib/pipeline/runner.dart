@@ -42,6 +42,9 @@ class Runner {
   final Directory tempDir;
   final int Function() now;
 
+  /// How long to wait before the second pass over the keys after a Gemini 429.
+  final Duration rateWait;
+
   /// Why the last run left items queued or failed one, for the library screen. Null when the last run was clean.
   String? lastProblem;
 
@@ -67,6 +70,7 @@ class Runner {
     Gemini Function(String key)? makeGemini,
     Directory? tempDir,
     int Function()? now,
+    this.rateWait = const Duration(seconds: 12),
   })  : readTurn = readTurn ?? (() async => 0),
         saveTurn = saveTurn ?? ((_) async {}),
         makeGemini = makeGemini ?? ((k) => Gemini(client, k)),
@@ -86,26 +90,39 @@ class Runner {
     finishedTitles.clear();
     _badKeys.clear();
     _turn = await readTurn();
+    final tried = <int>{};
     try {
-      for (final item in await bridge.pendingItems(status: 'queued')) {
-        try {
-          _title = '';
-          _itemTurn = _turn++; // one reel per key: the next reel starts on the next key
-          final status = await _process(item);
-          await bridge.setPendingStatus(item.id, status, title: _title);
-          if (_title.isNotEmpty) finishedTitles.add(_title);
-          finished++;
-        } on _RetryLater catch (e) {
-          lastProblem = 'Will retry: ${e.reason}';
-          if (e.stopAll) break;
-        } catch (e) {
-          // Errors too, not just Exceptions: an uncaught one used to leave the item queued with no reason shown.
-          lastProblem = 'Failed: $e';
-          await bridge.setPendingStatus(item.id, 'failed');
+      // Re-read the queue after each pass: reels shared while this run was busy are picked up in the same run,
+      // and an item that asked to retry later is not tried again until the next run.
+      var stop = false;
+      while (!stop) {
+        final batch = [for (final i in await bridge.pendingItems(status: 'queued')) if (!tried.contains(i.id)) i];
+        if (batch.isEmpty) break;
+        for (final item in batch) {
+          tried.add(item.id);
+          await library.extendLock(now()); // a long queue must not let the background task start a second run
+          try {
+            _title = '';
+            _itemTurn = _turn++; // one reel per key: the next reel starts on the next key
+            final status = await _process(item);
+            await bridge.setPendingStatus(item.id, status, title: _title);
+            if (_title.isNotEmpty) finishedTitles.add(_title);
+            finished++;
+          } on _RetryLater catch (e) {
+            lastProblem = 'Will retry: ${e.reason}';
+            if (e.stopAll) {
+              stop = true;
+              break;
+            }
+          } catch (e) {
+            // Errors too, not just Exceptions: an uncaught one used to leave the item queued with no reason shown.
+            lastProblem = 'Failed: $e';
+            await bridge.setPendingStatus(item.id, 'failed');
+          }
         }
       }
     } finally {
-      await saveTurn(_turn);
+      if (finished > 0 || tried.isNotEmpty) await saveTurn(_turn);
       await library.unlock();
     }
     return finished;
@@ -115,16 +132,24 @@ class Runner {
   Future<T> _gemini<T>(Future<T> Function(Gemini g) f) async {
     final ks = _keys.gemini;
     GeminiException? last;
-    for (var i = 0; i < ks.length; i++) {
-      final k = ks[(_itemTurn + i) % ks.length];
-      if (_badKeys.contains(k)) continue;
-      try {
-        return await f(makeGemini(k));
-      } on GeminiException catch (e) {
-        if (e.kind == GeminiFailure.rejected) rethrow;
-        if (e.kind == GeminiFailure.badKey) _badKeys.add(k);
-        last = e;
+    // Two passes: if every key is rate limited, wait a moment (the free tier counts requests per minute)
+    // and try once more before leaving the reel for the next run.
+    for (var pass = 0; pass < 2; pass++) {
+      var limited = false;
+      for (var i = 0; i < ks.length; i++) {
+        final k = ks[(_itemTurn + i) % ks.length];
+        if (_badKeys.contains(k)) continue;
+        try {
+          return await f(makeGemini(k));
+        } on GeminiException catch (e) {
+          if (e.kind == GeminiFailure.rejected) rethrow;
+          if (e.kind == GeminiFailure.badKey) _badKeys.add(k);
+          if (e.kind == GeminiFailure.retryLater && e.message.contains('HTTP 429')) limited = true;
+          last = e;
+        }
       }
+      if (!limited || pass == 1) break;
+      await Future<void>.delayed(rateWait);
     }
     throw last ?? _NoGemini();
   }
@@ -195,9 +220,9 @@ class Runner {
       rethrow;
     } on RateLimited catch (e) {
       throw _RetryLater(e.loginWall
-          ? 'Instagram wants a login to show this post (often a private account). Reel Bot tries again in 10 min, '
+          ? 'Instagram wants a login to show this post (often a private account). Reel Bot tries again in a few minutes, '
               'up to 3 times, then makes the note from what it has.'
-          : 'Instagram is limiting requests right now. Reel Bot retries on its own (10–30 min).');
+          : 'Instagram is limiting requests right now. Reel Bot retries on its own in a few minutes.');
     } on SocketException catch (e) {
       throw _RetryLater('no network ($e)');
     } on http.ClientException catch (e) {
@@ -332,6 +357,8 @@ class Runner {
         mentions: a.mentions,
         author: author,
         caption: caption,
+        transcript: a.transcript,
+        onScreenText: [a.onScreenText, if (a.onScreenText.isEmpty) item.onScreenText].where((e) => e.isNotEmpty).join('\n'),
         analysis: analysis,
         step: step,
         savedAt: item.createdAt == 0 ? now() : item.createdAt,

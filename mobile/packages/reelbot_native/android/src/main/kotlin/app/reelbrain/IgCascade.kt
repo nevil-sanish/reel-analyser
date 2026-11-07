@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException
 sealed interface StepResult {
     data class Media(val media: IgMedia) : StepResult
     object Empty : StepResult
-    /** HTTP 429: Instagram is rate-limiting this phone; stop all Instagram calls for 30 min. */
+    /** HTTP 429: Instagram is rate-limiting this phone; stop all Instagram calls for 10 min. */
     object Limited : StepResult
     /**
      * A login redirect or `require_login` on one page. v0.9.1: only that step is skipped; logged out, the post
@@ -25,16 +25,16 @@ class RateLimitedException(why: String = "Instagram is rate-limiting; try later"
 
 /**
  * The rules around the Instagram steps (ENDPOINTS §1): first video wins, metadata is merged,
- * one fetch per code at a time, 1 h negative cache, 30 min pause after a 429 (a login wall only skips its step),
- * and at most one request every 5 s. Steps are plain functions so tests can fake them.
+ * one fetch per code at a time, 1 h negative cache, 10 min pause after a 429 (a login wall only skips its step),
+ * and at most one request every 1.5 s. Steps are plain functions so tests can fake them.
  */
 class IgCascade(
     private val clock: () -> Long = System::currentTimeMillis,
     private val sleep: (Long) -> Unit = Thread::sleep,
-    private val minGapMs: Long = 5_000,
-    private val pauseMs: Long = 30 * 60_000,
+    private val minGapMs: Long = 1_500,
+    private val pauseMs: Long = 10 * 60_000,
     private val negativeMs: Long = 60 * 60_000,
-    private val wallRetryMs: Long = 10 * 60_000,
+    private val wallRetryMs: Long = 3 * 60_000,
     private val wallTries: Int = 3,
 ) {
     /** Codes where every step was walled: retried after [wallRetryMs], given up after [wallTries] runs. */
@@ -91,7 +91,7 @@ class IgCascade(
                 StepResult.Empty -> Unit
                 StepResult.Limited -> {
                     pausedUntil = clock() + pauseMs
-                    throw RateLimitedException("HTTP 429 at step ${i + 1}; pausing 30 min")
+                    throw RateLimitedException("HTTP 429 at step ${i + 1}; pausing 10 min")
                 }
                 StepResult.LoginWall -> wall = true
                 StepResult.Gone -> {
@@ -104,7 +104,7 @@ class IgCascade(
         // but give up after a few runs so the reel isn't stuck in the queue for ever.
         if (wall && bestStep == 0 && walled.merge(code, 1, Int::plus)!! < wallTries) {
             pausedUntil = maxOf(pausedUntil, clock() + wallRetryMs)
-            throw RateLimitedException("every step hit a login wall; retrying in 10 min")
+            throw RateLimitedException("every step hit a login wall; retrying in 3 min")
         }
         walled.remove(code)
         return FetchResult(bestStep, best)

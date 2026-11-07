@@ -44,19 +44,19 @@ class IgCascadeTest {
     }
 
     // T-IG-U05
-    @Test fun requestsAreFiveSecondsApart() {
+    @Test fun requestsAreOneAndAHalfSecondsApart() {
         val c = cascade()
         c.throttle()
         now += 1_000
         c.throttle()
-        assertEquals(listOf(4_000L), slept)
+        assertEquals(listOf(500L), slept)
     }
 
-    @Test fun rateLimitPausesInstagramForThirtyMinutes() {
+    @Test fun rateLimitPausesInstagramForTenMinutes() {
         val c = cascade()
         try { c.run("a", listOf { _ -> StepResult.Limited }); fail() } catch (_: RateLimitedException) {}
         val calls = AtomicInteger()
-        now += 29 * 60_000
+        now += 9 * 60_000
         try { c.run("b", listOf { _ -> calls.incrementAndGet(); video }); fail() } catch (_: RateLimitedException) {}
         try { c.throttle(); fail() } catch (_: RateLimitedException) {}
         assertEquals(0, calls.get())

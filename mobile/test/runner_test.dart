@@ -102,6 +102,7 @@ void main() {
             k,
             pollEvery: Duration.zero),
         tempDir: tmp,
+        rateWait: Duration.zero,
       );
 
   const yt = PendingItem(id: 1, url: 'https://www.youtube.com/shorts/abcdefg', app: 'youtube', createdAt: 5);
@@ -231,7 +232,7 @@ void main() {
     expect(r.lastProblem, contains('Instagram is limiting'));
 
     // A post walled on every step (a private account's, say) is not a rate limit, and the library says so.
-    final walled = runner(FakeBridge([ig], fetch: (_) => throw RateLimited('every step hit a login wall; retrying in 10 min')),
+    final walled = runner(FakeBridge([ig], fetch: (_) => throw RateLimited('every step hit a login wall; retrying in 3 min')),
         (r) async => http.Response(_gemOk(), 200));
     await walled.processQueue();
     expect(walled.lastProblem, contains('wants a login'));
@@ -248,6 +249,40 @@ void main() {
         gemini: ['K1', 'K2']).processQueue();
     expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']), ['K1', 'K2']);
     expect(b2.statuses[4], 'done');
+  });
+
+  test('a 429 on every key waits once and tries again in the same run', () async {
+    var calls = 0;
+    final b = FakeBridge([yt]);
+    await runner(b, (r) async => ++calls == 1 ? http.Response('{"error":{"status":"RESOURCE_EXHAUSTED"}}', 429) : http.Response(_gemOk(), 200))
+        .processQueue();
+    expect(b.statuses[1], 'done');
+  });
+
+  test('reels added while a run is busy are picked up in the same run', () async {
+    final b = FakeBridge([yt]);
+    var added = false;
+    await runner(b, (r) async {
+      if (!added) {
+        added = true;
+        b.items.add(const PendingItem(id: 9, url: 'https://www.youtube.com/shorts/lateone1', app: 'youtube', createdAt: 9));
+      }
+      return http.Response(_gemOk(), 200);
+    }).processQueue();
+    expect(b.statuses.keys, containsAll([1, 9]));
+  });
+
+  test('transcript and on-screen text are saved and searchable', () async {
+    final j = jsonDecode(_gemOk()) as Map;
+    final note = {..._note, 'transcript': 'hello zebra world', 'onScreenText': 'Step one'};
+    final ok = jsonEncode({'candidates': [{'content': {'parts': [{'text': jsonEncode(note)}]}}]});
+    j.clear();
+    final b = FakeBridge([yt]);
+    await runner(b, (r) async => http.Response(ok, 200)).processQueue();
+    final r = (await db.reels(query: 'zebra')).single;
+    expect(r.transcript, 'hello zebra world');
+    expect(r.onScreenText, 'Step one');
+    expect(r.toMarkdown(), contains('## Transcript'));
   });
 
   test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {
