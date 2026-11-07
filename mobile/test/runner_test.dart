@@ -285,6 +285,48 @@ void main() {
     expect(r.toMarkdown(), contains('## Transcript'));
   });
 
+  test('with several Gemini keys, reels are analysed at the same time, each on its own key', () async {
+    var live = 0, peak = 0;
+    final keysSeen = <String?>[];
+    final b = FakeBridge([
+      yt,
+      const PendingItem(id: 3, url: 'https://www.youtube.com/shorts/zzzzzzz', app: 'youtube', createdAt: 7),
+      const PendingItem(id: 4, url: 'https://www.youtube.com/shorts/yyyyyyy', app: 'youtube', createdAt: 8),
+    ]);
+    await runner(b, (r) async {
+      if (!isGenerate(r)) return http.Response('', 404);
+      keysSeen.add(r.headers['x-goog-api-key']);
+      peak = ++live > peak ? live : peak;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      live--;
+      return http.Response(_gemOk(), 200);
+    }, gemini: ['K1', 'K2', 'K3']).processQueue();
+    expect(peak, 3);
+    expect(keysSeen.toSet(), {'K1', 'K2', 'K3'});
+    expect(b.statuses.keys, containsAll([1, 3, 4]));
+    expect((await db.reels()).map((r) => r.url).toSet().length, 3);
+  });
+
+  test('a reel stopped before it starts is not analysed; each reel has its own progress', () async {
+    final b = FakeBridge([
+      yt,
+      const PendingItem(id: 3, url: 'https://www.youtube.com/shorts/zzzzzzz', app: 'youtube', createdAt: 7),
+    ]);
+    late Runner r;
+    r = runner(b, (req) async {
+      if (!isGenerate(req)) return http.Response('', 404);
+      await r.cancel(3); // stopped while the first reel is being analysed
+      return http.Response(_gemOk(), 200);
+    });
+    final seen = <String>{};
+    r.jobs.addListener(() => seen.addAll(r.jobs.value.map((j) => '${j.id}:${j.stage}')));
+    await r.processQueue();
+    expect(b.statuses[1], 'done');
+    expect(b.statuses[3], 'cancelled');
+    expect(await db.has('https://www.youtube.com/shorts/zzzzzzz'), isFalse);
+    expect(seen.any((x) => x.startsWith('1:Analysing')), isTrue);
+  });
+
   test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {
     final f = File('${tmp.path}/v.mp4')..writeAsBytesSync([0]);
     final b = FakeBridge([ig], fetch: (_) => IgFetch(step: 1, videoPath: f.path));

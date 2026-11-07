@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
+import '../pipeline/runner.dart';
 import 'archive_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
@@ -155,7 +156,11 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 text: 'Add a Gemini key (free) in Settings to turn reels into notes.',
                 onTap: () => _open(SettingsScreen(s)),
               ),
-            if (_waiting > 0)
+            ValueListenableBuilder<List<Job>>(
+              valueListenable: s.runner.jobs,
+              builder: (context, jobs, _) => jobs.isEmpty ? const SizedBox.shrink() : _JobsCard(jobs, s.runner.cancel),
+            ),
+            if (_waiting > 0 && s.runner.jobs.value.isEmpty)
               _Banner(
                 icon: _busy ? null : Icons.schedule,
                 text: '$_waiting waiting to be analysed',
@@ -169,7 +174,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   const SizedBox(height: 24),
                   Text('Nothing saved yet', style: t.textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text('In Instagram or YouTube, tap Share → Reel Bot on a reel or short.',
+                  Text('In Instagram or YouTube, tap Share → Reel Analyser on a reel or short.',
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),
@@ -180,6 +185,73 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r, onChanged: _reload)) : _toggle(r),
                   onChanged: _reload),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Every reel in the current run with its own progress bar and a Stop button.
+class _JobsCard extends StatelessWidget {
+  final List<Job> jobs;
+  final Future<void> Function(int id) onStop;
+  const _JobsCard(this.jobs, this.onStop);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final active = jobs.where((j) => j.active).length;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(active > 0 ? 'Analysing $active ${active == 1 ? 'reel' : 'reels'}' : 'Analysis finished',
+                style: t.textTheme.titleMedium),
+            const SizedBox(height: 6),
+            for (final j in jobs)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(children: [
+                  Icon(
+                    switch (j.state) {
+                      JobState.done => Icons.check_circle_rounded,
+                      JobState.failed || JobState.retry => Icons.error_outline_rounded,
+                      JobState.stopped => Icons.stop_circle_outlined,
+                      _ => j.app == 'youtube' ? Icons.smart_display_outlined : j.app == 'photo' ? Icons.image_outlined : Icons.movie_outlined,
+                    },
+                    size: 22,
+                    color: j.state == JobState.done ? t.colorScheme.primary : t.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(j.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.textTheme.bodyLarge),
+                      Text(j.stage, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                      if (j.state == JobState.running || j.state == JobState.waiting)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(value: j.state == JobState.waiting ? 0 : j.progress, minHeight: 5),
+                          ),
+                        ),
+                    ]),
+                  ),
+                  if (j.state != JobState.done && j.state != JobState.stopped)
+                    IconButton(
+                      tooltip: 'Stop analysing this reel',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        onStop(j.id);
+                      },
+                    ),
+                ]),
+              ),
+          ]),
         ),
       ),
     );

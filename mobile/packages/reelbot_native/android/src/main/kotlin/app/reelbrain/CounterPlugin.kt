@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
  */
 class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     companion object {
-        private val io = Executors.newFixedThreadPool(2)
+        private val io = Executors.newFixedThreadPool(4)
         private val main = Handler(Looper.getMainLooper())
     }
 
