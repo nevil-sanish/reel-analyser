@@ -187,6 +187,11 @@ class CounterBridge {
   /// The digest is skipped on days the app was opened. Also applies the retention rules (old Insights data goes).
   Future<void> markOpened() => _ch.invokeMethod('markOpened');
 
+  /// Dead-man's switch for an analysis run in the app: if it is not pushed back (by calling this again) or disarmed,
+  /// the background task restarts the analysis about 100 seconds later. Covers the app being killed mid-run.
+  Future<void> armWatchdog() => _ch.invokeMethod('armWatchdog');
+  Future<void> disarmWatchdog() => _ch.invokeMethod('disarmWatchdog');
+
   /// "Erase all my data": counters, queue, debug rows, shared photos and the notification state.
   Future<void> eraseAll() => _ch.invokeMethod('eraseAll');
 

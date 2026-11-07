@@ -41,6 +41,10 @@ class FakeBridge implements CounterBridge {
       ];
   @override
   Future<void> saveDownload(String name, String text) async {}
+  @override
+  Future<void> armWatchdog() async {}
+  @override
+  Future<void> disarmWatchdog() async {}
   final notified = <(String, String)>[];
   @override
   Future<void> notifyNotes(String title, String text) async => notified.add((title, text));
@@ -481,6 +485,31 @@ void main() {
     final idle = FakeBridge([]);
     await analyseAndNotify(runner(idle, (r) async => http.Response(_gemOk(), 200)), idle);
     expect(idle.notified, isEmpty);
+  });
+
+  test('the background task waits for the queue lock instead of retrying later, and is done when idle', () async {
+    final b = FakeBridge([yt]);
+    final busy = runner(b, (r) async => http.Response(_gemOk(), 200));
+    expect(await db.tryLock(DateTime.now().millisecondsSinceEpoch), isTrue); // someone else is working
+    // The lock frees while the task waits for it (the open app finished, or a killed run's lock ran out): it then does the work.
+    final waiting = analyseAndNotify(busy, b, patience: const Duration(seconds: 5), poll: const Duration(milliseconds: 20));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(b.statuses, isEmpty);
+    await db.unlock();
+    expect(await waiting, isTrue);
+    expect(b.statuses[1], 'done');
+    // Still busy after the patience runs out: it gives up quietly (the live run finishes the queue), without a retry.
+    expect(await db.tryLock(DateTime.now().millisecondsSinceEpoch), isTrue);
+    expect(await analyseAndNotify(busy, FakeBridge([yt]), patience: const Duration(milliseconds: 60), poll: const Duration(milliseconds: 20)), isTrue);
+    await db.unlock();
+    expect(await analyseAndNotify(runner(FakeBridge([]), (r) async => http.Response(_gemOk(), 200)), FakeBridge([])), isTrue); // nothing to do
+  });
+
+  test('a run killed with the app frees the queue within 90 seconds', () async {
+    final t0 = DateTime.now().millisecondsSinceEpoch;
+    expect(await db.tryLock(t0), isTrue);
+    expect(await db.tryLock(t0 + 60000), isFalse);
+    expect(await db.tryLock(t0 + 91000), isTrue);
   });
 
   test('T-PIPE-16 a link shared again is not analysed twice; its note comes back to the top, unread', () async {

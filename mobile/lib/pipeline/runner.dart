@@ -117,6 +117,9 @@ class Runner {
   /// How long to wait before the second pass over the keys after a Gemini 429.
   final Duration rateWait;
 
+  /// True when the last [processQueue] found another run holding the queue (the app and the background task never both work).
+  bool lockBusy = false;
+
   /// Why the last run left items queued or failed one, for the library screen. Null when the last run was clean.
   String? lastProblem;
 
@@ -160,10 +163,24 @@ class Runner {
     if (_keys.isEmpty) {
       return 0; // Items stay queued; the library asks for a key.
     }
+    lockBusy = false;
     if (!await library.tryLock(now())) {
-      lastProblem = 'Another analysis run is in progress (it holds the queue for up to 5 min).';
+      lockBusy = true;
+      lastProblem = 'Another analysis run is in progress; this one waits for it.';
       return 0;
     }
+    // The lock is short (90 s) so a run killed with the app frees the queue quickly; a live run renews it.
+    Future<void> heartbeat() async {
+      await library.extendLock(now());
+      try {
+        await bridge.armWatchdog(); // pushed back each beat: it only fires if the app dies mid-run
+      } on Object {
+        // no native side (tests, or a failed call): the periodic task is still the fallback
+      }
+    }
+
+    unawaited(heartbeat());
+    final beat = Timer.periodic(const Duration(seconds: 30), (_) => heartbeat());
     var finished = 0;
     lastProblem = null;
     finishedTitles.clear();
@@ -202,6 +219,12 @@ class Runner {
         finished += counts.fold(0, (a, b) => a + b);
       }
     } finally {
+      beat.cancel();
+      try {
+        await bridge.disarmWatchdog();
+      } on Object {
+        // see heartbeat
+      }
       if (finished > 0 || tried.isNotEmpty) await saveTurn(_turn);
       await library.unlock();
       // Finished and stopped reels are in the library or gone; only the ones still waiting on a retry stay listed.

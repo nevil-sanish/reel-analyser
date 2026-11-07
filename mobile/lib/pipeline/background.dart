@@ -11,24 +11,43 @@ import 'runner.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, _) async {
     WidgetsFlutterBinding.ensureInitialized();
-    final s = await AppServices.create();
-    // No library.close(): sqflite shares one native connection per path across engines in the process,
-    // so closing it here also closed the open app's database (every screen then failed with database_closed).
-    await analyseAndNotify(s.runner, s.bridge);
-    return true;
+    try {
+      final s = await AppServices.create();
+      // No library.close(): sqflite shares one native connection per path across engines in the process,
+      // so closing it here also closed the open app's database (every screen then failed with database_closed).
+      final done = await analyseAndNotify(s.runner, s.bridge);
+      debugPrint('ReelBot background "$task": ${done ? 'done' : 'failed'}${s.runner.lastProblem == null ? '' : ' (${s.runner.lastProblem})'}');
+      return done;
+    } on Object catch (e, st) {
+      debugPrint('ReelBot background "$task" failed: $e\n$st');
+      return false;
+    }
   });
 }
 
 /// The task's work once the stores are open; T-BG-01 runs it with fakes.
-Future<void> analyseAndNotify(Runner runner, CounterBridge bridge) async {
-  if (await runner.processQueue() == 0) return;
-  if (kPrivateBuild) return; // the private build posts no notifications
+Future<bool> analyseAndNotify(
+  Runner runner,
+  CounterBridge bridge, {
+  Duration patience = const Duration(seconds: 150),
+  Duration poll = const Duration(seconds: 5),
+}) async {
+  var n = await runner.processQueue();
+  // Another run holds the queue: the open app (it finishes the queue itself) or one that was killed (its lock runs out
+  // within 90 s). Wait for the lock instead of giving up: a retry would come minutes later, and later every time.
+  for (var waited = Duration.zero; n == 0 && runner.lockBusy && waited < patience; waited += poll) {
+    await Future<void>.delayed(poll);
+    n = await runner.processQueue();
+  }
+  if (n == 0) return true;
+  if (kPrivateBuild) return true; // the private build posts no notifications
   // Only from the background: with the app open, the library already shows the new notes.
   final t = runner.finishedTitles;
   await bridge.notifyNotes(
     t.length == 1 ? 'Note ready' : '${t.length} notes ready',
     t.length == 1 ? t.single : t.take(3).join(' · '),
   );
+  return true;
 }
 
 Future<void> scheduleBackgroundAnalysis() async {

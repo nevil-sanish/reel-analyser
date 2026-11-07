@@ -38,6 +38,7 @@ class ShareReceiverActivity : Activity() {
                 }
                 else -> ShareUrls.extract(text)?.let { CounterDb.get(this).addShared(it, now); "Saved ✓" } ?: "Not a reel link"
             }
+            if (message.startsWith("Saved")) AnalyseKick.enqueue(applicationContext) // analyse now, app open or not
             runOnUiThread {
                 Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
                 finish()

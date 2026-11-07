@@ -123,7 +123,7 @@ class LibraryDb {
   Future<void> delete(String url) => _db.delete('reels', where: 'url = ?', whereArgs: [url]);
 
   /// The app and the background task share one queue; whoever sets this first runs it (T-PIPE-10).
-  Future<bool> tryLock(int now, {Duration hold = const Duration(minutes: 5)}) async {
+  Future<bool> tryLock(int now, {Duration hold = const Duration(seconds: 90)}) async {
     final n = await _db.rawUpdate(
         "UPDATE meta SET v = ? WHERE k = 'processing_until' AND v < ?", [now + hold.inMilliseconds, now]);
     return n == 1;
@@ -139,7 +139,7 @@ class LibraryDb {
   Future<void> setGeminiTurn(int v) => _db.insert('meta', {'k': 'gemini_turn', 'v': v}, conflictAlgorithm: ConflictAlgorithm.replace);
 
   /// Keeps the lock while a long run is still working through the queue.
-  Future<void> extendLock(int now, {Duration hold = const Duration(minutes: 5)}) =>
+  Future<void> extendLock(int now, {Duration hold = const Duration(seconds: 90)}) =>
       _db.rawUpdate("UPDATE meta SET v = ? WHERE k = 'processing_until'", [now + hold.inMilliseconds]);
 
   Future<void> unlock() => _db.rawUpdate("UPDATE meta SET v = 0 WHERE k = 'processing_until'");

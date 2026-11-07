@@ -100,6 +100,8 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now) } } // retention: see the Privacy Policy
                 result.success(null)
             }
+            "armWatchdog" -> { AnalyseKick.arm(ctx); result.success(null) }
+            "disarmWatchdog" -> { AnalyseKick.disarm(ctx); result.success(null) }
             "eraseAll" -> offMain(result) {
                 CounterDb.get(ctx).eraseAll()
                 java.io.File(ctx.filesDir, "photos").deleteRecursively()
