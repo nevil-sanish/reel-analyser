@@ -26,6 +26,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _groq = TextEditingController();
   final _apify = TextEditingController();
 
+  /// Save stays off until the stored keys have been read: saving the still-empty boxes used to erase them.
+  bool _loaded = false;
+  List<String> _storedGemini = const [];
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +41,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _apify.text = await s.keys.apify ?? '';
       if (!mounted) return;
       setState(() {
+        _loaded = true;
+        _storedGemini = g;
         _gemini.addAll([for (final k in g.isEmpty ? [''] : g) TextEditingController(text: k)]);
       });
     }();
@@ -45,6 +51,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _save() async {
+    if (!_loaded) return;
+    final entered = [for (final c in _gemini) c.text.trim()].where((k) => k.isNotEmpty).toList();
+    if (entered.isEmpty && _storedGemini.isNotEmpty) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Remove your Gemini keys?'),
+          content: const Text('The Gemini key boxes are empty, so saving will delete the keys stored on this phone.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep them')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    _storedGemini = entered;
     await s.keys.setGeminiKeys([for (final c in _gemini) c.text]);
     await s.keys.setOpenai(_openai.text);
     await s.keys.setClaude(_claude.text);
@@ -180,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _key(_claude, 'Claude key', helper: 'Optional. Same as OpenAI: frames, no sound'),
             _key(_groq, 'Groq key', helper: 'Optional. Chat only'),
             _key(_apify, 'Apify token', helper: 'Optional. Only when Instagram won\'t give the video (~\$0.002 per reel)'),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: _save, child: const Text('Save keys'))),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: _loaded ? _save : null, child: const Text('Save keys'))),
           ]),
           _section('Appearance', [
             ValueListenableBuilder(

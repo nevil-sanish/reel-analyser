@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 4,
+        version: 5,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -27,11 +27,13 @@ class LibraryDb {
           await _v2(db);
           await _v3(db);
           await _v4(db);
+          await _v5(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
           if (from < 3) await _v3(db);
           if (from < 4) await _v4(db);
+          if (from < 5) await _v5(db);
         },
       ),
     );
@@ -52,6 +54,12 @@ class LibraryDb {
   static Future<void> _v4(Database db) async {
     await db.execute("ALTER TABLE reels ADD COLUMN overview TEXT NOT NULL DEFAULT '[]'");
     await db.execute("ALTER TABLE reels ADD COLUMN mentions TEXT NOT NULL DEFAULT '[]'");
+  }
+
+  /// Version 5: the transcript and on-screen text of v0.9.6 notes.
+  static Future<void> _v5(Database db) async {
+    await db.execute("ALTER TABLE reels ADD COLUMN transcript TEXT NOT NULL DEFAULT ''");
+    await db.execute("ALTER TABLE reels ADD COLUMN onScreenText TEXT NOT NULL DEFAULT ''");
   }
 
   /// Creates the chat when [id] is null; returns its id.
@@ -105,7 +113,7 @@ class LibraryDb {
     final where = [
       if (archived != null) 'archived = ${archived ? 1 : 0}',
       if (q.isNotEmpty)
-        "(title || ' ' || overview || ' ' || summary || ' ' || keyPoints || ' ' || mentions || ' ' || tags || ' ' || author || ' ' || caption) LIKE ?",
+        "(title || ' ' || overview || ' ' || summary || ' ' || keyPoints || ' ' || mentions || ' ' || tags || ' ' || author || ' ' || caption || ' ' || transcript || ' ' || onScreenText) LIKE ?",
     ];
     final rows = await _db.query('reels',
         where: where.isEmpty ? null : where.join(' AND '), whereArgs: q.isEmpty ? null : ['%$q%'], orderBy: 'savedAt DESC');
@@ -120,6 +128,19 @@ class LibraryDb {
         "UPDATE meta SET v = ? WHERE k = 'processing_until' AND v < ?", [now + hold.inMilliseconds, now]);
     return n == 1;
   }
+
+  /// Which Gemini key the next reel starts with. Kept here, not in secure storage, so the background task
+  /// never writes to the key store.
+  Future<int> geminiTurn() async {
+    final r = await _db.query('meta', where: "k = 'gemini_turn'");
+    return r.isEmpty ? 0 : r.first['v'] as int;
+  }
+
+  Future<void> setGeminiTurn(int v) => _db.insert('meta', {'k': 'gemini_turn', 'v': v}, conflictAlgorithm: ConflictAlgorithm.replace);
+
+  /// Keeps the lock while a long run is still working through the queue.
+  Future<void> extendLock(int now, {Duration hold = const Duration(minutes: 5)}) =>
+      _db.rawUpdate("UPDATE meta SET v = ? WHERE k = 'processing_until'", [now + hold.inMilliseconds]);
 
   Future<void> unlock() => _db.rawUpdate("UPDATE meta SET v = 0 WHERE k = 'processing_until'");
 

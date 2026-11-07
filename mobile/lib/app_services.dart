@@ -23,14 +23,14 @@ class AppServices {
           client: client,
           keys: () async => AnalysisKeys(gemini: await keys.geminiKeys, openai: await keys.openai, claude: await keys.claude),
           apifyKey: () => keys.apify,
-          readTurn: () => keys.geminiTurn,
-          saveTurn: keys.setGeminiTurn,
+          readTurn: library.geminiTurn,
+          saveTurn: library.setGeminiTurn,
         );
 
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client());
 
-  static const version = '0.9.5';
+  static const version = '0.9.6';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
