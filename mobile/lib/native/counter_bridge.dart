@@ -204,6 +204,12 @@ class CounterBridge {
     }
   }
 
+  /// The app's own folder for a downloaded update.
+  Future<String> updateDir() async => (await _ch.invokeMethod<String>('updateDir'))!;
+
+  /// Opens Android's installer on a downloaded update: `started`, `needs_permission` (the settings screen was opened) or `failed: <reason>`.
+  Future<String> installApk(String path) async => await _ch.invokeMethod<String>('installApk', {'path': path}) ?? 'failed';
+
   Future<void> saveDownload(String name, String text) =>
       _ch.invokeMethod('saveDownload', {'name': name, 'text': text});
 

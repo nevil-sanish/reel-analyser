@@ -9,6 +9,7 @@ import 'data/update_check.dart';
 import 'pipeline/background.dart';
 import 'ui/chat_screen.dart';
 import 'ui/intro_screen.dart';
+import 'ui/update_flow.dart';
 import 'ui/legal_screen.dart';
 import 'ui/library_screen.dart';
 import 'ui/liquid.dart';
@@ -128,19 +129,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final s = widget.services, now = DateTime.now().millisecondsSinceEpoch;
     if (now - await s.keys.updateCheckedAt < const Duration(days: 1).inMilliseconds) return;
     await s.keys.setUpdateCheckedAt(now);
-    final rel = await newerRelease(s.client, AppServices.version);
+    final rel = await latestUpdate(s.client, AppServices.version);
     if (rel == null || !mounted) return;
     final m = ScaffoldMessenger.of(context);
     m.showMaterialBanner(MaterialBanner(
-      content: Text('Reel Analyser ${rel.$1} is out'),
+      content: Text('Reel Analyser ${rel.tag} is out'),
       actions: [
         TextButton(onPressed: m.hideCurrentMaterialBanner, child: const Text('Later')),
         FilledButton(
           onPressed: () {
             m.hideCurrentMaterialBanner();
-            s.bridge.openUrl(rel.$2);
+            runUpdate(context, s, rel);
           },
-          child: const Text('Download'),
+          child: Text(kPrivateBuild ? 'Download' : 'Update'),
         ),
       ],
     ));

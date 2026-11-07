@@ -73,6 +73,7 @@ kotlin {
 dependencies {
     // Same version workmanager_android already puts in the app.
     implementation("androidx.work:work-runtime:2.11.2")
+    implementation("androidx.core:core:1.13.1") // FileProvider, for handing a downloaded update to the installer
     testImplementation("junit:junit:4.13.2")
     // android.jar's org.json is a stub on the JVM; the fixture tests need the real one.
     testImplementation("org.json:json:20250517")

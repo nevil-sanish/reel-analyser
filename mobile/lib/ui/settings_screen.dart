@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
+import 'update_flow.dart';
 import '../data/key_backup.dart';
 import '../data/key_store.dart';
 import '../flavor.dart';
@@ -421,6 +422,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton.tonalIcon(onPressed: _feedback, icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
           ]),
           _section('About and legal', [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.system_update_outlined),
+              title: const Text('Check for updates'),
+              subtitle: Text('You have ${AppServices.version}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => checkForUpdate(context, s),
+            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.privacy_tip_outlined),

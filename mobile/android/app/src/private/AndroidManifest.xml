@@ -4,6 +4,7 @@
       Private build: nothing that reads the phone beyond the app's own data. Removed here:
       - the Accessibility service (reads other apps' screens);
       - Usage access (PACKAGE_USAGE_STATS) and the battery-optimisation exemption;
+      - installing updates from inside the app (REQUEST_INSTALL_PACKAGES; the update button opens the download page instead);
       - the notification permission (the build posts no notifications; see res/values/flags.xml).
       What remains is INTERNET, plus the permissions WorkManager adds for background analysis. Android grants those
       without asking and shows no prompt for them: network state, wake lock, run at boot, short foreground service.
@@ -11,7 +12,9 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:node="remove"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove"/>
     <application>
+        <provider android:name="androidx.core.content.FileProvider" tools:node="remove"/>
         <service android:name="app.reelbrain.ReelCounterService" tools:node="remove"/>
     </application>
 </manifest>

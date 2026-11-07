@@ -5,7 +5,13 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <!-- Usage access (granted by the user in Settings): time in Instagram and YouTube without Accessibility. -->
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+  <!-- Installing an update the app downloaded itself (full build only; the private build removes both). -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
   <application>
+    <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.updates"
+        android:exported="false" android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths"/>
+    </provider>
     <activity android:name="app.reelbrain.ShareReceiverActivity" android:exported="true"
         android:theme="@android:style/Theme.Translucent.NoTitleBar"
         android:excludeFromRecents="true" android:taskAffinity=""

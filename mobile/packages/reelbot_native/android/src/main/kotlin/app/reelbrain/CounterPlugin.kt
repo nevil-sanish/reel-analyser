@@ -112,6 +112,8 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 null
             }
             "status" -> result.success(status())
+            "updateDir" -> result.success(java.io.File(ctx.cacheDir, "update").apply { mkdirs() }.path)
+            "installApk" -> result.success(installApk(call.argument<String>("path")!!))
             "openUrl" -> result.success(launch(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url")!!))))
             "openUsageAccess" -> result.success(
                 launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, Uri.parse("package:${ctx.packageName}")))
@@ -192,6 +194,27 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private fun appInfo() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}"))
 
     /** No activity here (the plugin also runs in the background engine), so start from the app context. */
+    /** Hands a downloaded update to Android's installer. Only a file in the app's own update folder is accepted. */
+    private fun installApk(path: String): String {
+        val dir = java.io.File(ctx.cacheDir, "update").canonicalFile
+        val f = java.io.File(path).canonicalFile
+        if (f.parentFile != dir) return "failed: the file is not in the update folder ($f)"
+        if (!f.isFile) return "failed: the downloaded file is missing"
+        if (!ctx.packageManager.canRequestPackageInstalls()) {
+            launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${ctx.packageName}")))
+            return "needs_permission"
+        }
+        return try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.updates", f)
+            val i = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            ctx.startActivity(i)
+            "started"
+        } catch (e: Exception) {
+            "failed: ${e.javaClass.simpleName} ${e.message}"
+        }
+    }
+
     private fun launch(i: Intent): Boolean = try {
         ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true
