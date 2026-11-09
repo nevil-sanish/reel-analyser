@@ -12,13 +12,16 @@ import android.content.IntentFilter
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
+import java.util.Calendar
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.reelbrain.core.R
 import org.json.JSONObject
 
 /**
- * Counts reels and shorts by reading the screen (IMPLEMENTATION §3.4). Read-only: no taps, no gestures.
+ * Counts reels and shorts by reading the screen (IMPLEMENTATION §3.4), and blocks them past the limit or outside the schedule
+ * the user set (1.0.9.0). It never taps, types or scrolls: to block, it opens the block screen over the reel. The blocker uses
+ * only whether a reel or short is on screen, and, in a browser, the address bar.
  * v0.9.0 removed the bubble and auto-Save; saving is only Share → Reel Analyser.
  */
 class ReelCounterService : AccessibilityService() {
@@ -26,11 +29,19 @@ class ReelCounterService : AccessibilityService() {
         @Volatile var running = false
         const val PREFS = "reelbot"
         const val CAPTURE = "debug_capture"
+        /** The user's opt-in to reading the reel screens. Until it is on, the service reads nothing, even if Accessibility is on. */
+        const val CONSENT = "detect_consent"
         private const val CHANNEL = "reelbot_alerts"
     }
 
     private lateinit var db: CounterDb
     private lateinit var tracker: ReelTracker
+    private lateinit var meter: BlockMeter
+    private var stateAt = 0L
+    private var state = BlockState()
+    private var usedAt = 0L
+    private var used: Map<String, Long> = emptyMap()
+    private var lastBlock = 0L
     private val handler = Handler(Looper.getMainLooper())
     private var lastEval = 0L
     private var lastTree = 0L
@@ -40,12 +51,12 @@ class ReelCounterService : AccessibilityService() {
     private val tick = object : Runnable {
         override fun run() {
             evaluate()
-            if (tracker.active) handler.postDelayed(this, 1000) else ticking = false
+            if (tracker.active || meter.active) handler.postDelayed(this, 1000) else ticking = false
         }
     }
 
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) = tracker.end(System.currentTimeMillis())
+        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop() }
     }
 
     /** CounterDb, plus the unknown alert after each unknown item. */
@@ -64,6 +75,8 @@ class ReelCounterService : AccessibilityService() {
     override fun onServiceConnected() {
         db = CounterDb.get(this)
         tracker = ReelTracker(AlertingSink())
+        meter = BlockMeter(db)
+        BlockPhotos.sweep(this, localDate(System.currentTimeMillis()))
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
         running = true
     }
@@ -71,6 +84,7 @@ class ReelCounterService : AccessibilityService() {
     override fun onUnbind(intent: Intent?): Boolean {
         if (running) {
             tracker.end(System.currentTimeMillis())
+            meter.stop()
             handler.removeCallbacks(tick)
             unregisterReceiver(screenOff)
             running = false
@@ -80,10 +94,16 @@ class ReelCounterService : AccessibilityService() {
 
     override fun onInterrupt() = Unit
 
+    private fun consented() = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CONSENT, false)
+
     override fun onAccessibilityEvent(e: AccessibilityEvent) {
+        if (!consented()) {
+            if (tracker.active || meter.active) { tracker.end(System.currentTimeMillis()); meter.stop() }
+            return
+        }
         val pkg = e.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return
-        if (pkg !in DetectionRules.apps && !tracker.active) return
+        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && !tracker.active && !meter.active) return
         val now = System.currentTimeMillis()
         if (now - lastEval >= 250) evaluate()
         if (tracker.active && !ticking) {
@@ -93,6 +113,7 @@ class ReelCounterService : AccessibilityService() {
     }
 
     private fun evaluate() {
+        if (!consented()) return
         val now = System.currentTimeMillis()
         lastEval = now
         val root = rootInActiveWindow ?: return
@@ -101,13 +122,51 @@ class ReelCounterService : AccessibilityService() {
         val app = DetectionRules.apps[pkg]
         if (app == null) {
             tracker.observe(now, null, false, null)
+            enforce(now, if (pkg in Browsers.packages) browserReel(root, pkg) else null)
             return
         }
         val nodes = collect(root)
         val r = Rect().also(root::getBoundsInScreen)
         val obs = DetectionRules.read(app, nodes, Box(r.left, r.top, r.right, r.bottom))
         tracker.observe(now, app, obs.inReels, obs.item)
+        enforce(now, if (obs.inReels) app else null)
         if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CAPTURE, false)) capture(now, app, obs, nodes)
+    }
+
+    /** `browser` when the address bar shows a reel or a short. Only the address bar is read, and only when the browser is blocked. */
+    private fun browserReel(root: AccessibilityNodeInfo, pkg: String): String? {
+        if ("browser" !in (currentState(System.currentTimeMillis()).active?.items ?: return null)) return null
+        for (id in Browsers.addressIds) {
+            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() } ?: continue
+            return if (BlockPolicy.browserSurface(t)) "browser" else null
+        }
+        return null
+    }
+
+    private fun currentState(now: Long): BlockState {
+        if (now - stateAt > 1000) { state = db.currentBlockState(now); stateAt = now }
+        return state
+    }
+
+    /** Counts reel time for the item on screen and, past the limit or outside the schedule, opens the block screen. */
+    private fun enforce(now: Long, surface: String?) {
+        val date = localDate(now)
+        val st = currentState(now)
+        val cfg = st.active
+        if (cfg == null || st.suspendedDate == date && surface == null) { meter.observe(now, null, date); return }
+        meter.observe(now, if (surface in cfg.items) surface else null, date)
+        if (surface == null) return
+        if (now - usedAt > 1000) { used = db.usedToday(date); usedAt = now }
+        val withPending = used + (surface to (used[surface] ?: 0L) + meter.pending(surface))
+        val v = BlockPolicy.verdict(cfg, surface, BlockPolicy.minuteOfDay(now), withPending, st.suspendedDate == date)
+        if (v is Verdict.Block && now - lastBlock > 4000) {
+            lastBlock = now
+            meter.stop()
+            val midnight = Calendar.getInstance().apply { timeInMillis = now; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
+            if (!db.hasEvent(v.reason, surface, midnight)) db.addEvent(now, v.reason, surface)
+            startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, v.reason))
+        }
     }
 
     /** At most 1,500 nodes and depth 40, so a huge tree can't stall the service. */
@@ -131,14 +190,16 @@ class ReelCounterService : AccessibilityService() {
     private fun capture(now: Long, app: String, obs: Observation, nodes: List<NodeSnap>) {
         val i = obs.item ?: ItemText()
         db.setDebug("now", JSONObject(mapOf(
+            // Only what was found, never what it said: no author, caption, title or any other text from the screen.
             "app" to app, "inReels" to obs.inReels, "fp" to (Fingerprint.of(app, obs.item) ?: ""),
-            "author" to i.author, "caption" to i.caption, "audio" to i.audio, "title" to i.title, "likes" to i.likes,
+            "hasAuthor" to i.author.isNotBlank(), "hasCaption" to i.caption.isNotBlank(), "hasAudio" to i.audio.isNotBlank(),
+            "hasTitle" to i.title.isNotBlank(), "hasLikes" to i.likes.isNotBlank(),
         )).toString(), now)
         if (now - lastTree < 3000) return
         lastTree = now
         val tree = nodes.take(400).joinToString("\n") { n ->
             val b = n.bounds
-            "${if (n.visible) "V" else "-"} ${n.id.ifEmpty { "-" }} ${n.cls.substringAfterLast('.')} [${b.left},${b.top},${b.right},${b.bottom}] ${n.label.replace('\n', ' ').take(80)}"
+            "${if (n.visible) "V" else "-"} ${n.id.ifEmpty { "-" }} ${n.cls.substringAfterLast('.')} [${b.left},${b.top},${b.right},${b.bottom}]"
         }
         db.setDebug("tree_$app", tree, now)
     }

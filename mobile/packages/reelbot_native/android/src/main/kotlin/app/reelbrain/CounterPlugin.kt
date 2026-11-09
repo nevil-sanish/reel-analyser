@@ -99,7 +99,29 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "markOpened" -> {
                 prefs().edit().putLong(Digest.LAST_OPENED, System.currentTimeMillis()).apply()
                 val now = System.currentTimeMillis()
-                io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now) } } // retention: see the Privacy Policy
+                io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now); BlockPhotos.sweep(ctx, localDate(now)) } } // retention: see the Privacy Policy
+                result.success(null)
+            }
+            "blockState" -> if (semiBuild) result.notImplemented() else result.success(blockState())
+            "blockSave" -> if (semiBuild) result.notImplemented() else result.success(blockSave(call.argument<String>("config")!!))
+            "blockRemove" -> if (semiBuild) result.notImplemented() else {
+                val db = CounterDb.get(ctx)
+                db.saveBlockState(BlockState())
+                db.addEvent(System.currentTimeMillis(), "removed")
+                BlockPhotos.wipe(ctx)
+                result.success(null)
+            }
+            "blockCancel" -> if (semiBuild) result.notImplemented() else result.success(launch(
+                Intent(ctx, BlockActivity::class.java).putExtra(BlockActivity.MODE, "cancel")))
+            "blockHistory" -> if (semiBuild) result.notImplemented() else result.success(CounterDb.get(ctx).events(200))
+            "detectionConsent" -> result.success(!semiBuild && prefs().getBoolean(ReelCounterService.CONSENT, false))
+            "setDetectionConsent" -> if (semiBuild) result.notImplemented() else {
+                val on = call.argument<Boolean>("on") == true
+                prefs().edit().putBoolean(ReelCounterService.CONSENT, on).apply()
+                if (!on) { // withdrawing the opt-in also stops and clears the debug capture
+                    prefs().edit().putBoolean(ReelCounterService.CAPTURE, false).apply()
+                    CounterDb.get(ctx).clearCapture()
+                }
                 result.success(null)
             }
             "armWatchdog" -> { AnalyseKick.arm(ctx); result.success(null) }
@@ -107,6 +129,7 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "eraseAll" -> offMain(result) {
                 CounterDb.get(ctx).eraseAll()
                 java.io.File(ctx.filesDir, "photos").deleteRecursively()
+                BlockPhotos.wipe(ctx)
                 prefs().edit().clear().apply()
                 (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancelAll()
                 null
@@ -157,6 +180,34 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         } finally {
             r.release()
         }
+    }
+
+    /** The blocker for the Blocker screen: the rules in force, any waiting change, today's reel time, and whether editing is open. */
+    private fun blockState(): Map<String, Any?> {
+        val now = System.currentTimeMillis()
+        val db = CounterDb.get(ctx)
+        val s = db.currentBlockState(now)
+        val date = localDate(now)
+        val photo = BlockPhotos.today(ctx, date)
+        return mapOf(
+            "active" to s.active?.toJson(), "pending" to s.pending?.toJson(), "pendingFrom" to s.pendingFrom,
+            "suspendedToday" to (s.suspendedDate == date),
+            "photo" to if (s.suspendedDate == date && photo.isFile) photo.path else null,
+            "editable" to BlockPolicy.editable(s, now), "nextEdit" to BlockPolicy.nextEditWindow(now),
+            "used" to db.usedToday(date), "now" to now,
+        )
+    }
+
+    /** "ok", "locked" (outside 00:00-00:10 with rules already set) or "invalid". */
+    private fun blockSave(json: String): String {
+        val cfg = BlockConfig.parse(json)?.takeIf { it.items.isNotEmpty() } ?: return "invalid"
+        val now = System.currentTimeMillis()
+        val db = CounterDb.get(ctx)
+        val before = db.currentBlockState(now)
+        val after = BlockPolicy.save(before, cfg, now) ?: return "locked"
+        db.saveBlockState(after)
+        db.addEvent(now, if (before.active == null) "set" else "changed")
+        return "ok"
     }
 
     private fun prefs() = ctx.getSharedPreferences(ReelCounterService.PREFS, Context.MODE_PRIVATE)

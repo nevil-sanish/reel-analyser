@@ -16,5 +16,6 @@
     <application>
         <provider android:name="androidx.core.content.FileProvider" tools:node="remove"/>
         <service android:name="app.reelbrain.ReelCounterService" tools:node="remove"/>
+        <activity android:name="app.reelbrain.BlockActivity" tools:node="remove"/>
     </application>
 </manifest>

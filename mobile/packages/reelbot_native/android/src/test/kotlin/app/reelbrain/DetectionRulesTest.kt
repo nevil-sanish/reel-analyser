@@ -16,6 +16,12 @@ class DetectionRulesTest {
         assertFalse(DetectionRules.read("instagram", listOf(n("feed_list", "", 0, 2400)), screen).inReels)
     }
 
+    // The Reels button of the bottom bar is on screen in the feed too: it must not count as being on Reels (1.0.9.0: the blocker blocked the whole app).
+    @Test fun reelsTabButtonAloneIsNotReels() {
+        val feed = listOf(n("tab_bar", "", 2200, 2400), n("feed_tab", "", 2200, 2400), n("clips_tab", "", 2200, 2400), n("row_feed_photo_profile_name", "someone", 300))
+        assertFalse(DetectionRules.read("instagram", feed, screen).inReels)
+    }
+
     // T-RULE-02
     @Test fun knownIdsAreRead() {
         val o = DetectionRules.read("instagram", listOf(

@@ -42,7 +42,8 @@ object DetectionRules {
     private val ids = mapOf(
         "instagram" to Ids(
             screen = setOf("clips_viewer_view_pager", "clips_viewer_root", "clips_viewer_root_layout", "clips_video_container",
-                "clips_swipe_refresh_container", "clips_tab"),
+                "clips_swipe_refresh_container"),
+            // Not "clips_tab": that is the Reels button in the bottom bar, on screen in the feed, search and profile too.
             page = setOf("clips_viewer_page", "clips_item_container", "clips_media_component", "clips_video_container"),
             author = listOf("clips_author_username", "clips_author_info_component", "row_feed_photo_profile_name", "username"),
             caption = listOf("clips_caption_component", "clips_caption", "clips_caption_text", "caption_text"),

@@ -59,9 +59,9 @@ class _DebugScreenState extends State<DebugScreen> {
               style: mono),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Capture screen structure'),
-            subtitle: const Text('Open Reels or Shorts with this on, then come back and copy the trees. '
-                'Turning it off deletes what it recorded.'),
+            title: const Text('Record the layout of Reels screens'),
+            subtitle: const Text('Records only the names and positions of the parts on the screen (never text or pictures, never a screenshot). '
+                'Open Reels or Shorts with this on, then come back. Turning it off deletes it.'),
             value: _capture,
             onChanged: (v) async {
               await b.setCapture(v);

@@ -17,6 +17,7 @@ import 'debug_screen.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
 import 'setup_screen.dart';
+import 'blocker_screen.dart';
 import 'theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -401,6 +402,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
             ),
           ]),
+          if (!kSemiBuild)
+            _section('Reel blocker', [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.block_rounded),
+                title: const Text('Limits and schedules'),
+                subtitle: const Text('Block Reels and Shorts past a daily limit or outside your times.'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BlockerScreen(s))),
+              ),
+            ]),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then: every export is a complete copy in its own file.'),
             SwitchListTile(

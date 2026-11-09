@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 /** `counter.db`, owned by Kotlin; Dart reaches it only through `reelbot/counter` (PLAN §4.7). */
-class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 4), TrackerSink {
+class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "counter.db", null, 5), TrackerSink, BlockMeter.Sink {
     companion object {
         @Volatile private var instance: CounterDb? = null
         fun get(ctx: Context): CounterDb =
@@ -27,6 +27,7 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
               title TEXT NOT NULL DEFAULT '')"""
         )
         createCounterTables(db)
+        createBlockTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -35,6 +36,17 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         if (oldVersion < 3) db.execSQL("ALTER TABLE pending_items ADD COLUMN title TEXT NOT NULL DEFAULT ''")
         // Version 4: watched reels are kept as anonymous fingerprints only; wipe the text earlier versions stored.
         if (oldVersion < 4) db.execSQL("UPDATE seen_items SET author = '', caption = ''")
+        // Version 5: the reel blocker (1.0.9.0).
+        if (oldVersion < 5) createBlockTables(db)
+    }
+
+    /** Version 5: the blocker's rules, reel time per item and day, and its history (dates and kinds only, no photos). */
+    private fun createBlockTables(db: SQLiteDatabase) {
+        listOf(
+            "CREATE TABLE block_state (k TEXT PRIMARY KEY, v TEXT NOT NULL)",
+            "CREATE TABLE block_use (date TEXT NOT NULL, app TEXT NOT NULL, ms INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (date, app))",
+            "CREATE TABLE block_events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, kind TEXT NOT NULL, surface TEXT NOT NULL DEFAULT '')",
+        ).forEach(db::execSQL)
     }
 
     /** Version 2: the Phase 2 counter (IMPLEMENTATION §3.3). */
@@ -68,6 +80,46 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
     override fun addDwell(date: String, app: String, fp: String, ms: Long) {
         writableDatabase.execSQL("UPDATE seen_items SET dwell_ms = dwell_ms + ? WHERE date = ? AND app = ? AND fp = ?", arrayOf<Any>(ms, date, app, fp))
     }
+
+    private fun kv(k: String): String? = query("SELECT v FROM block_state WHERE k = ?", arrayOf(k)) { it.getString(0) }.firstOrNull()
+    private fun setKv(k: String, v: String?) {
+        if (v == null) writableDatabase.delete("block_state", "k = ?", arrayOf(k))
+        else writableDatabase.insertWithOnConflict("block_state", null, ContentValues().apply { put("k", k); put("v", v) }, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    /** The blocker's stored state exactly as saved; apply [BlockPolicy.effective] to get what is in force now. */
+    fun blockState() = BlockState(
+        BlockConfig.parse(kv("active")), BlockConfig.parse(kv("pending")), kv("pendingFrom")?.toLongOrNull() ?: 0, kv("suspended"))
+
+    /** The state in force now: pending rules that are due are made active and saved. */
+    fun currentBlockState(now: Long): BlockState {
+        val s = blockState()
+        val e = BlockPolicy.effective(s, now)
+        if (e != s) saveBlockState(e)
+        return e
+    }
+
+    fun saveBlockState(s: BlockState) {
+        setKv("active", s.active?.toJson()); setKv("pending", s.pending?.toJson())
+        setKv("pendingFrom", if (s.pending != null) s.pendingFrom.toString() else null); setKv("suspended", s.suspendedDate)
+    }
+
+    override fun addUse(date: String, surface: String, ms: Long) = bump("block_use", "ms", date, surface, ms)
+
+    fun usedToday(date: String): Map<String, Long> =
+        query("SELECT app, ms FROM block_use WHERE date = ?", arrayOf(date)) { it.getString(0) to it.getLong(1) }.toMap()
+
+    fun addEvent(ts: Long, kind: String, surface: String = "") {
+        writableDatabase.insert("block_events", null, ContentValues().apply { put("ts", ts); put("kind", kind); put("surface", surface) })
+    }
+
+    fun hasEvent(kind: String, surface: String, since: Long): Boolean =
+        query("SELECT 1 FROM block_events WHERE kind = ? AND surface = ? AND ts >= ? LIMIT 1", arrayOf(kind, surface, since.toString())) { 1 }.isNotEmpty()
+
+    fun events(limit: Int): List<Map<String, Any?>> =
+        query("SELECT ts, kind, surface FROM block_events ORDER BY ts DESC LIMIT ?", arrayOf(limit.toString())) {
+            mapOf("ts" to it.getLong(0), "kind" to it.getString(1), "surface" to it.getString(2))
+        }
 
     override fun addScreenTime(date: String, app: String, ms: Long) = bump("screen_time", "ms", date, app, ms)
     override fun addUnknown(date: String, app: String) = bump("unknown_items", "n", date, app, 1)
@@ -130,13 +182,15 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         for (t in listOf("seen_items", "screen_time", "unknown_items")) {
             db.execSQL("DELETE FROM $t WHERE date < date(?, '-90 days')", arrayOf(today))
         }
+        db.execSQL("DELETE FROM block_use WHERE date < date(?, '-90 days')", arrayOf(today))
+        db.delete("block_events", "ts < ?", arrayOf((now - 90L * 24 * 3600 * 1000).toString()))
         db.delete("pending_items", "status != 'queued' AND created_at < ?", arrayOf((now - 30L * 24 * 3600 * 1000).toString()))
     }
 
     /** "Erase all my data": every counter, queue and debug row. */
     fun eraseAll() {
         val db = writableDatabase
-        for (t in listOf("pending_items", "seen_items", "screen_time", "unknown_items", "debug_state")) db.delete(t, null, null)
+        for (t in listOf("pending_items", "seen_items", "screen_time", "unknown_items", "debug_state", "block_state", "block_use", "block_events")) db.delete(t, null, null)
     }
 
     /** SHARE-IN: queues a shared link. */

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../app_services.dart';
 import '../flavor.dart';
 import '../native/counter_bridge.dart';
+import '../data/blocker.dart';
+import 'detect_consent.dart';
 import 'liquid.dart';
 
 /// Insights setup. Both parts are optional: Usage access for time in the apps, Accessibility for reel counts.
@@ -18,6 +20,7 @@ class SetupScreen extends StatefulWidget {
 class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   CounterBridge get b => widget.services.bridge;
   CounterStatus? _s;
+  bool _consent = false;
 
   @override
   void initState() {
@@ -39,7 +42,13 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   Future<void> _load() async {
     final s = await b.status();
-    if (mounted) setState(() => _s = s);
+    final c = kSemiBuild ? false : await BlockerBridge().consent();
+    if (mounted) {
+      setState(() {
+        _s = s;
+        _consent = c;
+      });
+    }
   }
 
   /// Prominent disclosure (Google Play policy): what the access reads and what is done with it, asked before the
@@ -53,7 +62,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         'Reel Analyser will use Android\'s Accessibility service to notice when you are on an Instagram or YouTube Reels or '
             'Shorts screen, so it can count them and the time on them. It reads only those two apps, ignores every other app, '
             'never types, taps or scrolls, and keeps only an anonymous fingerprint and a count on this phone, deleted after 90 days. '
-            'Nothing is sent anywhere. You can turn it off in Android settings at any time.'),
+            'If you turn on the Reel blocker (Settings), it also uses this to open a block screen over a reel past your limit, and in a browser '
+            'it reads only the address bar. Nothing is sent anywhere. You can turn it off in Android settings at any time.'),
   };
 
   Future<void> _go(String screen) async {
@@ -115,6 +125,18 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                       'In App info, tap ⋮ → Allow restricted settings.', null, 'openAppInfo', 'App info'),
                 _step('Turn on Reel Analyser in Accessibility', 'Installed apps → Reel Analyser → On. It only reads the Reels and '
                     'Shorts screens, and never taps or scrolls.', s.serviceEnabled, 'openAccessibilitySettings', 'Open'),
+                SwitchListTile(
+                  secondary: Icon(_consent ? Icons.check_circle : Icons.radio_button_unchecked, color: _consent ? Colors.green : null),
+                  title: const Text('Allow reading the reel screens'),
+                  subtitle: const Text('Needed for the counter and the Reel blocker. Off = nothing is read, even with Accessibility on. '
+                      'Never a screenshot or recording.'),
+                  value: _consent,
+                  onChanged: (v) async {
+                    if (v && !await askDetectionConsent(context)) return;
+                    await BlockerBridge().setConsent(v);
+                    _load();
+                  },
+                ),
                 _step('Battery: unrestricted', 'So Android doesn\'t stop the counter in the background.', s.batteryExempt,
                     'requestBatteryExemption', 'Allow'),
                 if (s.needsAutostart)
