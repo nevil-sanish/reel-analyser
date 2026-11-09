@@ -458,6 +458,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.info_outline),
+              title: const Text('Disclaimer'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.disclaimer)),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.article_outlined),
               title: const Text('Open-source licenses'),
               trailing: const Icon(Icons.chevron_right),

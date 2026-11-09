@@ -94,19 +94,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Once (and again if the documents change): the Terms and Privacy Policy, before anything else is used.
   Future<void> _askConsent() async {
     final k = widget.services.keys;
-    if (await k.flag('legal_v1') || !mounted) return;
+    if (await k.flag('legal_v2') || !mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (c) => PopScope(
         canPop: false,
         child: AlertDialog(
-          title: const Text('Terms and Privacy'),
+          title: const Text('Terms, Privacy and Disclaimer'),
           content: const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
-              'with your own key. Please read how your data is handled and the terms of use.'),
+              'with your own key. The terms, privacy policy and disclaimer were updated (the optional Reel blocker was added). Please read them.'),
           actions: [
             TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.privacy)), child: const Text('Privacy Policy')),
             TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.terms)), child: const Text('Terms of Use')),
+            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.disclaimer)), child: const Text('Disclaimer')),
             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Close app')),
             FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('I agree')),
           ],
@@ -115,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (ok == true) {
       try {
-        await k.setFlag('legal_v1');
+        await k.setFlag('legal_v2');
       } on Object catch (e) {
         debugPrint('Could not remember the agreement: $e');
       }

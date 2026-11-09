@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 7 November 2026 · Version 1.0
+Reel Analyser · Effective 9 November 2026 · Version 1.1
 
 ## 1. The short version
 
@@ -8,6 +8,8 @@ Reel Analyser · Effective 7 November 2026 · Version 1.0
 - Your notes, chats and counts are stored only on your phone.
 - When you analyse a reel or ask a question, the content is sent straight from your phone to the AI service you chose, using your own API key. We never see it.
 - You can erase everything from Settings at any time.
+- The app never takes screenshots and never records your screen, your voice or any video of you.
+- The optional features that read the Reels and Shorts screens (the counter and the Reel blocker) work only in the full version, only after you allow them inside the app, and you can withdraw that at any time.
 
 ## 2. Who we are
 
@@ -21,7 +23,9 @@ Reel Analyser is made by an independent developer ("we", "us"), published on Git
 - **API keys** you enter, kept in Android's encrypted storage (Keystore).
 - **Settings**: theme, a few on/off flags.
 - **Insights (optional)**: counts of Reels and Shorts watched, stored as anonymous fingerprints (no author, caption or text), and time spent in Instagram and YouTube, by day and hour.
-- **Debug capture**: off by default. If you switch it on in Counter debug, it keeps recent screen text of Instagram and YouTube on your phone for troubleshooting, until you switch it off.
+- **Reel blocker (optional, full version)**: the rules you set (what to block, daily limits, allowed times), the minutes of reels you watched each day in each blocked app, and a history of the days you passed your limit, tried to cancel the block, cancelled it, kept it, changed the rules or removed the blocker. The history holds dates, times and kinds only. It holds no photos and no text you typed.
+- **A face photo (only if you cancel the block for a day)**: one photo, taken with your phone's own camera app, kept in the app's private storage.
+- **Debug capture**: off by default. If you switch it on in Counter debug, it keeps the names and positions of the parts of the Instagram and YouTube screens, for troubleshooting. It never keeps text or pictures from the screen. Switching it off, or withdrawing your permission to read the reel screens, deletes it.
 
 All of this lives in the app's private storage, which other apps cannot read. Android's automatic cloud backup is turned off for this app.
 
@@ -41,12 +45,15 @@ We do not collect your name, email, contacts, location, advertising ID or device
 
 ## 5. Permissions and why
 
-There are two versions. The **full** version has every feature. The **private** version has none of the optional permissions below (no Accessibility, no Usage access, no notifications, no battery exemption), has no Insights, and makes no network request except to the services you use. The private version never asks Android for anything.
+There are two versions. The **full** version has every feature. The **semi** version asks Android for nothing beyond the internet: no Accessibility, no Usage access, no notifications, no battery exemption, no Insights, no Reel blocker. It makes no network request except to the services you use.
 
 - **Internet**: to reach the services above.
 - **Notifications** (optional): "note ready", an evening digest, and an alert if reel counting stops working.
-- **Usage access** (optional, you turn it on in Android settings): reads Android's own app-usage statistics to show your time in Instagram and YouTube. Nothing is read from the screen.
-- **Accessibility service** (optional, full version only; it also needs your separate OK inside the app, "Allow reading the reel screens", and reads nothing until you give it): lets the app notice when you are on an Instagram or YouTube Reels or Shorts screen so it can count them. It reads only those two apps, never types, taps or scrolls, and stores only an anonymous fingerprint and a count. It ignores every other app. The app never takes screenshots and never records your screen or any video of it. If you turn on the **Reel blocker** (full version), the same service also opens a block screen over a reel that is past your daily limit or outside your times; in a browser it reads only the address bar to see whether the page is a reel or a short. The blocker keeps on this phone: your rules, the minutes of reels watched per day and app (deleted after 90 days), and a history of the days you passed the limit or tried to cancel (dates and kinds only, deleted after 90 days). To cancel the block for a day you take a photo of your face with your phone's camera app; the photo stays on this phone, is checked on the phone for a face, is never sent anywhere, and is deleted by the next day. "Erase all my data" removes all of it.
+- **Usage access** (optional, you turn it on in Android settings): reads Android's own app-usage events for Instagram and YouTube, plus screen-off and lock events, to show your time in those two apps. It does not look at any other app and reads nothing from the screen.
+- **Accessibility service** (optional, full version only): it needs two separate OKs from you, switching it on in Android settings and then "Allow reading the reel screens" inside this app, which is off by default. Until you give both, the app reads nothing. You can withdraw the second one in the app at any time (Settings → Set up Insights), and the first one in Android settings.
+- **What the Accessibility service reads, once allowed**: Android tells it which app is in front, which it uses only to notice when you leave Instagram or YouTube. It keeps no record of other apps and reads nothing inside them. Inside Instagram and YouTube it reads the layout of the screen, including some on-screen text such as the author and caption, to tell that a Reel or Short is showing and to tell one reel from the next. That text is used in memory for that moment only. What is saved is an anonymous fingerprint (a hash), a count and the time spent. In a browser it reads only the address bar, to see whether the page is a reel or a short.
+- **What it never does**: it never takes screenshots, never records the screen or video of it, never types, taps or scrolls for you, and never sends anything off the phone.
+- **Reel blocker** (optional, full version): uses the same service. When your daily limit is used up or the time is outside the times you allowed, it opens a block screen over the reel. The rest of Instagram, YouTube and your browser is not blocked. To cancel the block for one day you take a photo of your face with your phone's camera app. The app checks on the phone that the photo has a face in it, shows it to you on a card with a quote, and deletes it after the day ends. It is never sent anywhere. The app has no camera permission of its own. To remove the blocker for good you type a paragraph; the paragraph is checked on the phone and is not stored or sent.
 - **Battery optimisation exemption and Autostart** (optional, full version only): so Android does not stop background counting.
 - **Share target**: so Reel Analyser appears in the Share menu.
 
@@ -56,13 +63,14 @@ There are two versions. The **full** version has every feature. The **private** 
 - **Shared photos**: kept while a note or queued item uses them, then removed.
 - **Share queue entries**: finished, failed or stopped entries are deleted after 30 days.
 - **Insights data**: deleted automatically after 90 days.
+- **Reel blocker data**: the minutes watched per day and the history are deleted automatically after 90 days. Your rules are kept until you change or remove them. The face photo is deleted after the day it was taken, the next time the app or its service runs.
 - **API keys**: kept until you remove them, erase your data or uninstall.
 - **Exports you make** (Downloads/ReelBot): kept until you delete those files. They are not encrypted, except API keys, which are included only if you choose that and are protected with your passphrase.
 - **Data held by AI providers and other services**: governed by their own policies. We cannot delete it for you; use your account with that provider.
 
 ## 7. Deleting your data
 
-Settings → "Erase all my data" deletes every note, chat, queued item, photo, count and key from the app. Uninstalling the app does the same. Files you exported must be deleted by you.
+Settings → "Erase all my data" deletes every note, chat, queued item, photo, count, blocker rule and history, face photo and key from the app. Uninstalling the app does the same. Files you exported must be deleted by you.
 
 ## 8. Security
 
@@ -74,7 +82,7 @@ Reel Analyser is not directed at children. You must be at least 13 years old, or
 
 ## 10. Your rights
 
-Everything the app holds is in the app: you can read, correct, export (Settings → Backup) and delete it yourself. Depending on where you live (for example under the EU GDPR, India's Digital Personal Data Protection Act 2023, or California law) you may have further rights to access, correct, erase, restrict or move your data and to withdraw consent. Because we hold none of your data, exercising them is done with the tools above. We do not sell or share personal data and do not use it for advertising.
+Everything the app holds is in the app: you can read, correct, export (Settings → Backup) and delete it yourself. Depending on where you live (for example under the EU GDPR, India's Digital Personal Data Protection Act 2023, or California law) you may have further rights to access, correct, erase, restrict or move your data and to withdraw consent. You can withdraw your permission to read the reel screens at any time, in the app (Settings → Set up Insights) or in Android settings. Because we hold none of your data, exercising them is done with the tools above. We do not sell or share personal data and do not use it for advertising.
 
 ## 11. Changes
 

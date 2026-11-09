@@ -1,6 +1,6 @@
 # Reel Analyser
 
-Android app that turns the Instagram Reels, YouTube Shorts, Instagram posts and photos you share to it into short AI notes you can search and chat with, and counts how many reels and shorts you watch. It uses your own AI keys. There is no account and no server: everything lives on your phone.
+Android app that turns the Instagram Reels, YouTube Shorts, Instagram posts and photos you share to it into short AI notes you can search and chat with, counts how many reels and shorts you watch, and (full build, optional) can block Reels and Shorts once you pass a limit you set. It uses your own AI keys. There is no account and no server: everything lives on your phone.
 
 **Download:** [latest APK](https://github.com/nevil-sanish/reel-analyser/releases) (Android 10+).
 
@@ -53,13 +53,31 @@ Both are optional; notes and chat work without them.
 
 **Time in Instagram and YouTube** comes from Android's own app-usage data (Usage access). Nothing is read from the screen, and it's time in the whole app, not only Reels or Shorts.
 
-**Counting reels and Shorts is optional.** Turn on Accessibility as well, and Reel Analyser reads the Reels and Shorts screens to count what you watch and the time on those screens:
+**Counting reels and Shorts is optional.** It needs Android's Accessibility service **and** your separate OK inside the app (*Settings → Set up Insights → Allow reading the reel screens*, off by default). With both, Reel Analyser reads the Reels and Shorts screens to count what you watch and the time on those screens:
 - a reel counts after 1.5 seconds on screen;
 - swipe-backs and rewatches the same day don't count twice;
 - it keeps only an anonymous fingerprint of each reel, never what it was;
 - it never taps, types or scrolls.
 
 After 9 pm, on days you didn't open the app, you get one digest notification.
+
+### 5. Reel blocker (Full build only, optional)
+
+*Settings → Reel blocker.* A self-control tool for your own phone: it blocks only Reels, Shorts and reel pages, never the rest of the app.
+
+- **What to block:** Instagram Reels, YouTube Shorts and reel or shorts pages in a browser (`instagram.com/reels`, `youtube.com/shorts`). Pick any of them.
+- **Limits:** one shared daily limit for everything you picked, or one for each, in minutes or hours. It counts time on reels only.
+- **Schedule:** any number of time slots when reels are allowed (for example 18:00 to 19:00). Outside them they are blocked. A reel is watched only when both the limit and the slots allow it.
+- **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
+- **Locked rules:** after the first set-up, rules can be changed only between 00:00 and 00:10, and a change starts at 00:10.
+- **Turn off for today:** needs a photo of a face with your phone's camera app. It is checked on the phone, shown on a card with a quote and a last yes or no, kept for the day and then deleted. Saying no keeps the block.
+- **Remove for good:** needs a paragraph of at least 50 words typed by hand: no paste, not too fast, no typical AI wording. These checks are best-effort.
+- **History:** dates and kinds of limit hits and cancel attempts. No photos, no text.
+- **It can be bypassed** (turn Accessibility off, change the clock, use another browser or app). It is a nudge for you, not a lock, and not for use on anyone else's phone.
+
+### The screen is never captured
+
+Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and they do that only in Instagram, YouTube and (for the address bar only) a browser, only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
 
 ### What leaves your phone
 
@@ -80,7 +98,8 @@ Nothing else leaves the phone: no analytics, no tracking, no Reel Analyser serve
 │  ─────────────────────────────────────────────     ────────────────────────   │
 │  ShareReceiverActivity   share in (links, photos)  Runner     queue → notes   │
 │  InstagramFetcher        logged-out cascade        Gemini / ChatModel  AI     │
-│  ReelCounterService      Accessibility counter     LibraryDb  notes, chats    │
+│  ReelCounterService      Accessibility counter,    LibraryDb  notes, chats    │
+│  BlockActivity, BlockPolicy  reel blocker (full)                              │
 │                                                    KeyStore   keys, flags     │
 │  DigestWorker            9 pm digest               UI: Ask, Insights, Library │
 │  CounterDb (counter.db)  queue + counts                                       │
@@ -95,10 +114,11 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
 
 | Store | Owner | Holds |
 |---|---|---|
-| `counter.db` (SQLite) | Kotlin | `pending_items`: the queue (link or `photo:<path>`, status, note title). `seen_items`: one anonymous fingerprint per reel watched per day, with time and dwell, never the content. `screen_time`, `unknown_items`, `debug_state`. |
+| `counter.db` (SQLite) | Kotlin | `pending_items`: the queue (link or `photo:<path>`, status, note title). `seen_items`: one anonymous fingerprint per reel watched per day, with time and dwell, never the content. `screen_time`, `unknown_items`, `debug_state`. Blocker (full build): `block_state` (rules, suspended day), `block_use` (reel minutes per day and app), `block_events` (history, no photos). |
 | `reel_brain.db` (SQLite) | Dart | `reels`: notes (title, summary, key points, tags, author, source, seen/archived). `chats`: saved conversations. `meta`: a lock so the app and the background job never analyse at the same time. |
 | Encrypted secure storage | Dart | API keys (several Gemini, OpenAI, Claude, Groq, Apify) and small flags (theme, intro seen). |
 | `files/photos/*.jpg` | Kotlin | Photos you shared, kept so their notes can show them. |
+| `files/blocker/<date>.jpg` | Kotlin | Today's face photo if you cancelled the block, deleted after the day. |
 | `cache/ig/*.mp4` | Kotlin | A downloaded reel, deleted right after analysis. |
 | `Downloads/ReelBot/` | you | Export: `library.json` (notes and saved chats) plus one Markdown file per note. |
 
@@ -140,7 +160,17 @@ Accessibility events ─▶ DetectionRules (is this Reels/Shorts? read author, c
                      ─▶ counter.db ─▶ Insights tab, Ask strip, digest
 ```
 
-The fingerprint is a SHA-1 of the app, author, the first 40 caption characters, the audio and the title. Only that hash is stored. If 5 or more reels in a day (and at least 30% of them) can't be read, one "counting may be broken" alert is posted.
+The service does nothing until you allow it in the app (`detect_consent`). The fingerprint is a SHA-1 of the app, author, the first 40 caption characters, the audio and the title. Only that hash is stored. If 5 or more reels in a day (and at least 30% of them) can't be read, one "counting may be broken" alert is posted.
+
+### Blocking reels (full build)
+
+```
+Accessibility events ─▶ is a reel/short on screen? (ids only; browser: address bar)
+                     ─▶ BlockMeter (reel time per app and day) ─▶ BlockPolicy.verdict(limit, slots)
+                     ─▶ Block ─▶ BlockActivity over the reel (quote, Close after 3 s)
+```
+
+`BlockPolicy` is pure Kotlin with unit tests: shared or separate limits, slots (also across midnight), both must pass, the 00:00 to 00:10 edit window, pending rules that start at 00:10. State lives in `counter.db` so the service needs no Flutter engine. The detection of Instagram Reels uses ids that exist only in the Reels viewer; the Reels button of the bottom bar is deliberately not one of them, as it is on screen in the feed too.
 
 ### Chat
 
@@ -165,7 +195,7 @@ Each question searches every note you haven't deleted, archive included: the 12 
 1. Pick a version. **Full** (`reel-analyser-vX.Y.Z-full.apk`) has every feature, including Insights and reel counting. **Semi** (`reel-analyser-vX.Y.Z-semi.apk`) asks for no permission beyond the internet: no Insights, no notifications, no in-app updating. It has its own app id and icon, so it installs next to the full build and keeps its own notes and keys. Download it from [Releases](https://github.com/nevil-sanish/reel-analyser/releases) and open it. If Play Protect warns, choose *Install anyway*.
 2. Slide to unlock through the intro, then open **Ask → ⚙ Settings** and paste a free Gemini key from [aistudio.google.com](https://aistudio.google.com/apikey). Optionally add OpenAI, Claude or Groq keys.
 3. Share a reel to Reel Analyser. Its note appears in the Library within about 15 minutes, or immediately when you open the app.
-4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts (optional): on Android 13+, *Allow restricted settings* first, then Accessibility, unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones.
+4. For Insights, go to **Settings → Set up Insights** and allow **Usage access** (time in Instagram and YouTube) and notifications. To also **count** reels and Shorts, or to use the **Reel blocker** (both optional): on Android 13+, *Allow restricted settings* first, then Accessibility, then switch on **Allow reading the reel screens** in the app, then unrestricted battery, and Autostart on Xiaomi, Realme, Oppo and Vivo phones. Reel blocker is in **Settings → Reel blocker**.
 
 Uninstalling deletes your notes, so use **Settings → Export** now and then. A banner tells you when a newer APK is out. The step-by-step guide for friends is [INSTALL.md](docs/INSTALL.md).
 
@@ -189,7 +219,7 @@ cd mobile && flutter build apk --release --flavor full
 cd mobile && flutter build apk --release --flavor semi --dart-define=SEMI_BUILD=true
 ```
 
-`full` has every feature. `private` asks Android for nothing: no Accessibility, Usage access, notifications or battery exemption, no Insights, no update check.
+`full` has every feature. `semi` asks Android for nothing beyond the internet: no Accessibility, Usage access, notifications or battery exemption, no Insights, no Reel blocker, no in-app updating.
 
 The release build needs `mobile/android/key.properties` (gitignored) pointing at a keystore kept outside the repo.
 
@@ -197,9 +227,16 @@ The release build needs `mobile/android/key.properties` (gitignored) pointing at
 - **Flutter app** (`mobile/lib`): `pipeline/` holds the analysis runner and providers, `data/` the library database and keys, `ui/` the screens.
 - **Kotlin** (`mobile/packages/reelbot_native`): the share receiver, the Instagram fetcher, the counter's Accessibility service, and the digest.
 
-## License
+## License and legal
 
-MIT, see [LICENSE](LICENSE).
+The source code is under the **MIT License**, see [LICENSE](LICENSE). Names and third-party notices are in [NOTICE.md](NOTICE.md).
+
+The app's legal texts are bundled in the app (Settings → About and legal) and are the public versions here:
+- [Privacy Policy](mobile/assets/legal/privacy.md)
+- [Terms of Use](mobile/assets/legal/terms.md)
+- [Disclaimer](mobile/assets/legal/disclaimer.md)
+
+Reel Analyser is an independent project and is not affiliated with Instagram, Meta, YouTube, Google, OpenAI, Anthropic, Groq or Apify.
 
 ## Docs
 
