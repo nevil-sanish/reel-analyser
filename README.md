@@ -227,6 +227,12 @@ The release build needs `mobile/android/key.properties` (gitignored) pointing at
 - **Flutter app** (`mobile/lib`): `pipeline/` holds the analysis runner and providers, `data/` the library database and keys, `ui/` the screens.
 - **Kotlin** (`mobile/packages/reelbot_native`): the share receiver, the Instagram fetcher, the counter's Accessibility service, and the digest.
 
+## About the developer
+
+Made by **Nevil Mathew Sanish** ([github.com/nevil-sanish](https://github.com/nevil-sanish)), an independent developer. The same text is in the app: Settings, About the developer.
+
+Thank you to **Sanjay S**, **Ashin Antony** and **Harry SP** for helping, suggesting and contributing.
+
 ## License and legal
 
 The source code is under the **MIT License**, see [LICENSE](LICENSE). Names and third-party notices are in [NOTICE.md](NOTICE.md).

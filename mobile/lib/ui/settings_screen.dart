@@ -14,6 +14,7 @@ import '../data/key_backup.dart';
 import '../data/key_store.dart';
 import '../flavor.dart';
 import 'debug_screen.dart';
+import 'developer_card.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
 import 'setup_screen.dart';
@@ -428,6 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.upload), label: const Text('Import')),
             ]),
           ]),
+          _section('About the developer', [DeveloperCard(onOpen: s.bridge.openUrl)]),
           _section('Feedback', [
             const Text('Found a bug or have an idea?'),
             const SizedBox(height: 8),

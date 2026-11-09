@@ -13,7 +13,7 @@ Reel Analyser · Effective 9 November 2026 · Version 1.1
 
 ## 2. Who we are
 
-Reel Analyser is made by an independent developer ("we", "us"), published on GitHub as nevil-sanish. We are the controller of the little data the app handles, which is none that leaves your phone to us. Contact: https://github.com/nevil-sanish/reel-analyser/issues
+Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "us"), published on GitHub as nevil-sanish. We are the controller of the little data the app handles, which is none that leaves your phone to us. Contact: https://github.com/nevil-sanish/reel-analyser/issues
 
 ## 3. What the app stores on your phone
 
