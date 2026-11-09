@@ -20,6 +20,8 @@ class NoteChatScreen extends StatefulWidget {
 }
 
 /// The preload: one tap asks for the whole note in short, simple words with nothing left out.
+/// What the thread shows for the preload; [kBriefPrompt] is what the model receives.
+const kBriefLabel = 'Short & simple';
 const kBriefPrompt =
     'Rewrite this whole note in short, simple words. Keep every fact, number, name, step and tip; '
     'leave nothing out and add nothing. Use short bullet lines.';
@@ -150,7 +152,10 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       final recent = _turns.length > 10
           ? _turns.sublist(_turns.length - 9)
           : _turns;
-      a = await s.noteChat(_provider!, widget.reel, recent, model: _model);
+      final sent = [
+        for (final t in recent) t == kBriefLabel ? kBriefPrompt : t,
+      ];
+      a = await s.noteChat(_provider!, widget.reel, sent, model: _model);
     } on Exception catch (e) {
       a = 'Couldn\'t answer: $e';
     }
@@ -181,7 +186,6 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return LiquidScaffold(
-      background: false,
       appBar: AppBar(
         title: const Text('Chat about this note'),
         actions: [
@@ -222,7 +226,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                         FilledButton.icon(
                           icon: const Icon(Icons.bolt_rounded),
                           label: const Text('Short & simple, nothing lost'),
-                          onPressed: () => _send(kBriefPrompt),
+                          onPressed: () => _send(kBriefLabel),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -281,7 +285,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                                 ),
                                 onPressed: _busy
                                     ? null
-                                    : () => _send(kBriefPrompt),
+                                    : () => _send(kBriefLabel),
                               ),
                             ActionChip(
                               avatar: const Icon(Icons.auto_awesome, size: 16),
