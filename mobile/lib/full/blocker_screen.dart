@@ -252,7 +252,7 @@ class _BlockerScreenState extends State<BlockerScreen>
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, widget.embedded ? 120 : 32),
         children: [
           Card(
           margin: const EdgeInsets.only(bottom: 12),
