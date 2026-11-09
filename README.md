@@ -4,6 +4,10 @@ Android app that turns the Instagram Reels, YouTube Shorts, Instagram posts and 
 
 **Download:** [latest APK](https://github.com/nevil-sanish/reel-analyser/releases) (Android 10+).
 
+## Look and feel
+
+A classic Greek look, in warm marble white and gold, or charcoal and gold in the dark: serif titles, hairline gold edges, a Greek key as the one ornament. It runs light on phones (no blur, a still background), moves with short springs and fades, and gives a light vibration on taps and results. Settings has switches for Vibration and Reduce motion. The launcher icon is drawn by `mobile/tool/make_icon.py`.
+
 ## How it works
 
 ### 1. Save: share anything to Reel Analyser

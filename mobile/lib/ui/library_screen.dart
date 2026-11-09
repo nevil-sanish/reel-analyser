@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
@@ -11,6 +10,7 @@ import '../pipeline/runner.dart';
 import 'archive_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
+import 'motion.dart';
 import 'theme.dart';
 import 'liquid.dart';
 
@@ -152,7 +152,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                       selected: _kind == k.key,
                       showCheckmark: false,
                       onSelected: (_) {
-                        HapticFeedback.selectionClick();
+                        Haptics.select();
                         setState(() => _kind = k.key);
                       },
                     ),
@@ -198,12 +198,18 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),
-            for (final r in _visible)
-              SwipeNote(s, r,
-                  selected: _selected.isEmpty ? null : _selected.contains(r.url),
-                  onLongPress: () => _toggle(r),
-                  onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r, onChanged: _reload)) : _toggle(r),
-                  onChanged: _reload),
+            for (final (i, r) in _visible.indexed)
+              Reveal(
+                key: ValueKey('reveal-${r.url}'),
+                index: i,
+                // Only the first screenful rises into place; ones scrolled to later just appear.
+                animate: i < 8,
+                child: SwipeNote(s, r,
+                    selected: _selected.isEmpty ? null : _selected.contains(r.url),
+                    onLongPress: () => _toggle(r),
+                    onTap: () => _selected.isEmpty ? _open(ReelScreen(s, r, onChanged: _reload)) : _toggle(r),
+                    onChanged: _reload),
+              ),
           ],
         ),
       ),
@@ -241,7 +247,7 @@ class _BackgroundCard extends StatelessWidget {
                   tooltip: 'Stop analysing this reel',
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () {
-                    HapticFeedback.selectionClick();
+                    Haptics.select();
                     onStop(i.id);
                   },
                 ),
@@ -346,7 +352,7 @@ class _JobsCard extends StatelessWidget {
                       tooltip: j.state == JobState.failed ? 'Dismiss' : 'Stop analysing this reel',
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () {
-                        HapticFeedback.selectionClick();
+                        Haptics.select();
                         onStop(j.id);
                       },
                     ),
@@ -394,23 +400,26 @@ class SwipeNote extends StatelessWidget {
       {required this.onTap, required this.onChanged, this.selected, this.onLongPress, super.key});
 
   Future<void> _delete(BuildContext context) async {
-    HapticFeedback.heavyImpact();
+    Haptics.heavy();
     await services.library.delete(reel.url);
     onChanged();
     if (!context.mounted) return;
     showUndo(ScaffoldMessenger.of(context), 'Note deleted', () => services.library.saveReel(reel), onChanged);
   }
 
-  Widget _bg(BuildContext context, Alignment a, IconData icon, String label, Color color) => Container(
+  Widget _bg(BuildContext context, Alignment a, IconData icon, String label, Color color) {
+    final fg = color.computeLuminance() > 0.3 ? Brand.onGold : Colors.white;
+    return Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24),
         alignment: a,
         decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: Colors.white),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Icon(icon, color: fg),
+          Text(label, style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
         ]),
-      );
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -419,11 +428,11 @@ class SwipeNote extends StatelessWidget {
       key: ValueKey(reel.url),
       direction: selected == null ? DismissDirection.horizontal : DismissDirection.none,
       background: _bg(context, Alignment.centerLeft, reel.archived ? Icons.unarchive_rounded : Icons.archive_rounded,
-          reel.archived ? 'Restore' : 'Archive', Brand.emerald),
+          reel.archived ? 'Restore' : 'Archive', Brand.gold),
       secondaryBackground: _bg(context, Alignment.centerRight, Icons.delete_rounded, 'Delete', c.error),
       onDismissed: (dir) async {
         if (dir == DismissDirection.endToStart) return _delete(context);
-        HapticFeedback.mediumImpact();
+        Haptics.medium();
         await services.library.setArchived(reel.url, !reel.archived);
         onChanged();
         if (!context.mounted) return;
@@ -457,13 +466,13 @@ class ReelCard extends StatelessWidget {
             : null,
         child: InkWell(
           onTap: () {
-            HapticFeedback.selectionClick();
+            Haptics.select();
             onTap();
           },
           onLongPress: onLongPress == null
               ? null
               : () {
-                  HapticFeedback.mediumImpact();
+                  Haptics.medium();
                   onLongPress!();
                 },
           child: Padding(
@@ -476,7 +485,7 @@ class ReelCard extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(10)),
                     child: Icon(photo ? Icons.photo_rounded : yt ? Icons.smart_display_rounded : Icons.movie_rounded,
-                        size: 16, color: Colors.white),
+                        size: 16, color: Brand.onGold),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -557,7 +566,7 @@ PreferredSizeWidget selectionBar({
 /// Applies a bulk action to [reels]; every action offers Undo.
 Future<void> bulkAction(BuildContext context, AppServices s, List<Reel> reels, String action, VoidCallback onDone) async {
   final now = DateTime.now().millisecondsSinceEpoch;
-  action == 'delete' ? HapticFeedback.heavyImpact() : HapticFeedback.mediumImpact();
+  action == 'delete' ? Haptics.heavy() : Haptics.medium();
   for (final r in reels) {
     switch (action) {
       case 'read':
@@ -601,7 +610,7 @@ void showUndo(ScaffoldMessengerState m, String text, Future<void> Function() und
     ..showSnackBar(SnackBar(
       content: Text(text),
       action: SnackBarAction(label: 'Undo', onPressed: () async {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         await undo();
         onUndone?.call();
       }),

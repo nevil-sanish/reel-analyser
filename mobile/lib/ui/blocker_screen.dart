@@ -7,6 +7,7 @@ import '../app_services.dart';
 import '../data/blocker.dart';
 import 'detect_consent.dart';
 import 'liquid.dart';
+import 'motion.dart';
 
 /// One rule being edited: a limit (minutes or hours) and the times of day the reels are allowed.
 class _RuleEdit {
@@ -112,7 +113,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     )) {
       return _say('Set a daily limit or at least one time slot.');
     }
-    HapticFeedback.mediumImpact();
+    Haptics.medium();
     final r = await _bridge.save(c);
     if (!mounted) return;
     _say(switch (r) {
@@ -249,6 +250,7 @@ class _BlockerScreenState extends State<BlockerScreen>
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           Card(
+          margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -294,6 +296,7 @@ class _BlockerScreenState extends State<BlockerScreen>
           ),
           if (!_consent)
           Card(
+          margin: const EdgeInsets.only(bottom: 12),
             color: Theme.of(context).colorScheme.secondaryContainer,
             child: ListTile(
               leading: const Icon(Icons.visibility_off_outlined),
@@ -311,6 +314,7 @@ class _BlockerScreenState extends State<BlockerScreen>
           ),
         if (st.active != null && locked)
             Card(
+          margin: const EdgeInsets.only(bottom: 12),
               color: t.colorScheme.secondaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -321,6 +325,7 @@ class _BlockerScreenState extends State<BlockerScreen>
             ),
           if (p != null)
             Card(
+          margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
@@ -330,6 +335,7 @@ class _BlockerScreenState extends State<BlockerScreen>
               ),
             ),
           Card(
+          margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

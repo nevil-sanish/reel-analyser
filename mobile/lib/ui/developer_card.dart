@@ -9,8 +9,6 @@ class Developer {
       'I build Reel Analyser on my own. It turns the Reels, Shorts and photos you share into short notes you can search '
       'and chat with, and, in the full version, can help you limit how much you watch. There is no account and no server: '
       'your notes stay on your phone and you use your own AI keys. It is free and open source (MIT).';
-  static const feedback =
-      'Found a bug or have an idea? Use Send feedback below, or open an issue on GitHub.';
   static const thanksTo = ['Sanjay S', 'Ashin Antony', 'Harry SP'];
   static const thanks =
       'Thank you to Sanjay S, Ashin Antony and Harry SP for helping, suggesting and contributing.';
@@ -38,8 +36,6 @@ class DeveloperCard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(Developer.about, style: t.bodyMedium?.copyWith(height: 1.4)),
-        const SizedBox(height: 6),
-        Text(Developer.feedback, style: t.bodyMedium?.copyWith(height: 1.4)),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.code_rounded),

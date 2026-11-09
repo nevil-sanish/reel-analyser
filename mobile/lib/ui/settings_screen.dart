@@ -15,6 +15,7 @@ import '../data/key_store.dart';
 import '../flavor.dart';
 import 'debug_screen.dart';
 import 'developer_card.dart';
+import 'motion.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
 import 'setup_screen.dart';
@@ -299,14 +300,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-  Widget _section(String title, List<Widget> children) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [Text(title, style: Theme.of(context).textTheme.titleMedium), const SizedBox(height: 12), ...children],
+  var _sectionIndex = 0;
+
+  Widget _section(String title, List<Widget> children) => Reveal(
+        index: _sectionIndex++,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  const MeanderDivider(height: 7, opacity: 0.55),
+                  const SizedBox(height: 12),
+                  ...children,
+                ],
+              ),
             ),
           ),
         ),
@@ -314,6 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _sectionIndex = 0;
     return LiquidScaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -378,13 +391,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               valueListenable: Brand.reduceEffects,
               builder: (_, reduced, _) => SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                secondary: const Icon(Icons.blur_off_rounded),
-                title: const Text('Reduce effects'),
-                subtitle: const Text('A still background and no blur. Try it if scrolling stutters.'),
+                secondary: const Icon(Icons.animation_rounded),
+                title: const Text('Reduce motion'),
+                subtitle: const Text('No entrance animations, glow or spring. The look stays.'),
                 value: reduced,
-                onChanged: (v) => Brand.reduceEffects.value = v,
+                onChanged: (v) {
+                  Haptics.select();
+                  Brand.reduceEffects.value = v;
+                },
               ),
             ),
+            _VibrationSwitch(s),
           ]),
           if (!kSemiBuild)
           _section('Insights', [
@@ -485,4 +502,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+
+/// Settings → Vibration: every tap, selection and result goes through Haptics, so this turns them all off.
+class _VibrationSwitch extends StatefulWidget {
+  final AppServices s;
+  const _VibrationSwitch(this.s);
+
+  @override
+  State<_VibrationSwitch> createState() => _VibrationSwitchState();
+}
+
+class _VibrationSwitchState extends State<_VibrationSwitch> {
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        secondary: const Icon(Icons.vibration_rounded),
+        title: const Text('Vibration'),
+        subtitle: const Text('A light tap on buttons, choices and results.'),
+        value: Haptics.enabled,
+        onChanged: (v) async {
+          Haptics.enabled = v;
+          if (v) Haptics.success();
+          setState(() {});
+          await widget.s.keys.setFlagTo('haptics_off', !v);
+        },
+      );
 }

@@ -96,6 +96,7 @@ class BlockActivity : Activity() {
         reason = intent.getStringExtra(REASON) ?: ""
         BlockPhotos.sweep(this, date)
         if (intent.getStringExtra(MODE) == "cancel") startCancel() else { unlocked = false; showBlock() }
+        window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
     }
 
     override fun onBackPressed() { if (unlocked) goHome() }
@@ -112,18 +113,20 @@ class BlockActivity : Activity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private fun text(t: String, size: Float, bold: Boolean = false, color: Int = Color.WHITE) = TextView(this).apply {
+    private fun text(t: String, size: Float, bold: Boolean = false, color: Int = Color.parseColor("#F6F1E4")) = TextView(this).apply {
         text = t; textSize = size; setTextColor(color); gravity = Gravity.CENTER
-        if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
+        // Titles and quotes in the system serif, to match the app's classic look.
+        setTypeface(android.graphics.Typeface.create("serif", if (bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL))
+        setLineSpacing(0f, 1.15f)
         setPadding(0, dp(8), 0, dp(8))
     }
 
     private fun button(t: String, filled: Boolean, onClick: () -> Unit) = Button(this).apply {
         text = t; isAllCaps = false; textSize = 16f
-        setTextColor(if (filled) Color.parseColor("#0B2B22") else Color.WHITE)
+        setTextColor(if (filled) Color.parseColor("#0F0E0B") else Color.WHITE)
         background = GradientDrawable().apply {
             cornerRadius = dp(28).toFloat()
-            if (filled) setColor(Color.parseColor("#7BE0A8")) else setStroke(dp(1), Color.parseColor("#88FFFFFF"))
+            if (filled) setColor(Color.parseColor("#C9A227")) else setStroke(dp(1), Color.parseColor("#99C9A227"))
             if (!filled) setColor(Color.TRANSPARENT)
         }
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(54)).apply { topMargin = dp(12) }
@@ -137,7 +140,7 @@ class BlockActivity : Activity() {
             views.forEach(::addView)
         }
         setContentView(ScrollView(this).apply {
-            setBackgroundColor(Color.parseColor("#0B2B22")); isFillViewport = true; addView(col)
+            setBackgroundColor(Color.parseColor("#0F0E0B")); isFillViewport = true; addView(col)
         })
     }
 
@@ -146,14 +149,18 @@ class BlockActivity : Activity() {
         val close = button("Close (3)", true) { goHome() }.apply { isEnabled = false; alpha = 0.5f }
         screen(
             text("Blocked for now", 28f, true),
-            text(quote, 20f, color = Color.parseColor("#B8D8C8")),
+            text(quote, 20f, color = Color.parseColor("#CFC6AE")),
             close,
         )
         val start = SystemClock.elapsedRealtime()
         val tick = object : Runnable {
             override fun run() {
                 val left = HOLD_MS - (SystemClock.elapsedRealtime() - start)
-                if (left <= 0) { close.text = "Close"; close.isEnabled = true; close.alpha = 1f; unlocked = true; return }
+                if (left <= 0) {
+                    close.text = "Close"; close.isEnabled = true; close.alpha = 1f; unlocked = true
+                    close.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                    return
+                }
                 close.text = "Close (${(left + 999) / 1000})"
                 close.postDelayed(this, 200)
             }
@@ -222,7 +229,7 @@ class BlockActivity : Activity() {
         BlockPhotos.today(this, date).delete()
         screen(
             text("Well done", 28f, true), text("Choosing to keep your limit takes strength. I'm proud of you for it.", 18f),
-            text(quote, 16f, color = Color.parseColor("#B8D8C8")), button("Close", true) { goHome() },
+            text(quote, 16f, color = Color.parseColor("#CFC6AE")), button("Close", true) { goHome() },
         )
     }
 }

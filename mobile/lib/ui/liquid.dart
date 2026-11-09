@@ -1,124 +1,73 @@
-import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import 'motion.dart';
 import 'theme.dart';
 
-/// Slowly drifting colour blobs behind everything; the glass surfaces sit on top of it.
-class LiquidBackground extends StatefulWidget {
+/// Warm marble behind everything: a still base, two soft pools of gold light and a few faint veins. It never animates,
+/// so it costs nothing after the first frame.
+class LiquidBackground extends StatelessWidget {
   const LiquidBackground({super.key});
-
-  @override
-  State<LiquidBackground> createState() => _LiquidBackgroundState();
-}
-
-class _LiquidBackgroundState extends State<LiquidBackground> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 30));
-
-  // A stopped controller also stops asking for frames, which is the point of reducing effects.
-  void _sync() => Brand.reduceEffects.value ? _c.stop() : _c.repeat();
-
-  @override
-  void initState() {
-    super.initState();
-    Brand.reduceEffects.addListener(_sync);
-    _sync();
-  }
-
-  @override
-  void dispose() {
-    Brand.reduceEffects.removeListener(_sync);
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, _) => CustomPaint(painter: _Blobs(_c.value, b), size: Size.infinite),
-      ),
-    );
+    return RepaintBoundary(child: CustomPaint(painter: _Marble(b), size: Size.infinite, isComplex: true, willChange: false));
   }
 }
 
-class _Blobs extends CustomPainter {
-  final double t;
+class _Marble extends CustomPainter {
   final Brightness b;
-  _Blobs(this.t, this.b);
+  _Marble(this.b);
 
   @override
   void paint(Canvas canvas, Size s) {
+    final dark = b == Brightness.dark;
     canvas.drawRect(Offset.zero & s, Paint()..color = Brand.base(b));
-    final a = b == Brightness.dark ? 0.35 : 0.28;
-    final w = 2 * math.pi * t;
-    // (colour, centre x, centre y, radius as a share of the long side, phase)
-    final blobs = [
-      (Brand.emerald, 0.15, 0.12, 0.55, 0.0),
-      (Brand.mint, 0.9, 0.3, 0.5, 1.7),
-      (Brand.lime, 0.2, 0.85, 0.45, 3.1),
-      (Brand.green, 0.85, 0.95, 0.35, 4.4),
-    ];
-    for (final (color, x, y, r, phase) in blobs) {
-      final c = Offset(s.width * (x + 0.12 * math.sin(w + phase)), s.height * (y + 0.08 * math.cos(w * 1.3 + phase)));
-      final radius = s.longestSide * r;
-      canvas.drawCircle(
-        c,
-        radius,
-        Paint()
-          ..shader = RadialGradient(colors: [color.withValues(alpha: a), color.withValues(alpha: 0)])
-              .createShader(Rect.fromCircle(center: c, radius: radius)),
-      );
-    }
+    void pool(Offset c, double r, double a) => canvas.drawCircle(
+        c, r, Paint()..shader = RadialGradient(colors: [Brand.gold.withValues(alpha: a), Brand.gold.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: r)));
+    pool(Offset(s.width * 0.95, s.height * 0.04), s.longestSide * 0.5, dark ? 0.12 : 0.16);
+    pool(Offset(s.width * 0.02, s.height * 0.96), s.longestSide * 0.4, dark ? 0.07 : 0.1);
+    final vein = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = (dark ? Brand.goldLight : Brand.goldDeep).withValues(alpha: dark ? 0.05 : 0.055);
+    final w = s.width, h = s.height;
+    canvas.drawPath(Path()..moveTo(-10, h * 0.18)..cubicTo(w * 0.3, h * 0.1, w * 0.55, h * 0.3, w + 10, h * 0.2), vein);
+    canvas.drawPath(Path()..moveTo(w * 0.1, h + 10)..cubicTo(w * 0.2, h * 0.7, w * 0.6, h * 0.62, w + 10, h * 0.5), vein);
+    canvas.drawPath(Path()..moveTo(-10, h * 0.62)..cubicTo(w * 0.25, h * 0.5, w * 0.35, h * 0.8, w * 0.7, h * 0.96), vein);
   }
 
   @override
-  bool shouldRepaint(_Blobs old) => old.t != t || old.b != b;
+  bool shouldRepaint(_Marble old) => old.b != b;
 }
 
-/// Frosted glass: blurs what's behind it, with a tint, a hairline edge and a soft top highlight.
+/// A card: marble white (or charcoal) with a hairline gold edge and a soft shadow. No blur, so it is cheap to draw and scroll.
 class Glass extends StatelessWidget {
   final Widget child;
   final double radius;
   final EdgeInsetsGeometry padding;
-  const Glass({required this.child, this.radius = 28, this.padding = EdgeInsets.zero, super.key});
+
+  /// Fully opaque, for bars that content scrolls under.
+  final bool solid;
+  const Glass({required this.child, this.radius = 24, this.padding = EdgeInsets.zero, this.solid = false, super.key});
 
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    return ValueListenableBuilder(
-      valueListenable: Brand.reduceEffects,
-      builder: (_, reduced, _) {
-        final surface = DecoratedBox(
-          decoration: BoxDecoration(
-            // Without the blur the tint is laid on the base colour, so text stays readable over the blobs.
-            color: reduced ? Color.alphaBlend(Brand.glass(b), Brand.base(b)) : Brand.glass(b),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: Brand.glassEdge(b)),
-            gradient: reduced
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.white.withValues(alpha: b == Brightness.dark ? 0.12 : 0.5), Colors.white.withValues(alpha: 0.02)],
-                  ),
-          ),
-          child: Padding(padding: padding, child: child),
-        );
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(radius),
-          child: reduced ? surface : BackdropFilter(filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24), child: surface),
-        );
-      },
+    return Container(
+      decoration: BoxDecoration(
+        color: solid ? Brand.surface(b) : Brand.glass(b),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: Brand.glassEdge(b)),
+        boxShadow: [BoxShadow(color: (b == Brightness.dark ? Colors.black : Brand.goldDeep).withValues(alpha: b == Brightness.dark ? 0.35 : 0.1), blurRadius: 18, offset: const Offset(0, 6))],
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(radius - 1), child: Padding(padding: padding, child: child)),
     );
   }
 }
 
-/// A Scaffold on the liquid background. Tab pages inside the home pass `background: false`: the home draws it once.
+/// A Scaffold on the marble background. Tab pages inside the home pass `background: false`: the home draws it once.
 class LiquidScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
   final Widget? body;
@@ -135,7 +84,7 @@ class LiquidScaffold extends StatelessWidget {
       );
 }
 
-/// The floating frosted tab bar at the bottom of the home screen.
+/// The floating tab bar at the bottom of the home screen: a gold line slides under the chosen tab.
 class GlassTabBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
@@ -145,40 +94,59 @@ class GlassTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final on = dark ? Brand.gold : Brand.goldDeep;
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(40, 0, 40, 12),
+      minimum: const EdgeInsets.fromLTRB(28, 0, 28, 12),
       child: Glass(
-        radius: 32,
-        padding: const EdgeInsets.all(6),
-        child: Row(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    if (i == index) return;
-                    HapticFeedback.selectionClick();
-                    onTap(i);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: i == index ? Brand.gradient : null,
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(i == index ? tabs[i].$2 : tabs[i].$1, color: i == index ? Colors.white : c.onSurfaceVariant, size: 22),
-                      const SizedBox(height: 2),
-                      Text(tabs[i].$3,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: i == index ? Colors.white : c.onSurfaceVariant)),
-                    ]),
-                  ),
-                ),
+        radius: 30,
+        solid: true,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: SizedBox(
+          height: 64,
+          child: LayoutBuilder(builder: (context, box) {
+            final w = box.maxWidth / tabs.length;
+            return Stack(children: [
+              AnimatedPositioned(
+                duration: Brand.reduceEffects.value ? Duration.zero : const Duration(milliseconds: 380),
+                curve: Curves.easeOutBack,
+                left: index * w + w / 2 - 15,
+                top: 0,
+                child: Container(width: 30, height: 3, decoration: const BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.vertical(bottom: Radius.circular(3)))),
               ),
-          ],
+              Row(children: [
+                for (var i = 0; i < tabs.length; i++)
+                  Expanded(
+                    child: Pressable(
+                      scale: 0.92,
+                      haptic: false,
+                      onTap: () {
+                        if (i == index) return;
+                        Haptics.select();
+                        onTap(i);
+                      },
+                      child: SizedBox(
+                        height: 64,
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          AnimatedScale(
+                            scale: i == index ? 1.12 : 1,
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeOutBack,
+                            child: Icon(i == index ? tabs[i].$2 : tabs[i].$1, color: i == index ? on : c.onSurfaceVariant, size: 24),
+                          ),
+                          const SizedBox(height: 3),
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 250),
+                            style: TextStyle(fontSize: 11, letterSpacing: 0.5, fontWeight: i == index ? FontWeight.w700 : FontWeight.w500, color: i == index ? on : c.onSurfaceVariant),
+                            child: Text(tabs[i].$3),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
+              ]),
+            ]);
+          }),
         ),
       ),
     );
@@ -195,7 +163,7 @@ class ThemeToggle extends StatelessWidget {
     return IconButton(
       tooltip: dark ? 'Light mode' : 'Dark mode',
       onPressed: () {
-        HapticFeedback.lightImpact();
+        Haptics.light();
         Brand.mode.value = dark ? ThemeMode.light : ThemeMode.dark;
       },
       icon: AnimatedSwitcher(
@@ -207,23 +175,76 @@ class ThemeToggle extends StatelessWidget {
   }
 }
 
-/// "Liquid" page transition: the new page swells up from 92% with a fade while the old one sinks back.
+/// Page transition: the new page rises a little and fades in, the old one dims. Only a fade when motion is reduced.
 class LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
   const LiquidPageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child) {
-    final inCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutQuint, reverseCurve: Curves.easeInCubic);
+    final inCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
     final out = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOutCubic);
-    return FadeTransition(
-      opacity: inCurve,
-      child: ScaleTransition(
-        scale: Tween(begin: 0.92, end: 1.0).animate(inCurve),
-        child: ScaleTransition(scale: Tween(begin: 1.0, end: 0.96).animate(out), child: child),
+    final fade = FadeTransition(opacity: Tween(begin: 1.0, end: 0.88).animate(out), child: FadeTransition(opacity: inCurve, child: child));
+    if (Brand.reduceEffects.value) return fade;
+    return SlideTransition(
+      position: Tween(begin: const Offset(0, 0.035), end: Offset.zero).animate(inCurve),
+      child: ScaleTransition(scale: Tween(begin: 0.985, end: 1.0).animate(inCurve), child: fade),
+    );
+  }
+}
+
+
+/// A Greek key (meander) border in gold: the app's one ornament. Use it as a divider under a title or between sections.
+class MeanderDivider extends StatelessWidget {
+  final double height;
+  final double opacity;
+  const MeanderDivider({this.height = 9, this.opacity = 0.7, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size(double.infinity, height),
+        painter: _Meander((dark ? Brand.gold : Brand.bronze).withValues(alpha: opacity)),
       ),
     );
   }
+}
+
+class _Meander extends CustomPainter {
+  final Color color;
+  _Meander(this.color);
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final h = s.height;
+    // Whole keys only, stretched a hair so the pattern ends exactly at the right edge.
+    final n = (s.width / (h * 1.6)).floor().clamp(1, 1000);
+    final u = s.width / n;
+    final p = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..strokeJoin = StrokeJoin.miter
+      ..color = color;
+    final path = Path();
+    for (var i = 0; i < n; i++) {
+      final x = i * u;
+      path
+        ..moveTo(x, h)
+        ..lineTo(x, 0)
+        ..lineTo(x + u * 0.72, 0)
+        ..lineTo(x + u * 0.72, h * 0.66)
+        ..lineTo(x + u * 0.32, h * 0.66)
+        ..lineTo(x + u * 0.32, h * 0.33)
+        ..lineTo(x + u * 0.5, h * 0.33);
+    }
+    canvas.drawPath(path, p);
+    canvas.drawLine(Offset(0, h), Offset(s.width, h), p..strokeWidth = 0.8);
+  }
+
+  @override
+  bool shouldRepaint(_Meander old) => old.color != color;
 }
 
 /// Tabs that all stay alive (like IndexedStack) and cross-fade. The fade sits outside TickerMode: muting a hidden

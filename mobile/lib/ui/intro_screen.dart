@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import 'motion.dart';
 import 'theme.dart';
 
 /// First run: a spinning gradient ring around the mark, three short pages, then "slide to unlock" bursts the
@@ -37,7 +37,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   }
 
   Future<void> _unlock() async {
-    HapticFeedback.heavyImpact();
+    Haptics.heavy();
     await _burst.forward();
     widget.onDone();
   }
@@ -70,7 +70,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                         child: Container(
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: SweepGradient(colors: [...Brand.colors, Brand.forest]),
+                            gradient: SweepGradient(colors: [...Brand.colors, Brand.bronze]),
                           ),
                         ),
                       ),
@@ -84,7 +84,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                   opacity: CurvedAnimation(parent: _enter, curve: const Interval(0.4, 1)),
                   child: ShaderMask(
                     shaderCallback: (r) => Brand.gradient.createShader(r),
-                    child: const Text('Reel Analyser', style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                    child: Text('Reel Analyser', style: Brand.serif(const TextStyle(color: Colors.white), size: 46, weight: 600, spacing: 0.5)),
                   ),
                 ),
                 Expanded(
@@ -129,7 +129,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
                               onPressed: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 _pages.nextPage(duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
                               },
                               child: const Text('Next', style: TextStyle(fontSize: 16)),
@@ -227,7 +227,7 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
                 onHorizontalDragUpdate: (d) {
                   final next = (_x + d.delta.dx).clamp(0.0, max);
                   // A tick each quarter of the track, like a dial clicking into place.
-                  if ((next / max * 4).floor() != (_x / max * 4).floor()) HapticFeedback.selectionClick();
+                  if ((next / max * 4).floor() != (_x / max * 4).floor()) Haptics.select();
                   setState(() => _x = next);
                 },
                 onHorizontalDragEnd: (_) {
@@ -236,7 +236,7 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
                     setState(() => _x = max);
                     widget.onUnlock();
                   } else {
-                    HapticFeedback.lightImpact();
+                    Haptics.light();
                     setState(() => _x = 0);
                   }
                 },
@@ -244,7 +244,7 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
                   width: _h,
                   height: _h,
                   decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
-                  child: Icon(_done ? Icons.lock_open_rounded : Icons.arrow_forward_rounded, color: Colors.white),
+                  child: Icon(_done ? Icons.lock_open_rounded : Icons.arrow_forward_rounded, color: Brand.onGold),
                 ),
               ),
             ),

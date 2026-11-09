@@ -8,6 +8,7 @@ import '../core/models.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
 import 'note_chat_screen.dart';
+import 'motion.dart';
 import 'theme.dart';
 import 'web_screen.dart';
 
@@ -62,7 +63,7 @@ class _ReelScreenState extends State<ReelScreen> {
             tooltip: 'Mark as unread',
             icon: const Icon(Icons.mark_email_unread_outlined),
             onPressed: () async {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               final m = ScaffoldMessenger.of(context);
               await services.library.markUnseen(reel.url);
               if (context.mounted) Navigator.pop(context);
@@ -73,7 +74,7 @@ class _ReelScreenState extends State<ReelScreen> {
             tooltip: reel.archived ? 'Move back to library' : 'Archive',
             icon: Icon(reel.archived ? Icons.unarchive_outlined : Icons.archive_outlined),
             onPressed: () async {
-              HapticFeedback.mediumImpact();
+              Haptics.medium();
               final m = ScaffoldMessenger.of(context);
               await services.library.setArchived(reel.url, !reel.archived);
               if (context.mounted) Navigator.pop(context);
@@ -96,7 +97,7 @@ class _ReelScreenState extends State<ReelScreen> {
                 ),
               );
               if (ok != true) return;
-              HapticFeedback.heavyImpact();
+              Haptics.heavy();
               if (!context.mounted) return;
               final m = ScaffoldMessenger.of(context);
               await services.library.delete(reel.url);
@@ -117,10 +118,16 @@ class _ReelScreenState extends State<ReelScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          SelectableText(reel.title, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 14),
+          Reveal(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SelectableText(reel.title, style: t.headlineSmall),
+              const SizedBox(height: 10),
+              const SizedBox(width: 120, child: MeanderDivider(height: 7, opacity: 0.6)),
+            ]),
+          ),
+          const SizedBox(height: 16),
           // At a glance: the overview bullets carry every important point in short, simple lines.
-          Card(
+          Reveal(index: 1, child: Card(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
               child: reel.overview.isEmpty
@@ -141,12 +148,12 @@ class _ReelScreenState extends State<ReelScreen> {
                         ),
                     ]),
             ),
-          ),
+          ),),
           const SizedBox(height: 6),
           Center(
             child: TextButton.icon(
               onPressed: () {
-                HapticFeedback.selectionClick();
+                Haptics.select();
                 setState(() => _full = !_full);
               },
               icon: AnimatedRotation(turns: _full ? 0.5 : 0, duration: const Duration(milliseconds: 300), child: const Icon(Icons.expand_more_rounded)),
@@ -218,7 +225,7 @@ class _ReelScreenState extends State<ReelScreen> {
                         icon: const Icon(Icons.refresh),
                         label: Text(reel.analysis == 'done' ? 'Re-analyse' : 'Try again with the video'),
                         onPressed: () async {
-                          HapticFeedback.lightImpact();
+                          Haptics.light();
                           final ok = await services.retry(reel);
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -233,7 +240,7 @@ class _ReelScreenState extends State<ReelScreen> {
             icon: const Icon(Icons.chat_bubble_outline_rounded),
             label: const Text('Chat about this note'),
             onPressed: () {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               Navigator.push(context, MaterialPageRoute(builder: (_) => NoteChatScreen(services, reel)));
             },
           ),

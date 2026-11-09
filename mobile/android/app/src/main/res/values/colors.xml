@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The marble white the app opens on; the night file has the dark one. -->
+    <color name="launch_bg">#FFFBF9F4</color>
+</resources>

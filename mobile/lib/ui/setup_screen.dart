@@ -6,6 +6,7 @@ import '../native/counter_bridge.dart';
 import '../data/blocker.dart';
 import 'detect_consent.dart';
 import 'liquid.dart';
+import 'theme.dart';
 
 /// Insights setup. Both parts are optional: Usage access for time in the apps, Accessibility for reel counts.
 /// Re-checked whenever you come back from a system screen.
@@ -87,7 +88,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   Widget _step(String title, String detail, bool? done, String screen, String button) => ListTile(
         leading: Icon(done == true ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: done == true ? Colors.green : null),
+            color: done == true ? Brand.gold : null),
         title: Text(title),
         subtitle: Text(detail),
         trailing: done == true ? null : FilledButton.tonal(onPressed: () => _go(screen), child: Text(button)),
@@ -126,7 +127,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                 _step('Turn on Reel Analyser in Accessibility', 'Installed apps → Reel Analyser → On. It only reads the Reels and '
                     'Shorts screens, and never taps or scrolls.', s.serviceEnabled, 'openAccessibilitySettings', 'Open'),
                 SwitchListTile(
-                  secondary: Icon(_consent ? Icons.check_circle : Icons.radio_button_unchecked, color: _consent ? Colors.green : null),
+                  secondary: Icon(_consent ? Icons.check_circle : Icons.radio_button_unchecked, color: _consent ? Brand.gold : null),
                   title: const Text('Allow reading the reel screens'),
                   subtitle: const Text('Needed for the counter and the Reel blocker. Off = nothing is read, even with Accessibility on. '
                       'Never a screenshot or recording.'),

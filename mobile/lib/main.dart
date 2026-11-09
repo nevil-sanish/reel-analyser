@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,11 +14,17 @@ import 'ui/update_flow.dart';
 import 'ui/legal_screen.dart';
 import 'ui/library_screen.dart';
 import 'ui/liquid.dart';
+import 'ui/motion.dart';
 import 'ui/theme.dart';
 import 'ui/insights_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // The bundled fonts are under the SIL Open Font Licence: list them with the other open-source licences.
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(['Cormorant Garamond (font)'], await rootBundle.loadString('assets/fonts/OFL-CormorantGaramond.txt'));
+    yield LicenseEntryWithLineBreaks(['Lato (font)'], await rootBundle.loadString('assets/fonts/OFL-Lato.txt'));
+  });
   final services = await AppServices.create();
   // None of these is worth a blank screen at launch if the phone refuses one: the app opens without it.
   for (final step in [scheduleBackgroundAnalysis, services.bridge.markOpened, services.retryTextOnlyOnce]) {
@@ -30,8 +37,11 @@ Future<void> main() async {
   unawaited(services.sweepPhotos().catchError((Object e) => debugPrint('sweepPhotos failed: $e')));
   if (await services.keys.flag('dark')) Brand.mode.value = ThemeMode.dark;
   Brand.mode.addListener(() => services.keys.setFlagTo('dark', Brand.mode.value == ThemeMode.dark));
+  Haptics.enabled = !await services.keys.flag('haptics_off');
   Brand.reduceEffects.value = await services.keys.flag('reduce_effects');
   Brand.reduceEffects.addListener(() => services.keys.setFlagTo('reduce_effects', Brand.reduceEffects.value));
+  // Draw behind the status and navigation bars: the marble runs to the edges of the screen.
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   runApp(ReelBotApp(services, showIntro: !await services.keys.introSeen));
 }
 
@@ -102,12 +112,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         canPop: false,
         child: AlertDialog(
           title: const Text('Terms, Privacy and Disclaimer'),
-          content: const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
-              'with your own key. The terms, privacy policy and disclaimer were updated (the optional Reel blocker was added). Please read them.'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
+                'with your own key. The terms, privacy policy and disclaimer were updated (the optional Reel blocker was added). Please read them.'),
+            const SizedBox(height: 8),
+            Wrap(spacing: 4, children: [
+              for (final (label, page) in [('Privacy Policy', LegalScreen.privacy), ('Terms of Use', LegalScreen.terms), ('Disclaimer', LegalScreen.disclaimer)])
+                ActionChip(label: Text(label), onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => page))),
+            ]),
+          ]),
           actions: [
-            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.privacy)), child: const Text('Privacy Policy')),
-            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.terms)), child: const Text('Terms of Use')),
-            TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => LegalScreen.disclaimer)), child: const Text('Disclaimer')),
             TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Close app')),
             FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('I agree')),
           ],

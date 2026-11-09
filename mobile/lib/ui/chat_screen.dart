@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
@@ -7,6 +6,7 @@ import '../native/counter_bridge.dart';
 import '../pipeline/providers.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
+import 'motion.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
@@ -131,7 +131,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     ? Icon(Icons.check_circle, color: Theme.of(c).colorScheme.primary)
                     : null,
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   Navigator.pop(c, (p, m.key));
                 },
               ),
@@ -172,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                           child: const Icon(Icons.delete_rounded, color: Colors.white),
                         ),
                         onDismissed: (_) {
-                          HapticFeedback.mediumImpact();
+                          Haptics.medium();
                           s.library.deleteChat(ch.$1);
                           set(() => chats.remove(ch));
                           showUndo(ScaffoldMessenger.of(context), 'Chat deleted', () => s.library.restoreChat(ch),
@@ -193,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       ),
     );
     if (open == null) return;
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       _chatId = open.$1;
       _turns = [...open.$2];
@@ -202,7 +202,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   void _newChat() {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       _turns = [];
       _chatId = null;
@@ -214,7 +214,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (q.isEmpty || _busy || _provider == null) return;
     _input.clear();
     FocusScope.of(context).unfocus();
-    HapticFeedback.lightImpact();
+    Haptics.light();
     setState(() {
       _turns.add(q);
       _busy = true;
@@ -229,7 +229,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       a = 'Couldn\'t answer: $e';
     }
     if (!mounted) return;
-    HapticFeedback.selectionClick(); // the answer landed
+    Haptics.select(); // the answer landed
     setState(() {
       _turns.add(a.trim().isEmpty ? '(no answer)' : a.trim());
       _busy = false;
@@ -289,50 +289,65 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     key: const ValueKey('landing'),
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     children: [
-                      Text(_greeting(), style: t.textTheme.titleMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                      ShaderMask(
-                        shaderCallback: (r) => Brand.gradient.createShader(r),
-                        child: Text('Ask your reels',
-                            style: t.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -1)),
-                      ),
-                      const SizedBox(height: 16),
-                      // Insights are optional: with neither Usage access nor the counter there's nothing to show.
-                      if (_counting || _usage) _TodayStrip(_today, counting: _counting, onTap: widget.onInsights),
-                      if (_recent.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text('Recently saved', style: t.textTheme.titleMedium),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 118,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _recent.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: 10),
-                            itemBuilder: (_, i) => _RecentCard(_recent[i], onTap: () async {
-                              HapticFeedback.selectionClick();
-                              await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(s, _recent[i], onChanged: _refresh)));
-                              _refresh();
-                            }),
+                      Reveal(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(_greeting().toUpperCase(),
+                              style: t.textTheme.labelMedium?.copyWith(color: t.colorScheme.onSurfaceVariant, letterSpacing: 2.2, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          ShaderMask(
+                            shaderCallback: (r) => Brand.gradient.createShader(r),
+                            child: Text('Ask your reels', style: t.textTheme.displaySmall?.copyWith(color: Colors.white)),
                           ),
+                          const SizedBox(height: 8),
+                          const SizedBox(width: 150, child: MeanderDivider(height: 8)),
+                        ]),
+                      ),
+                      const SizedBox(height: 18),
+                      // Insights are optional: with neither Usage access nor the counter there's nothing to show.
+                      if (_counting || _usage) Reveal(index: 1, child: _TodayStrip(_today, counting: _counting, onTap: widget.onInsights)),
+                      if (_recent.isNotEmpty)
+                        Reveal(
+                          index: 2,
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const SizedBox(height: 24),
+                            Text('Recently saved', style: t.textTheme.titleMedium),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 124,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _recent.length,
+                                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                                itemBuilder: (_, i) => _RecentCard(_recent[i], onTap: () async {
+                                  Haptics.select();
+                                  await Navigator.push(context, MaterialPageRoute(builder: (_) => ReelScreen(s, _recent[i], onChanged: _refresh)));
+                                  _refresh();
+                                }),
+                              ),
+                            ),
+                          ]),
                         ),
-                      ],
-                      if (_providers.isEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text('Add a Gemini, OpenAI, Claude or Groq key in Settings to chat with your saved reels.',
-                            style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                      ],
-                      const SizedBox(height: 24),
-                      if (_providers.isNotEmpty) ...[
-                        Text('Try asking', style: t.textTheme.titleMedium),
-                        const SizedBox(height: 10),
-                      ],
-                      if (_providers.isNotEmpty)
-                        Wrap(
-                          alignment: WrapAlignment.start,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [for (final i in _ideas) ActionChip(label: Text(i), onPressed: () => _send(i))],
-                        ),
+                      Reveal(
+                        index: 3,
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          if (_providers.isEmpty) ...[
+                            const SizedBox(height: 24),
+                            Text('Add a Gemini, OpenAI, Claude or Groq key in Settings to chat with your saved reels.',
+                                style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                          ],
+                          const SizedBox(height: 24),
+                          if (_providers.isNotEmpty) ...[
+                            Text('Try asking', style: t.textTheme.titleMedium),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              alignment: WrapAlignment.start,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [for (final i in _ideas) ActionChip(label: Text(i), onPressed: () => _send(i))],
+                            ),
+                          ],
+                        ]),
+                      ),
                     ],
                   ),
           ),
@@ -357,6 +372,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 ),
               Glass(
                 radius: 30,
+                solid: true,
                 padding: const EdgeInsets.fromLTRB(20, 4, 6, 4),
                 child: Row(children: [
                   Expanded(
@@ -386,7 +402,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         width: 44,
                         height: 44,
                         decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
-                        child: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                        child: const Icon(Icons.arrow_upward_rounded, color: Brand.onGold),
                       ),
                     ),
                   ),
@@ -471,7 +487,7 @@ class ChatBubble extends StatelessWidget {
               bottomRight: Radius.circular(mine ? 6 : 22),
             ),
           ),
-          child: SelectableText.rich(boldSpans(text), style: TextStyle(color: mine ? Colors.white : Theme.of(context).colorScheme.onSurface, height: 1.35)),
+          child: SelectableText.rich(boldSpans(text), style: TextStyle(color: mine ? Brand.onGold : Theme.of(context).colorScheme.onSurface, height: 1.35)),
         ),
       ),
     );
@@ -517,7 +533,7 @@ class _RecentCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(8)),
-                  child: Icon(icon, size: 14, color: Colors.white),
+                  child: Icon(icon, size: 14, color: Brand.onGold),
                 ),
                 const Spacer(),
                 if (reel.seenAt == 0)

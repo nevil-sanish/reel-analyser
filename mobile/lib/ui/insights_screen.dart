@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../native/counter_bridge.dart';
@@ -9,6 +8,7 @@ import 'debug_screen.dart';
 import 'liquid.dart';
 import '../flavor.dart';
 import 'setup_screen.dart';
+import 'motion.dart';
 import 'theme.dart';
 
 /// Insights tab: how much you watch, on which days and at what time, over a week or a month.
@@ -128,7 +128,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
                 selected: {_range},
                 showSelectedIcon: false,
                 onSelectionChanged: (v) {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => _range = v.first);
                   _load();
                 },
@@ -139,13 +139,13 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(28)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(_range == 7 ? 'This week' : 'Last 30 days', style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                Text(_range == 7 ? 'This week' : 'Last 30 days', style: TextStyle(color: Brand.onGold.withValues(alpha: 0.75), fontWeight: FontWeight.w700, letterSpacing: 0.6)),
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: (counting ? total : minutes).toDouble()),
                   duration: const Duration(milliseconds: 700),
                   curve: Curves.easeOutCubic,
                   builder: (_, v, _) => Text(counting ? '${v.round()} reels & shorts' : '${dur(v.round())} in the apps',
-                      style: t.textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: -0.8)),
+                      style: t.textTheme.headlineMedium?.copyWith(color: Brand.onGold)),
                 ),
                 const SizedBox(height: 14),
                 Row(children: counting
@@ -284,8 +284,8 @@ class _HeroStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(value, style: const TextStyle(color: Brand.onGold, fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: Brand.onGold.withValues(alpha: 0.75), fontSize: 12)),
         ]),
       );
 }
@@ -382,7 +382,7 @@ class _AppStat extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: Brand.onGold, size: 18),
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

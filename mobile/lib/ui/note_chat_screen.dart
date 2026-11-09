@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
 import '../pipeline/providers.dart';
 import 'chat_screen.dart';
 import 'liquid.dart';
+import 'motion.dart';
 import 'theme.dart';
 
 /// The chat bot of one analysis. Its thread is saved with the note and holds only this conversation;
@@ -95,7 +95,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                         )
                       : null,
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    Haptics.select();
                     Navigator.pop(c, (p, m.key));
                   },
                 ),
@@ -141,7 +141,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
     if (q.isEmpty || _busy || _provider == null) return;
     _input.clear();
     FocusScope.of(context).unfocus();
-    HapticFeedback.lightImpact();
+    Haptics.light();
     setState(() {
       _turns.add(q);
       _busy = true;
@@ -167,7 +167,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       DateTime.now().millisecondsSinceEpoch,
     );
     if (!mounted) return;
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() => _busy = false);
     _toEnd();
   }
@@ -336,7 +336,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                               ),
                               child: const Icon(
                                 Icons.arrow_upward_rounded,
-                                color: Colors.white,
+                                color: Brand.onGold,
                               ),
                             ),
                           ),
