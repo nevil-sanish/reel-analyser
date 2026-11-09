@@ -83,6 +83,8 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 *Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day: 1 day, then 2 days after two misses in a row, then 4 days. A day you could not be read is never counted as a miss.
 
+- **Changing or stopping:** any time, but only after typing a paragraph of at least 50 words by hand (no paste). A running penalty still ends on its last day.
+- **Changing or stopping:** allowed any time, but after the first set-up it takes a typed paragraph of at least 50 words (no paste). A running penalty still ends on its last day.
 - **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why; your own AI provider (your key, not stored) checks it is a real reason.
 - **Limits:** GitHub counts public repositories only; LeetCode has no official API, so it may stop working; a changed phone clock or Accessibility turned off can bypass it.
 - **Semi is a different build, not a hidden one:** it contains none of this code.

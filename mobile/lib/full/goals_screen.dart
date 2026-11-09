@@ -9,6 +9,7 @@ import 'goals.dart';
 import 'full_features.dart';
 import 'detect_consent.dart';
 import 'handle_change_screen.dart';
+import 'paragraph_gate.dart';
 import '../ui/liquid.dart';
 import '../ui/motion.dart';
 
@@ -56,8 +57,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
     super.dispose();
   }
 
-  bool get _editable => goalsEditable(DateTime.now(), hasGoals: _hasGoals);
-
   Future<void> _load() async {
     final cfg = GoalConfig.parse(await (await GoalStore.of(s.library)).latestGoalConfigJson());
     final (streak, until) = await (await GoalStore.of(s.library)).goalPenaltyRow();
@@ -98,6 +97,19 @@ class _GoalsScreenState extends State<GoalsScreen> {
     return _enabled[k]! && validHandle(k, h) ? Goal(k, h, _targets[k]!) : null;
   }
 
+  Future<bool> _gate(String title, String intro, String action) => askParagraph(context, title: title, intro: intro, action: action);
+
+  /// Stops the goals for good. Written reasons are never stored. A penalty already running still runs to its last day.
+  Future<void> _stop() async {
+    if (!await _gate('Stop daily goals', 'To stop the goals, write at least ${ParagraphGuard.minWords} words, by hand, about why. Pasting is not accepted. A penalty already running still ends on its last day.', 'Stop the goals')) return;
+    await (await GoalStore.of(s.library)).saveGoalConfig(dateOf(DateTime.now()), GoalConfig(const [], {..._apps}).toJson());
+    _say('Daily goals are stopped.');
+    try {
+      await goalEngine(s).run();
+    } on Object catch (_) {}
+    _load();
+  }
+
   Future<void> _save() async {
     final goals = <Goal>[];
     for (final k in goalSources) {
@@ -112,6 +124,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
     if (goals.isEmpty) return _say('Turn on at least one goal.');
     if (_apps.isEmpty) return _say('Pick at least one app to block.');
+    if (_hasGoals && !await _gate('Change your goals', 'Changing goals that are already on takes a paragraph: write at least ${ParagraphGuard.minWords} words, by hand, about why. Pasting is not accepted.', 'Save the change')) return;
+    if (!mounted) return;
     if (!_consent) {
       if (!await askDetectionConsent(context)) return _say('Blocking needs your OK to read which app is open.');
       await _bridge.setConsent(true);
@@ -220,7 +234,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     if (!_loaded) return _shell(appBar: AppBar(title: const Text('Daily goals')), body: const SizedBox());
-    final locked = !_editable;
+    const locked = false;
     final today = dateOf(DateTime.now());
     final blocked = _until != null && _until!.compareTo(today) >= 0;
     return _shell(
@@ -259,15 +273,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
           ),
         ),
-        if (locked)
-          Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            color: t.colorScheme.secondaryContainer,
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Goals are locked for today. You can change them between 00:00 and 00:10, and a change counts from that day.'),
-            ),
-          ),
         for (final (i, k) in goalSources.indexed) _source(k, locked, i + 1),
         Reveal(
           index: 4,
@@ -282,11 +287,15 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(label),
                     value: _apps.contains(k),
-                    onChanged: locked ? null : (v) => setState(() { Haptics.select(); v == true ? _apps.add(k) : _apps.remove(k); }),
+                    onChanged: (v) => setState(() { Haptics.select(); v == true ? _apps.add(k) : _apps.remove(k); }),
                   ),
                 Text('A penalty cannot be cancelled for the day. It ends after its last day.', style: t.textTheme.bodySmall),
                 const SizedBox(height: 14),
-                FilledButton(onPressed: locked ? null : _save, child: Text(_hasGoals ? 'Save changes' : 'Turn the goals on')),
+                FilledButton(onPressed: _save, child: Text(_hasGoals ? 'Save changes' : 'Turn the goals on')),
+                if (_hasGoals) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton(onPressed: _stop, child: const Text('Stop the goals')),
+                ],
               ]),
             ),
           ),

@@ -123,10 +123,6 @@ Penalty applyDay(Penalty p, String date, bool? met) {
   return Penalty(streak, cur != null && cur.compareTo(until) > 0 ? cur : until);
 }
 
-/// Goals can be set up any time, and after that changed only between 00:00 and 00:10, as the reel limits are. A change counts
-/// from that day on, so yesterday is still judged by the goals it had.
-bool goalsEditable(DateTime now, {required bool hasGoals}) => !hasGoals || (now.hour == 0 && now.minute < 10);
-
 /// A time as the sites want it in a query: with its offset from UTC, e.g. 2026-11-09T00:00:00+05:30.
 String isoWithOffset(DateTime t) {
   final off = t.timeZoneOffset;
