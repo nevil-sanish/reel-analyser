@@ -25,10 +25,10 @@ void main() {
       status));
 
   test('T-REL-01 newer tag gives the apk; same, older or 403 gives nothing', () async {
-    expect(await newerRelease(gh(200, 'v0.10.0'), '0.9.3'), ('v0.10.0', 'https://x/v0.10.0.apk'));
-    expect(await newerRelease(gh(200, 'v0.9.3'), '0.9.3'), isNull);
-    expect(await newerRelease(gh(200, 'v0.9.2'), '0.9.3'), isNull);
-    expect(await newerRelease(gh(403, 'v1.0.0'), '0.9.3'), isNull);
-    expect(await newerRelease(MockClient((_) async => http.Response('nope', 200)), '0.9.3'), isNull);
+    expect(await newerRelease(gh(200, 'v0.10.0'), '0.9.3', semi: false), ('v0.10.0', 'https://x/v0.10.0.apk'));
+    expect(await newerRelease(gh(200, 'v0.9.3'), '0.9.3', semi: false), isNull);
+    expect(await newerRelease(gh(200, 'v0.9.2'), '0.9.3', semi: false), isNull);
+    expect(await newerRelease(gh(403, 'v1.0.0'), '0.9.3', semi: false), isNull);
+    expect(await newerRelease(MockClient((_) async => http.Response('nope', 200)), '0.9.3', semi: false), isNull);
   });
 }

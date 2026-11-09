@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 6,
+        version: 7,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -29,6 +29,7 @@ class LibraryDb {
           await _v4(db);
           await _v5(db);
           await _v6(db);
+          await _v7(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
@@ -36,6 +37,7 @@ class LibraryDb {
           if (from < 4) await _v4(db);
           if (from < 5) await _v5(db);
           if (from < 6) await _v6(db);
+          if (from < 7) await _v7(db);
         },
       ),
     );
@@ -85,6 +87,13 @@ class LibraryDb {
         for (final r in await _db.query('note_chats'))
           r['url'] as String: [for (final t in jsonDecode(r['turns'] as String) as List) '$t'],
       };
+
+  /// Version 7 was daily goals (full build). Those tables now belong to `lib/full/goal_store.dart`, which creates them itself, so this
+  /// build keeps the version number (a phone that already has v7 must not see it go down) and creates nothing.
+  static Future<void> _v7(Database db) async {}
+
+  /// The open database, for the full build's own stores.
+  Database get raw => _db;
 
   /// Creates the chat when [id] is null; returns its id.
   Future<int> saveChat(int? id, List<String> turns, int now) async {

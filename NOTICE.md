@@ -4,7 +4,7 @@ Reel Analyser is an independent project by nevil-sanish, released under the MIT 
 
 ## Trademarks
 
-Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
+Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. GitHub is a trademark of GitHub, Inc. LeetCode and Codeforces are trademarks of their owners. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
 
 ## Third-party software
 

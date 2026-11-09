@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
-import '../native/counter_bridge.dart';
 import '../pipeline/providers.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
@@ -15,7 +14,7 @@ import 'theme.dart';
 class ChatScreen extends StatefulWidget {
   final AppServices services;
 
-  /// Opens the Insights tab from the today strip.
+  /// Opens the Insights tab from the today strip (full build only).
   final VoidCallback? onInsights;
   const ChatScreen(this.services, {this.onInsights, super.key});
 
@@ -33,9 +32,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   String? _provider;
   String? _model;
   bool _busy = false;
-  DayTotal? _today;
-  var _counting = false;
-  var _usage = false;
   List<Reel> _recent = [];
   List<String> _ideas = _defaultIdeas;
 
@@ -62,16 +58,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   /// Providers (a key may have been added in Settings) and today's counts.
   Future<void> _refresh() async {
     final p = await s.chatProviders();
-    DayTotal? today;
-    var counting = false, usage = false;
-    try {
-      today = (await s.bridge.history(days: 1)).where((d) => d.date == localDate()).firstOrNull;
-      final st = await s.bridge.status();
-      counting = st.serviceEnabled;
-      usage = st.usageAccess;
-    } on Exception {
-      today = null;
-    }
     final notes = await s.library.reels();
     // Suggestions from what you actually saved: your three most used tags.
     final counts = <String, int>{};
@@ -84,9 +70,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {
       _providers = p;
-      _today = today;
-      _counting = counting || (today?.reels ?? 0) > 0;
-      _usage = usage;
       _recent = notes.take(8).toList();
       _ideas = top.isEmpty
           ? _defaultIdeas
@@ -248,6 +231,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final chatting = _turns.isNotEmpty;
+    final strip = widget.onInsights == null ? null : s.features.askStrip(s, widget.onInsights!);
     const slide = Duration(milliseconds: 500);
     return LiquidScaffold(
       background: false,
@@ -304,7 +288,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       ),
                       const SizedBox(height: 18),
                       // Insights are optional: with neither Usage access nor the counter there's nothing to show.
-                      if (_counting || _usage) Reveal(index: 1, child: _TodayStrip(_today, counting: _counting, onTap: widget.onInsights)),
+                      if (strip != null) Reveal(index: 1, child: strip),
                       if (_recent.isNotEmpty)
                         Reveal(
                           index: 2,
@@ -412,47 +396,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
         ),
       ]),
-    );
-  }
-}
-
-/// Today at a glance on the Ask tab; tap for Insights.
-class _TodayStrip extends StatelessWidget {
-  final DayTotal? today;
-
-  /// With the optional reel counter on, the strip leads with counts; without it, with time in each app.
-  final bool counting;
-  final VoidCallback? onTap;
-  const _TodayStrip(this.today, {this.counting = false, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    final d = today ?? DayTotal(localDate(), const {}, 0, 0);
-    String min(int ms) => ms < 3600000 ? '${ms ~/ 60000}m' : '${ms ~/ 3600000}h ${ms % 3600000 ~/ 60000}m';
-    Widget stat(String v, String label) => Expanded(
-          child: Column(children: [
-            Text(v, style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-            Text(label, style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-          ]),
-        );
-    return GestureDetector(
-      onTap: onTap,
-      child: Glass(
-        radius: 24,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        child: Row(children: [
-          if (counting) ...[
-            stat('${d.reelsByApp['instagram'] ?? 0}', 'Reels today'),
-            stat('${d.reelsByApp['youtube'] ?? 0}', 'Shorts today'),
-            stat(min(d.timeMs), d.appMs.isEmpty ? 'Watching' : 'In the apps'),
-          ] else ...[
-            stat(min(d.appMs['instagram'] ?? 0), 'Instagram today'),
-            stat(min(d.appMs['youtube'] ?? 0), 'YouTube today'),
-          ],
-          Icon(Icons.chevron_right_rounded, color: t.colorScheme.onSurfaceVariant),
-        ]),
-      ),
     );
   }
 }

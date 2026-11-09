@@ -442,7 +442,7 @@ A checklist that re-checks `status` on resume:
 
 The full catalogue, with IDs, levels, fixture rules and commands, is [TESTS.md](TESTS.md). Each section above names the endpoints it implements; [ENDPOINTS.md](ENDPOINTS.md) lists the tests for each endpoint.
 
-Before every commit that changes code: `flutter analyze`, `flutter test`, `./gradlew :app:testDebugUnitTest`. Before every release: also `flutter build apk --release --flavor full` and `--flavor semi --dart-define=SEMI_BUILD=true` and the live and manual checks in TESTS.md §6–7.
+Before every commit that changes code: `flutter analyze`, `flutter test`, `./gradlew :reelbot_native:testFullDebugUnitTest :reelbot_native:testSemiDebugUnitTest`, and `mobile/tool/check_apks.sh <full.apk> <semi.apk>` on the two release APKs. Before every release: also `flutter build apk --release --flavor full -t lib/main_full.dart` and `--flavor semi -t lib/main_semi.dart` and the live and manual checks in TESTS.md §6–7.
 
 ---
 
@@ -513,3 +513,10 @@ One page, one screenshot per step:
 5. Notifications, battery unrestricted, Autostart (Xiaomi/Realme/Oppo/Vivo).
 6. Get a free Gemini key at aistudio.google.com and paste it in Settings.
 7. Test: share one reel to Reel Analyser and check it appears in the Library.
+
+## 1.1.1.0 layout: Full and Semi are separate builds
+
+- **Dart:** entry points `lib/main_full.dart` and `lib/main_semi.dart` call `runReelBot(features, dispatcher)` in `lib/app.dart`. Shared code asks an `AppFeatures` object (`lib/features.dart`); `lib/full/` (Insights, setup, debug, blocker, goals, updater, `FullBridge`) is reachable only from `main_full.dart`. `test/semi_purity_test.dart` enforces it.
+- **Android plugin** (`packages/reelbot_native/android`): flavours `full` and `semi`. `src/main` holds the share queue, Instagram fetch, keys and export. `src/full` holds the accessibility service, tracker, blocker, usage, digest, installer, their tables (`FlavorSchema`, `CounterDbFull.kt`) and manifest entries. `FlavorMethods` is the seam: `CounterPlugin` hands every method it does not know to it (Semi returns "not implemented"). `counter.db` stays at version 5 in both; `ReelCounterService` keeps its class name.
+- **Daily goals** (`lib/full/goals.dart`, `goal_store.dart`, `goals_screen.dart`, `handle_change_screen.dart`): fetchers, judging engine, automatic 00:20 check (`FullFeatures._scheduleMidnight`), locked usernames and the AI-checked change reason (`HandleChangeJudge`, via `AppServices.askOnce`).
+- **Acceptance:** `mobile/tool/check_apks.sh <full.apk> <semi.apk>`.

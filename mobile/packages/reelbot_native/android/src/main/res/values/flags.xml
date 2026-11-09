@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- The semi build overrides this to true (app/src/semi/res/values/flags.xml). -->
-    <bool name="reelbot_semi">false</bool>
-</resources>

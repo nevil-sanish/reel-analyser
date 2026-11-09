@@ -47,7 +47,6 @@ class FakeBridge implements CounterBridge {
   @override
   Future<void> disarmWatchdog() async {}
   final notified = <(String, String)>[];
-  @override
   Future<void> notifyNotes(String title, String text) async => notified.add((title, text));
 }
 
@@ -554,13 +553,13 @@ void main() {
   test('T-BG-01 the background task analyses the queue and posts one "note ready"', () async {
     final yt2 = PendingItem(id: 3, url: 'https://www.youtube.com/shorts/hijklmn', app: 'youtube', createdAt: 7);
     final b = FakeBridge([yt, yt2]);
-    await analyseAndNotify(runner(b, (r) async => http.Response(_gemOk(), 200)), b);
+    await analyseAndNotify(runner(b, (r) async => http.Response(_gemOk(), 200)), b, notify: b.notifyNotes);
     expect(b.statuses, {1: 'done', 3: 'done'});
     expect(b.notified, [('2 notes ready', 'Rice · Rice')]);
 
     // Nothing queued: no notification.
     final idle = FakeBridge([]);
-    await analyseAndNotify(runner(idle, (r) async => http.Response(_gemOk(), 200)), idle);
+    await analyseAndNotify(runner(idle, (r) async => http.Response(_gemOk(), 200)), idle, notify: idle.notifyNotes);
     expect(idle.notified, isEmpty);
   });
 

@@ -36,6 +36,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Same dimension and names as the app's flavours, so each app flavour picks its own plugin flavour. `full` holds the
+    // counter, blocker, goals bridge, notifications and installer; `semi` holds none of it (only stubs that say "not here").
+    flavorDimensions += "dist"
+    productFlavors {
+        create("full") { dimension = "dist" }
+        create("semi") { dimension = "dist" }
+    }
+
     sourceSets {
         getByName("main") {
             java.srcDirs("src/main/kotlin")
@@ -43,6 +51,10 @@ android {
         getByName("test") {
             java.srcDirs("src/test/kotlin")
         }
+        getByName("full") { java.srcDirs("src/full/kotlin") }
+        getByName("semi") { java.srcDirs("src/semi/kotlin") }
+        getByName("testFull") { java.srcDirs("src/testFull/kotlin") }
+        getByName("testSemi") { java.srcDirs("src/testSemi/kotlin") }
     }
 
     defaultConfig {

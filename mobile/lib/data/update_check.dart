@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../flavor.dart';
 
 /// The newest release and the files an update needs: this build's APK and the checksum list that goes with it.
 class UpdateInfo {
@@ -14,14 +13,14 @@ class UpdateInfo {
 /// GH-RELEASE-LATEST. Every release is a pre-release, which `/releases/latest` leaves out, so this reads
 /// the newest entry of `/releases`. Returns (tag, apk url) when it's newer than [current]; null otherwise,
 /// and on any failure (offline, a 403 rate limit, an odd body), so the app stays silent.
-Future<(String, String)?> newerRelease(http.Client client, String current) async {
-  final u = await latestUpdate(client, current);
+Future<(String, String)?> newerRelease(http.Client client, String current, {required bool semi}) async {
+  final u = await latestUpdate(client, current, semi: semi);
   return u == null ? null : (u.tag, u.apkUrl);
 }
 
 /// Same check, with the checksum file too. A release carries a `-full` and a `-semi` APK; this build takes its own
 /// (a release with one unlabelled APK still works).
-Future<UpdateInfo?> latestUpdate(http.Client client, String current, {bool semi = kSemiBuild}) async {
+Future<UpdateInfo?> latestUpdate(http.Client client, String current, {required bool semi}) async {
   try {
     final r = await client.get(Uri.parse('https://api.github.com/repos/nevil-sanish/reel-analyser/releases?per_page=1'),
         headers: {'Accept': 'application/vnd.github+json'}).timeout(const Duration(seconds: 10));

@@ -7,6 +7,7 @@ import 'core/models.dart';
 import 'data/key_store.dart';
 import 'data/library_db.dart';
 import 'native/counter_bridge.dart';
+import 'features.dart';
 import 'pipeline/gemini.dart';
 import 'pipeline/providers.dart';
 import 'pipeline/runner.dart';
@@ -21,7 +22,10 @@ class AppServices {
 
   final Directory sharedDir;
 
-  AppServices._(this.keys, this.library, this.bridge, this.client, this.sharedDir)
+  /// What this build adds (the full build's counter, blocker and goals; nothing in the semi build).
+  final AppFeatures features;
+
+  AppServices._(this.keys, this.library, this.bridge, this.client, this.sharedDir, this.features)
       : runner = Runner(
           bridge: bridge,
           library: library,
@@ -33,10 +37,10 @@ class AppServices {
           sharedDir: sharedDir,
         );
 
-  static Future<AppServices> create() async =>
-      AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client(), Directory(await getDatabasesPath()));
+  static Future<AppServices> create(AppFeatures features) async =>
+      AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client(), Directory(await getDatabasesPath()), features);
 
-  static const version = '1.1.0.0';
+  static const version = '1.1.1.0';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -53,6 +57,7 @@ class AppServices {
   /// Settings → "Erase all my data": notes, chats, queue, counts, photos and keys. The caller closes the app after.
   Future<void> eraseEverything() async {
     await library.eraseAll();
+    await features.erase(this);
     await bridge.eraseAll();
     await keys.eraseAll();
   }
@@ -127,6 +132,16 @@ class AppServices {
         'never from general knowledge. If the note does not cover the question, say so and stop. '
         'Keep answers short.\n\nSaved note:\n${noteDetail(reel)}';
     return _complete(provider, system, turns, model);
+  }
+
+  /// One question outside the chat, to the first provider the user has a key for (cheapest model); null when there is none.
+  /// Used by the full build to check a written reason. The text goes to that provider and is not stored.
+  Future<String> Function(String system, String user)? get askOnce => _askOnce;
+
+  Future<String> _askOnce(String system, String user) async {
+    final ps = await chatProviders();
+    if (ps.isEmpty) throw GeminiException(GeminiFailure.badKey, 'Add an AI key in Settings');
+    return _complete(ps.first, system, [user], null);
   }
 
   /// Runs the turns through the provider's keys (Gemini tries each saved key in turn on a rate limit).

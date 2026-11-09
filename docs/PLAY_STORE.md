@@ -16,11 +16,11 @@ Prepared 7 November 2026 for v0.9.8+. This is a checklist and the answers to Pla
 Build commands (flavors need `--flavor`):
 
 ```bash
-flutter build apk --release --flavor full
+flutter build apk --release --flavor full -t lib/main_full.dart
 ```
 
 ```bash
-flutter build appbundle --release --flavor semi --dart-define=SEMI_BUILD=true
+flutter build appbundle --release --flavor semi -t lib/main_semi.dart
 ```
 
 The bundle is `build/app/outputs/bundle/semiRelease/app-semi-release.aab`. Same signing key as the APK; its package id is `app.reelbrain.semi`. Use Play App Signing: upload this key as the **upload key**.

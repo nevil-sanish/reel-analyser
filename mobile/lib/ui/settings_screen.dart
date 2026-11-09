@@ -9,17 +9,11 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../data/export.dart';
-import 'update_flow.dart';
 import '../data/key_backup.dart';
 import '../data/key_store.dart';
-import '../flavor.dart';
-import 'debug_screen.dart';
-import 'developer_card.dart';
 import 'motion.dart';
-import 'legal_screen.dart';
 import 'liquid.dart';
-import 'setup_screen.dart';
-import 'blocker_screen.dart';
+import 'section_card.dart';
 import 'theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -264,33 +258,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SystemNavigator.pop();
   }
 
-  /// The one thing that leaves the phone on purpose: what you type here, as a GitHub issue you submit yourself.
-  Future<void> _feedback() async {
-    final text = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Send feedback'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: text, maxLines: 5, autofocus: true, decoration: const InputDecoration(hintText: 'What works, what doesn\'t?')),
-            const SizedBox(height: 8),
-            const Text('Opens a GitHub issue with only this text and the app version. You review it before it\'s posted.',
-                style: TextStyle(fontSize: 12)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Continue')),
-        ],
-      ),
-    );
-    if (ok != true || text.text.trim().isEmpty) return;
-    final body = Uri.encodeQueryComponent('${text.text.trim()}\n\n— Reel Analyser ${AppServices.version}');
-    await s.bridge.openUrl('https://github.com/nevil-sanish/reel-analyser/issues/new?title=Feedback&body=$body');
-  }
-
   Widget _key(TextEditingController c, String label, {String? helper, Widget? trailing}) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: TextField(
@@ -302,27 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   var _sectionIndex = 0;
 
-  Widget _section(String title, List<Widget> children) => Reveal(
-        index: _sectionIndex++,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  const MeanderDivider(height: 7, opacity: 0.55),
-                  const SizedBox(height: 12),
-                  ...children,
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+  Widget _section(String title, List<Widget> children) => SectionCard(index: _sectionIndex++, title: title, children: children);
 
   @override
   Widget build(BuildContext context) {
@@ -403,34 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _VibrationSwitch(s),
           ]),
-          if (!kSemiBuild)
-          _section('Insights', [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.checklist_rounded),
-              title: const Text('Set up Insights'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SetupScreen(s))),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.bug_report_outlined),
-              title: const Text('Counter debug'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebugScreen(s))),
-            ),
-          ]),
-          if (!kSemiBuild)
-            _section('Reel blocker', [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.block_rounded),
-                title: const Text('Limits and schedules'),
-                subtitle: const Text('Block Reels and Shorts past a daily limit or outside your times.'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BlockerScreen(s))),
-              ),
-            ]),
+          ...s.features.settingsSections(context, s, _section),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then: every export is a complete copy in its own file.'),
             SwitchListTile(
@@ -446,49 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.upload), label: const Text('Import')),
             ]),
           ]),
-          _section('About the developer', [DeveloperCard(onOpen: s.bridge.openUrl)]),
-          _section('Feedback', [
-            const Text('Found a bug or have an idea?'),
-            const SizedBox(height: 8),
-            FilledButton.tonalIcon(onPressed: _feedback, icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
-          ]),
-          _section('About and legal', [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.system_update_outlined),
-              title: const Text('Check for updates'),
-              subtitle: Text('You have ${AppServices.version}'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => checkForUpdate(context, s),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: const Text('Privacy Policy'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.privacy)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.gavel_outlined),
-              title: const Text('Terms of Use'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.terms)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.info_outline),
-              title: const Text('Disclaimer'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LegalScreen.disclaimer)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.article_outlined),
-              title: const Text('Open-source licenses'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => showLicensePage(context: context, applicationName: 'Reel Analyser', applicationVersion: AppServices.version),
-            ),
+          _section('Your data', [
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),

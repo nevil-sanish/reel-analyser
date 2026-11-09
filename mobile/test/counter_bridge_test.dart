@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:reelbrain/full/full_bridge.dart';
 import 'package:reelbrain/native/counter_bridge.dart';
 
 void main() {
@@ -49,7 +50,7 @@ void main() {
 
   // T-CH-03 (Dart side)
   test('T-CH-03 daily groups by date; seenItems, debugState and setCapture map through', () async {
-    final b = CounterBridge();
+    final b = FullBridge();
     final h = await b.history();
     expect(h.map((d) => d.date), ['2026-11-06', '2026-11-05']);
     expect(h.first.reels, 37);
@@ -85,7 +86,7 @@ void main() {
 
   // T-USE-03
   test('T-USE-03 Usage-access time joins the counter days and replaces the hourly time', () async {
-    final b = CounterBridge();
+    final b = FullBridge();
     expect((await b.hourly())[21], (4, 50000)); // no Usage access: the counter's time
 
     appUsage = {

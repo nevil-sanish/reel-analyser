@@ -34,6 +34,14 @@ void main() {
     expect(p, contains('semi'));
     expect(p, isNot(contains('keeps recent screen text')));
     expect(read('terms'), contains('## 6. The Reel blocker'));
+    expect(read('terms'), contains('## 7. Daily goals'));
+    expect(read('privacy'), contains('Daily goals'));
+    expect(read('privacy'), contains('api.github.com'));
+    expect(read('privacy'), contains('not an official API'));
+    expect(read('privacy'), contains('written reason for changing a username'));
+    expect(read('terms'), contains('Usernames are locked'));
+    expect(read('disclaimer'), contains('written reason'));
+    expect(read('disclaimer'), contains('Daily goals'));
     expect(read('terms'), contains('can be bypassed'));
     expect(read('disclaimer'), contains('Not affiliated'));
     expect(read('disclaimer'), contains('Reel blocker'));

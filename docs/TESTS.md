@@ -6,7 +6,7 @@ Every test the app must have, by ID. Code doesn't exist yet: all tests are **pla
 
 | Level | What | Where | Run with |
 |---|---|---|---|
-| **unit** | Pure logic, no Android, no network | Kotlin: `mobile/packages/reelbot_native/android/src/test/kotlin/app/reelbrain/` · Dart: `mobile/test/` | `cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest` · `cd mobile && flutter test` |
+| **unit** | Pure logic, no Android, no network | Kotlin: `mobile/packages/reelbot_native/android/src/test/kotlin/app/reelbrain/` · Dart: `mobile/test/` | `cd mobile/android && ./gradlew :reelbot_native:testFullDebugUnitTest :reelbot_native:testSemiDebugUnitTest` · `cd mobile && flutter test` |
 | **fixture** | Parsers fed saved real responses | Fixtures in `mobile/packages/reelbot_native/android/src/test/resources/ig/` | same as unit |
 | **integration** | Several parts with fakes for the network | `mobile/test/` (Dart), Robolectric for Kotlin (`CounterPluginTest.kt`) | same as unit |
 | **live** | Real calls to Instagram/YouTube/Gemini from a phone | Debug screen → "Run live checks" (no CI: needs a residential IP and keys) | manually, weekly and before each release |
@@ -196,3 +196,10 @@ Run from the phone, logged out, with a fixed set of public test URLs kept in `mo
 | 2026-11-06 | v0.6.0: T-UI-01 and T-LIB-01 added and passing; T-PIPE-01 checks the note-ready titles; T-DIG-02 checks the empty-day nudge. |
 | 2026-11-06 | v0.5.0: T-PIPE-11/12 and T-IG-F11 added and passing; T-PIPE-01 also checks the watch URL, fps 0.5 and minimal thinking; T-SHARE-04 now 2 min. |
 | 2026-11-06 | v0.4.0: T-DIG-01/02 passing as unit tests of the post rule and text (`DigestTest.kt`); T-PIPE-01 also checks the title passed to Kotlin. |
+
+### Added for 1.1.1.0
+
+- `mobile/test/semi_purity_test.dart`: the semi entry point cannot reach `lib/full/`; only `main_full.dart` imports it.
+- `mobile/test/full/goals_test.dart`: rules, fetchers, engine, the 00:20 schedule, the change flow (cool-off, verdict parser, fail-closed judge, locked usernames).
+- Kotlin: `src/testFull` (blocker, tracker, rules, digest, usage, retention) runs with `testFullDebugUnitTest`; `src/testSemi` (`SemiSeamTest`: Full-only methods are not implemented) with `testSemiDebugUnitTest`; shared tests run in both.
+- `mobile/tool/check_apks.sh <full.apk> <semi.apk>`: Semi has none of 18 Full-only markers (strings in the Dart snapshot, dex and manifest), Full has all.

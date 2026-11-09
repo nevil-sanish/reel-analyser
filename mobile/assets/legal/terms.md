@@ -1,6 +1,6 @@
 # Terms of Use
 
-Reel Analyser · Effective 9 November 2026 · Version 1.1
+Reel Analyser · Effective 10 November 2026 · Version 1.2
 
 By installing or using Reel Analyser you agree to these terms. If you do not agree, do not use the app.
 
@@ -34,38 +34,50 @@ The Reel blocker (full version) is a self-control tool for you, on your own phon
 - **The face photo and the paragraph.** The photo is taken with your own camera app, checked on the phone, kept for the day and then deleted. The paragraph is checked on the phone for pasting and for wording typical of AI and is not stored. These checks are not perfect, and we do not promise they will accept or refuse any particular text or photo.
 - **Your risk.** Being blocked from Reels or Shorts is the result of rules you set. We are not responsible for missed content, a block that came too early or too late, or being locked out by your own rules.
 
-## 7. Not affiliated
+## 7. Daily goals
+
+Daily goals (full version) are an optional, self-imposed habit tool. You choose a daily number of GitHub commits, Codeforces problems and LeetCode problems. If you miss a day, the whole Instagram app (and YouTube, if you choose it) is blocked: for 1 day after the first miss, 2 days after two misses in a row and 4 days after three or more in a row.
+
+- **Usernames are locked.** Once a username is used for a goal it cannot be changed freely. You ask first and must come back on a later day; then you write at least 50 words about why, and your own AI provider checks that it is a real reason (for example the account was renamed, had a typo, was deleted or banned). A reason that is vague or only avoids a penalty is refused, and you wait another day. The check is automatic and can be wrong; if it cannot run (no key, no connection) nothing changes.
+- **Checked by itself.** Each day is checked automatically just after midnight, with no button to press.
+- **Your own accounts and phone.** Use it only with your own usernames, on a phone you own, and never to watch or restrict another person.
+- **Third-party sites.** The app reads your public activity from GitHub, Codeforces and LeetCode. You must follow their terms. LeetCode has no official API, so the app uses the public profile query its own website uses; it may stop working or be refused at any time, and you should check LeetCode's terms before you turn it on. Only your public username is sent. No password, token or account is used.
+- **Not exact.** Counts can be late or incomplete (for example, GitHub counts only commits in public repositories made with an email linked to your account, and sites can be slow). The app judges a day only after it has ended and never counts a day it could not read as a miss. You accept that a count can still be wrong.
+- **A penalty cannot be cancelled for the day.** It is meant to hold. It ends after its last day. It can still be bypassed, for example by turning Accessibility off in Android settings, changing the phone's clock, using another device, or uninstalling.
+- **Your risk.** Being blocked from apps is the result of goals you set. We are not responsible for being blocked, for a count that was wrong, or for any loss from not being able to use an app.
+
+## 8. Not affiliated
 
 Reel Analyser is an independent app. It is not affiliated with, endorsed or sponsored by Instagram, Meta, YouTube, Google, OpenAI, Anthropic, Groq or Apify. All names and trademarks belong to their owners and are used only to say which services the app works with.
 
-## 8. Availability
+## 9. Availability
 
 Instagram and YouTube can change or block how their pages are read, so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
 
-## 9. Permission to use the app
+## 10. Permission to use the app
 
 We give you a personal, non-exclusive, non-transferable, revocable right to use the app for its intended purpose. You may not misrepresent the app as yours or remove its notices. Open-source components are covered by their own licences, listed in Settings → Open-source licenses.
 
-## 10. No warranty
+## 11. No warranty
 
 The app is provided "as is" and "as available", without warranties of any kind, including fitness for a particular purpose, accuracy or uninterrupted operation, to the extent the law allows.
 
-## 11. Limitation of liability
+## 12. Limitation of liability
 
 To the extent the law allows, we are not liable for indirect, incidental or consequential loss, lost data, lost profits, or charges made by third-party services using your keys. Our total liability for any claim is limited to the amount you paid for the app, which is zero if it is free. Nothing here limits liability that cannot be limited by law, including for fraud or for death or personal injury caused by negligence.
 
-## 12. Ending
+## 13. Ending
 
 You can stop using the app at any time by uninstalling it. We may suspend or end access if you breach these terms.
 
-## 13. Changes
+## 14. Changes
 
 We may update these terms. The new version appears in the app with a new date, and continuing to use the app after that means you accept it.
 
-## 14. Governing law
+## 15. Governing law
 
 These terms are governed by the laws of India, and the courts of India have jurisdiction, without affecting any consumer rights you have under the law of your own country.
 
-## 15. Contact
+## 16. Contact
 
 https://github.com/nevil-sanish/reel-analyser/issues

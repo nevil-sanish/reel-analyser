@@ -243,3 +243,16 @@ Rules for every `IG-*` call:
 | 2026-11-06 | v0.8.1: `hourly` added for Insights. |
 | 2026-11-06 | v0.9.3: `sweepPhotos` added. |
 | 2026-11-06 | v0.9.4: GH-RELEASE-LATEST implemented (via `/releases`, see above); SHARE-IN takes `ACTION_SEND_MULTIPLE`. |
+
+## 9. Daily goals (full build only)
+
+Owner: `mobile/lib/full/goals.dart` (`GoalFetcher`, `HandleChangeJudge`). None of these exists in the semi build (`tool/check_apks.sh` proves it). Only the public username leaves the phone; no key, token or cookie.
+
+| ID | Request | Use | Fails when |
+|---|---|---|---|
+| GOAL-GH | `GET https://api.github.com/search/commits?q=author:<user> author-date:<start>..<end>&per_page=1` | `total_count`, `incomplete_results`: commits in public repositories that day | 403/429: retry later; 422: unknown user |
+| GOAL-CF | `GET https://codeforces.com/api/user.status?handle=<h>&from=1&count=100` | different problems with verdict `OK` that day | `status != OK`: "not found" or retry later |
+| GOAL-LC | `POST https://leetcode.com/graphql` (`matchedUser`, `recentAcSubmissionList(limit 20)`) | different `titleSlug` that day. Unofficial; may stop working | null `matchedUser`: unknown user |
+| GOAL-AI | the user's own AI provider (first with a key; cheapest model), one message: old and new username and the typed reason | JSON `{valid, reason}`; only `valid: true` allows a username change | no key, error or malformed answer: no change (fail closed). The reason is not stored |
+
+Schedule: a WorkManager one-off task for the next 00:20 local time (named `goals-<date>`, re-booked each run), the 15-minute `analyse` task and opening the app as fallbacks. Tests: `mobile/test/full/goals_test.dart`.

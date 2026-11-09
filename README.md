@@ -79,6 +79,14 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **History:** dates and kinds of limit hits and cancel attempts. No photos, no text.
 - **It can be bypassed** (turn Accessibility off, change the clock, use another browser or app). It is a nudge for you, not a lock, and not for use on anyone else's phone.
 
+### 6. Daily goals (Full build only, optional)
+
+*Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day: 1 day, then 2 days after two misses in a row, then 4 days. A day you could not be read is never counted as a miss.
+
+- **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why; your own AI provider (your key, not stored) checks it is a real reason.
+- **Limits:** GitHub counts public repositories only; LeetCode has no official API, so it may stop working; a changed phone clock or Accessibility turned off can bypass it.
+- **Semi is a different build, not a hidden one:** it contains none of this code.
+
 ### The screen is never captured
 
 Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and they do that only in Instagram, YouTube and (for the address bar only) a browser, only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
@@ -216,11 +224,11 @@ cd mobile/android && ./gradlew :reelbot_native:testDebugUnitTest
 ```
 
 ```bash
-cd mobile && flutter build apk --release --flavor full
+cd mobile && flutter build apk --release --flavor full -t lib/main_full.dart
 ```
 
 ```bash
-cd mobile && flutter build apk --release --flavor semi --dart-define=SEMI_BUILD=true
+cd mobile && flutter build apk --release --flavor semi -t lib/main_semi.dart
 ```
 
 `full` has every feature. `semi` asks Android for nothing beyond the internet: no Accessibility, Usage access, notifications or battery exemption, no Insights, no Reel blocker, no in-app updating.
