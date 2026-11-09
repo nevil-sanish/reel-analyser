@@ -7,6 +7,7 @@ import '../app_services.dart';
 import '../core/models.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
+import 'note_chat_screen.dart';
 import 'theme.dart';
 import 'web_screen.dart';
 
@@ -226,6 +227,15 @@ class _ReelScreenState extends State<ReelScreen> {
                         },
                       ),
                   ]),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            label: const Text('Chat about this note'),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => NoteChatScreen(services, reel)));
+            },
           ),
         ],
       ),

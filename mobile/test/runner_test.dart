@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:reelbrain/app_services.dart' show noteDetail;
 import 'package:reelbrain/core/models.dart';
 import 'package:reelbrain/data/export.dart';
 import 'package:reelbrain/data/library_db.dart';
@@ -424,6 +425,31 @@ void main() {
     final data = jsonDecode(second) as Map;
     expect((data['reels'] as List).length, 2, reason: 'archived notes are exported too');
     expect((data['chats'] as List).length, 2);
+  });
+
+  test('T-NOTECHAT per-note threads are separate, saved, exported and imported; the model sees only that note', () async {
+    const a = Reel(url: 'https://youtu.be/n1', app: 'youtube', title: 'Alpha', summary: 'about apples', transcript: 'apple talk', savedAt: 1);
+    const b = Reel(url: 'https://youtu.be/n2', app: 'youtube', title: 'Beta', summary: 'about bananas', savedAt: 2);
+    await db.saveReel(a);
+    await db.saveReel(b);
+    expect(await db.noteChat(a.url), isEmpty);
+    await db.saveNoteChat(a.url, ['q?', 'a.'], 5);
+    await db.saveNoteChat(a.url, ['q?', 'a.', 'q2?', 'a2.'], 6);
+    await db.saveNoteChat(b.url, ['other?', 'b.'], 7);
+    expect(await db.noteChat(a.url), ['q?', 'a.', 'q2?', 'a2.']);
+    expect(await db.noteChat(b.url), ['other?', 'b.']);
+    expect(noteDetail(a), contains('apple talk'));
+    expect(noteDetail(a), isNot(contains('bananas')));
+    final json = exportJson(await db.reels(), await db.chats(), null, await db.noteChats());
+    await db.delete(a.url);
+    await db.deleteNoteChat(a.url);
+    await importJson(db, json);
+    expect(await db.noteChat(a.url), ['q?', 'a.', 'q2?', 'a2.']);
+    await db.deleteNoteChat(b.url);
+    expect(await db.noteChat(b.url), isEmpty);
+    expect(await db.noteChat(a.url), isNotEmpty, reason: 'clearing one thread leaves the others');
+    await db.eraseAll();
+    expect(await db.noteChats(), isEmpty);
   });
 
   test('T-EXP-01 export, wipe, import (notes and chats); import twice adds nothing', () async {

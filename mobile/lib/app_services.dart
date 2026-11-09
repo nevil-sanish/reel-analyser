@@ -36,7 +36,7 @@ class AppServices {
   static Future<AppServices> create() async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client(), Directory(await getDatabasesPath()));
 
-  static const version = '1.0.7.0';
+  static const version = '1.0.8.0';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.
@@ -97,28 +97,15 @@ class AppServices {
     // ponytail: keyword overlap, no embeddings; good enough for a personal library.
     int score(Reel r) => words.where(text(r).contains).length;
     final ranked = [...all]..sort((a, b) => score(b).compareTo(score(a)));
-    String brief(Reel r) =>
-        '- ${r.title} (${r.kind}, ${savedAgo(r.savedAt, DateTime.now())}): ${r.overview.isEmpty ? r.summary : r.overview.join('; ')}';
-    String full(Reel r) => [
-          brief(r),
-          if (r.overview.isNotEmpty && r.summary.isNotEmpty) '  Detail: ${r.summary}',
-          if (r.keyPoints.isNotEmpty) '  Points: ${r.keyPoints.join('; ')}',
-          if (r.mentions.isNotEmpty) '  Mentioned: ${r.mentions.join(', ')}',
-          if (r.author.isNotEmpty) '  Author: @${r.author}',
-          if (r.caption.isNotEmpty) '  Caption: ${r.caption}',
-          if (r.onScreenText.isNotEmpty) '  On screen: ${r.onScreenText}',
-          if (r.transcript.isNotEmpty) '  Transcript: ${r.transcript}',
-          if (r.url.startsWith('http')) '  Link: ${r.url}',
-        ].join('\n');
     final out = <String>[];
     var used = 0;
     for (final r in ranked) {
-      final f = full(r);
+      final f = noteDetail(r);
       if (used + f.length <= budget) {
         out.add(f);
         used += f.length;
       } else {
-        out.add(brief(r));
+        out.add(noteBrief(r));
       }
     }
     return out.join('\n');
@@ -131,6 +118,19 @@ class AppServices {
     final system = 'You are Reel Analyser. The saved reel notes below are everything you know: answer ONLY from them, '
         'never from general knowledge. Cite the note titles you used. If the notes do not cover the question, '
         'say that they do not and stop. Keep answers short.\n\nSaved notes:\n$notes';
+    return _complete(provider, system, turns, model);
+  }
+
+  /// One chat turn about a single note: that note is all the model is given, and [turns] is only that note's thread.
+  Future<String> noteChat(String provider, Reel reel, List<String> turns, {String? model}) {
+    final system = 'You are Reel Analyser. The saved note below is everything you know: answer ONLY from it, '
+        'never from general knowledge. If the note does not cover the question, say so and stop. '
+        'Keep answers short.\n\nSaved note:\n${noteDetail(reel)}';
+    return _complete(provider, system, turns, model);
+  }
+
+  /// Runs the turns through the provider's keys (Gemini tries each saved key in turn on a rate limit).
+  Future<String> _complete(String provider, String system, List<String> turns, String? model) async {
     final ks = switch (provider) {
       'gemini' => await keys.geminiKeys,
       'openai' => [?await keys.openai],
@@ -149,3 +149,20 @@ class AppServices {
     throw last ?? GeminiException(GeminiFailure.badKey, 'Add a ${ChatModel.labels[provider]} key in Settings');
   }
 }
+
+/// One line per note: title, kind, age and the overview.
+String noteBrief(Reel r) =>
+    '- ${r.title} (${r.kind}, ${savedAgo(r.savedAt, DateTime.now())}): ${r.overview.isEmpty ? r.summary : r.overview.join('; ')}';
+
+/// Everything the app kept about a note, as text for a model.
+String noteDetail(Reel r) => [
+      noteBrief(r),
+      if (r.overview.isNotEmpty && r.summary.isNotEmpty) '  Detail: ${r.summary}',
+      if (r.keyPoints.isNotEmpty) '  Points: ${r.keyPoints.join('; ')}',
+      if (r.mentions.isNotEmpty) '  Mentioned: ${r.mentions.join(', ')}',
+      if (r.author.isNotEmpty) '  Author: @${r.author}',
+      if (r.caption.isNotEmpty) '  Caption: ${r.caption}',
+      if (r.onScreenText.isNotEmpty) '  On screen: ${r.onScreenText}',
+      if (r.transcript.isNotEmpty) '  Transcript: ${r.transcript}',
+      if (r.url.startsWith('http')) '  Link: ${r.url}',
+    ].join('\n');

@@ -188,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final n = DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
     final name = 'library-${n.year}-${two(n.month)}-${two(n.day)}-${two(n.hour)}${two(n.minute)}.json';
-    await s.bridge.saveDownload(name, exportJson(reels, chats, encrypted));
+    await s.bridge.saveDownload(name, exportJson(reels, chats, encrypted, await s.library.noteChats()));
     if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats${encrypted == null ? '' : ', with your keys encrypted,'} to one file, Downloads/ReelBot/$name');
   }
 

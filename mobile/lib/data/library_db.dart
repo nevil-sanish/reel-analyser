@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 5,
+        version: 6,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -28,12 +28,14 @@ class LibraryDb {
           await _v3(db);
           await _v4(db);
           await _v5(db);
+          await _v6(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
           if (from < 3) await _v3(db);
           if (from < 4) await _v4(db);
           if (from < 5) await _v5(db);
+          if (from < 6) await _v6(db);
         },
       ),
     );
@@ -61,6 +63,28 @@ class LibraryDb {
     await db.execute("ALTER TABLE reels ADD COLUMN transcript TEXT NOT NULL DEFAULT ''");
     await db.execute("ALTER TABLE reels ADD COLUMN onScreenText TEXT NOT NULL DEFAULT ''");
   }
+
+  /// Version 6: one chat thread per note. `turns` alternates question, answer, like `chats`.
+  static Future<void> _v6(Database db) => db.execute(
+      'CREATE TABLE note_chats (url TEXT PRIMARY KEY, updatedAt INTEGER NOT NULL, turns TEXT NOT NULL)');
+
+  /// The chat thread of one note (empty when none yet). It holds only that note's conversation.
+  Future<List<String>> noteChat(String url) async {
+    final r = await _db.query('note_chats', where: 'url = ?', whereArgs: [url]);
+    return r.isEmpty ? [] : [for (final t in jsonDecode(r.first['turns'] as String) as List) '$t'];
+  }
+
+  Future<void> saveNoteChat(String url, List<String> turns, int now) => _db.insert(
+      'note_chats', {'url': url, 'updatedAt': now, 'turns': jsonEncode(turns)},
+      conflictAlgorithm: ConflictAlgorithm.replace);
+
+  Future<void> deleteNoteChat(String url) => _db.delete('note_chats', where: 'url = ?', whereArgs: [url]);
+
+  /// Every note's thread by link, for export.
+  Future<Map<String, List<String>>> noteChats() async => {
+        for (final r in await _db.query('note_chats'))
+          r['url'] as String: [for (final t in jsonDecode(r['turns'] as String) as List) '$t'],
+      };
 
   /// Creates the chat when [id] is null; returns its id.
   Future<int> saveChat(int? id, List<String> turns, int now) async {
@@ -148,6 +172,7 @@ class LibraryDb {
   Future<void> eraseAll() async {
     await _db.delete('reels');
     await _db.delete('chats');
+    await _db.delete('note_chats');
     await _db.update('meta', {'v': 0}, where: "k = 'gemini_turn'");
   }
 

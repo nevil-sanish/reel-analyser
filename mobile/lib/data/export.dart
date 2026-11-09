@@ -4,11 +4,12 @@ import '../core/models.dart';
 import 'library_db.dart';
 
 /// `library.json` content; Import reads the same shape. Version 2 adds saved chats.
-String exportJson(List<Reel> reels, [List<(int, String, int, List<String>)> chats = const [], Map<String, Object?>? encryptedKeys]) =>
+String exportJson(List<Reel> reels, [List<(int, String, int, List<String>)> chats = const [], Map<String, Object?>? encryptedKeys, Map<String, List<String>> noteChats = const {}]) =>
     const JsonEncoder.withIndent('  ').convert({
       'version': 2,
       'encryptedKeys': ?encryptedKeys,
       'reels': reels.map((r) => r.toJson()).toList(),
+      'noteChats': noteChats,
       'chats': [for (final (_, title, updatedAt, turns) in chats) {'title': title, 'updatedAt': updatedAt, 'turns': turns}],
     });
 
@@ -56,6 +57,14 @@ Future<(int, int)> importJson(LibraryDb db, String json) async {
     if (turns.isEmpty || !have.add(key)) continue;
     await db.saveChat(null, turns, key.$2);
     chats++;
+  }
+  // Per-note threads: only for notes that are here, and never over a thread already in the app.
+  final nc = data is Map && data['noteChats'] is Map ? data['noteChats'] as Map : const {};
+  for (final e in nc.entries) {
+    final url = '${e.key}';
+    final turns = e.value is List ? [for (final t in e.value as List) '$t'] : <String>[];
+    if (turns.isEmpty || !_importableUrl(url) || !await db.has(url) || (await db.noteChat(url)).isNotEmpty) continue;
+    await db.saveNoteChat(url, turns, DateTime.now().millisecondsSinceEpoch);
   }
   return (notes, chats);
 }

@@ -282,8 +282,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     itemCount: _turns.length + (_busy ? 1 : 0),
                     itemBuilder: (_, i) => i == _turns.length
-                        ? const Align(alignment: Alignment.centerLeft, child: _Typing())
-                        : _Bubble(_turns[i], mine: i.isEven),
+                        ? const Align(alignment: Alignment.centerLeft, child: ChatTyping())
+                        : ChatBubble(_turns[i], mine: i.isEven),
                   )
                 : ListView(
                     key: const ValueKey('landing'),
@@ -441,10 +441,10 @@ class _TodayStrip extends StatelessWidget {
   }
 }
 
-class _Bubble extends StatelessWidget {
+class ChatBubble extends StatelessWidget {
   final String text;
   final bool mine;
-  const _Bubble(this.text, {required this.mine});
+  const ChatBubble(this.text, {required this.mine, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -478,8 +478,8 @@ class _Bubble extends StatelessWidget {
   }
 }
 
-class _Typing extends StatelessWidget {
-  const _Typing();
+class ChatTyping extends StatelessWidget {
+  const ChatTyping({super.key});
 
   @override
   Widget build(BuildContext context) => Container(
