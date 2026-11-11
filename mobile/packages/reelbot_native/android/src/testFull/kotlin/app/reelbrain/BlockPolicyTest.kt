@@ -66,23 +66,13 @@ class BlockPolicyTest {
         assertEquals(Verdict.Allow, v(shared, "instagram", 600, mapOf("instagram" to 999 * min), susp = true))
     }
 
-    @Test fun `first set-up applies at once and later edits only in the window`() {
-        val now = at(15, 0)
-        val first = BlockPolicy.save(BlockState(), shared, now)!!
+    @Test fun `first set-up applies at once and a later change any time of day waits for midnight`() {
+        val first = BlockPolicy.save(BlockState(), shared, at(15, 0))
         assertEquals(shared, first.active)
-        assertTrue(BlockPolicy.editable(BlockState(), now))
-        assertFalse(BlockPolicy.editable(first, at(0, 10)))
-        assertFalse(BlockPolicy.editable(first, now))
-        assertNull(BlockPolicy.save(first, separate, now))
-        assertTrue(BlockPolicy.editable(first, at(0, 9)))
-    }
-
-    @Test fun `an edit in the window starts at ten past midnight, not before`() {
-        val s0 = BlockState(active = shared)
-        val saved = BlockPolicy.save(s0, separate, at(0, 4))!!
-        assertEquals(shared, BlockPolicy.effective(saved, at(0, 9)).active)
-        assertEquals(separate, BlockPolicy.effective(saved, at(0, 10)).active)
-        assertNull(BlockPolicy.effective(saved, at(5, 0)).pending)
+        val saved = BlockPolicy.save(first, separate, at(15, 0))
+        assertEquals(shared, BlockPolicy.effective(saved, at(23, 59)).active)
+        assertEquals(separate, BlockPolicy.effective(saved, at(0, 0, 10)).active)
+        assertNull(BlockPolicy.effective(saved, at(0, 0, 10)).pending)
     }
 
     @Test fun `json round trip and damaged values`() {

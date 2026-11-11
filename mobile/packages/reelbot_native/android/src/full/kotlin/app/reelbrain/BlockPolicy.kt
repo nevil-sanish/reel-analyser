@@ -54,7 +54,7 @@ data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<
     }
 }
 
-/** The stored state: the rules in force, rules waiting for 00:10, and the day the block was suspended. */
+/** The stored state: the rules in force, rules waiting for the next midnight, and the day the block was suspended. */
 data class BlockState(
     val active: BlockConfig? = null,
     val pending: BlockConfig? = null,
@@ -70,9 +70,6 @@ sealed class Verdict {
 }
 
 object BlockPolicy {
-    /** Rules can be edited from 00:00 to 00:10 only, and the change starts when that window closes. */
-    const val EDIT_WINDOW_MIN = 10
-
     fun minuteOfDay(ms: Long): Int = Calendar.getInstance().apply { timeInMillis = ms }.let { it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE) }
 
     private fun midnight(ms: Long): Long = Calendar.getInstance().apply {
@@ -80,22 +77,20 @@ object BlockPolicy {
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    /** Pending rules that are due take over. Checked whenever the state is read, so nothing has to run at 00:10. */
+    /** Pending rules that are due take over. Checked whenever the state is read, so nothing has to run at midnight. */
     fun effective(s: BlockState, now: Long): BlockState =
         if (s.pending != null && now >= s.pendingFrom) s.copy(active = s.pending, pending = null, pendingFrom = 0) else s
 
-    /** The first set-up is free; after that only in the window. */
-    fun editable(s: BlockState, now: Long): Boolean = s.active == null || minuteOfDay(now) < EDIT_WINDOW_MIN
-
-    /** The new state, or null when editing is locked. */
-    fun save(s: BlockState, cfg: BlockConfig, now: Long): BlockState? = when {
+    /**
+     * The first set-up applies at once. A later change (the app asks for a typed paragraph first) waits for the next
+     * midnight, so it can never loosen today's rules.
+     */
+    fun save(s: BlockState, cfg: BlockConfig, now: Long): BlockState = when {
         s.active == null -> s.copy(active = cfg, pending = null, pendingFrom = 0)
-        !editable(s, now) -> null
-        else -> s.copy(pending = cfg, pendingFrom = midnight(now) + EDIT_WINDOW_MIN * 60_000L)
+        else -> s.copy(pending = cfg, pendingFrom = nextMidnight(now))
     }
 
-    /** When a saved change starts to count, for the screen to say. */
-    fun nextEditWindow(now: Long): Long = Calendar.getInstance().apply {
+    fun nextMidnight(now: Long): Long = Calendar.getInstance().apply {
         timeInMillis = midnight(now); add(Calendar.DAY_OF_MONTH, 1)
     }.timeInMillis
 

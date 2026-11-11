@@ -110,18 +110,18 @@ object FlavorMethods {
                 "active" to s.active?.toJson(), "pending" to s.pending?.toJson(), "pendingFrom" to s.pendingFrom,
                 "suspendedToday" to (s.suspendedDate == date),
                 "photo" to if (s.suspendedDate == date && photo.isFile) photo.path else null,
-                "editable" to BlockPolicy.editable(s, now), "nextEdit" to BlockPolicy.nextEditWindow(now),
+                "nextEdit" to BlockPolicy.nextMidnight(now),
                 "used" to db.usedToday(date), "now" to now,
             )
         }
 
-        /** "ok", "locked" (outside 00:00-00:10 with rules already set) or "invalid". */
+        /** "ok" or "invalid". */
         private fun blockSave(json: String): String {
             val cfg = BlockConfig.parse(json)?.takeIf { it.items.isNotEmpty() } ?: return "invalid"
             val now = System.currentTimeMillis()
             val db = CounterDb.get(ctx)
             val before = db.currentBlockState(now)
-            val after = BlockPolicy.save(before, cfg, now) ?: return "locked"
+            val after = BlockPolicy.save(before, cfg, now)
             db.saveBlockState(after)
             db.addEvent(now, if (before.active == null) "set" else "changed")
             return "ok"

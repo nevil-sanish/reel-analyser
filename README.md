@@ -73,7 +73,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **Limits:** one shared daily limit for everything you picked, or one for each, in minutes or hours. It counts time on reels only.
 - **Schedule:** any number of time slots when reels are allowed (for example 18:00 to 19:00). Outside them they are blocked. A reel is watched only when both the limit and the slots allow it.
 - **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
-- **Locked rules:** after the first set-up, rules can be changed only between 00:00 and 00:10, and a change starts at 00:10.
+- **Locked rules:** after the first set-up, changing the rules takes a 50-word paragraph typed by hand (no paste), checked with your own AI key; an accepted change starts at the next 00:00.
 - **Turn off for today:** needs a photo of a face with your phone's camera app. It is checked on the phone, shown on a card with a quote and a last yes or no, kept for the day and then deleted. Saying no keeps the block.
 - **Remove for good:** needs a paragraph of at least 50 words typed by hand: no paste, not too fast, no typical AI wording. These checks are best-effort.
 - **History:** dates and kinds of limit hits and cancel attempts. No photos, no text.
@@ -184,7 +184,7 @@ Accessibility events ─▶ is a reel/short on screen? (ids only; browser: addre
                      ─▶ Block ─▶ BlockActivity over the reel (quote, Close after 3 s)
 ```
 
-`BlockPolicy` is pure Kotlin with unit tests: shared or separate limits, slots (also across midnight), both must pass, the 00:00 to 00:10 edit window, pending rules that start at 00:10. State lives in `counter.db` so the service needs no Flutter engine. The detection of Instagram Reels uses ids that exist only in the Reels viewer; the Reels button of the bottom bar is deliberately not one of them, as it is on screen in the feed too.
+`BlockPolicy` is pure Kotlin with unit tests: shared or separate limits, slots (also across midnight), both must pass, a change to rules already on waits for the next midnight. State lives in `counter.db` so the service needs no Flutter engine. The detection of Instagram Reels uses ids that exist only in the Reels viewer; the Reels button of the bottom bar is deliberately not one of them, as it is on screen in the feed too.
 
 ### Chat
 

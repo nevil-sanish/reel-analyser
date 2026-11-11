@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import 'blocker.dart';
 import 'detect_consent.dart';
+import 'paragraph_gate.dart';
 import '../ui/liquid.dart';
 import '../ui/motion.dart';
 
@@ -81,7 +82,7 @@ class _BlockerScreenState extends State<BlockerScreen>
       _st = st;
       _consent = consent;
       if (keepEdits && _edits.isNotEmpty) return;
-      // Show what is waiting for 00:10 if there is a change, else what is in force.
+      // Show what is waiting for midnight if there is a change, else what is in force.
       final c = st.pending ?? st.active;
       _mode = c?.mode ?? 'shared';
       _items
@@ -116,15 +117,26 @@ class _BlockerScreenState extends State<BlockerScreen>
     )) {
       return _say('Set a daily limit or at least one time slot.');
     }
+    final before = _st?.active;
+    if (before != null) {
+      final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
+      if (!mounted) return;
+      final ok = await askParagraph(
+        context,
+        title: 'Change the reel limits',
+        intro: 'To change rules that are already on, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
+            'Pasting is not accepted. Your paragraph is checked with your own AI key and is not stored. '
+            'If it is accepted, the new rules start at 00:00 tonight; until then today\'s rules stay.',
+        action: 'Check and save',
+        verify: (text) => judgeRuleChange(ask, before: before, after: c, reason: text),
+      );
+      if (!ok || !mounted) return;
+    }
     Haptics.medium();
     final r = await _bridge.save(c);
     if (!mounted) return;
     _say(switch (r) {
-      'ok' =>
-        _st?.active == null
-            ? 'The blocker is on.'
-            : 'Saved. It starts at 00:10.',
-      'locked' => 'Rules can only be changed between 00:00 and 00:10.',
+      'ok' => before == null ? 'The blocker is on.' : 'Saved. The new rules start at 00:00 tonight.',
       _ => 'Those rules are not valid.',
     });
     _edits.clear();
@@ -149,7 +161,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     setState(() => e.intervals = [...e.intervals, i]);
   }
 
-  Widget _ruleEditor(String key, String title, bool locked) {
+  Widget _ruleEditor(String key, String title) {
     final e = _edits[key]!;
     final t = Theme.of(context);
     return Column(
@@ -162,7 +174,6 @@ class _BlockerScreenState extends State<BlockerScreen>
             Expanded(
               child: TextField(
                 controller: e.limit,
-                enabled: !locked,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
@@ -179,9 +190,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                 ButtonSegment(value: true, label: Text('hours')),
               ],
               selected: {e.hours},
-              onSelectionChanged: locked
-                  ? null
-                  : (v) => setState(() => e.hours = v.first),
+              onSelectionChanged: (v) => setState(() => e.hours = v.first),
             ),
           ],
         ),
@@ -193,14 +202,11 @@ class _BlockerScreenState extends State<BlockerScreen>
             for (final i in e.intervals)
               InputChip(
                 label: Text('$i'),
-                onDeleted: locked
-                    ? null
-                    : () => setState(
-                        () => e.intervals = [...e.intervals]..remove(i),
-                      ),
+                onDeleted: () => setState(
+                  () => e.intervals = [...e.intervals]..remove(i),
+                ),
               ),
-            if (!locked)
-              ActionChip(
+            ActionChip(
                 avatar: const Icon(Icons.add, size: 18),
                 label: const Text('Add time'),
                 onPressed: () => _addInterval(e),
@@ -232,7 +238,6 @@ class _BlockerScreenState extends State<BlockerScreen>
         body: const SizedBox(),
       );
     }
-    final locked = !st.editable;
     final p = st.pending;
     final startsAt = p == null
         ? null
@@ -317,17 +322,6 @@ class _BlockerScreenState extends State<BlockerScreen>
               ),
             ),
           ),
-        if (st.active != null && locked)
-            Card(
-          margin: const EdgeInsets.only(bottom: 12),
-              color: t.colorScheme.secondaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'The rules are locked for today. You can change them between 00:00 and 00:10, and a change starts at 00:10.',
-                ),
-              ),
-            ),
           if (p != null)
             Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -352,12 +346,9 @@ class _BlockerScreenState extends State<BlockerScreen>
                       contentPadding: EdgeInsets.zero,
                       title: Text(surfaceNames[k]!),
                       value: _items.contains(k),
-                      onChanged: locked
-                          ? null
-                          : (v) => setState(
-                              () =>
-                                  v == true ? _items.add(k) : _items.remove(k),
-                            ),
+                      onChanged: (v) => setState(
+                        () => v == true ? _items.add(k) : _items.remove(k),
+                      ),
                     ),
                   const SizedBox(height: 8),
                   SegmentedButton<String>(
@@ -372,20 +363,17 @@ class _BlockerScreenState extends State<BlockerScreen>
                       ),
                     ],
                     selected: {_mode},
-                    onSelectionChanged: locked
-                        ? null
-                        : (v) => setState(() => _mode = v.first),
+                    onSelectionChanged: (v) => setState(() => _mode = v.first),
                   ),
                   const SizedBox(height: 16),
                   if (_mode == 'shared')
-                    _ruleEditor('all', 'All chosen together', locked)
+                    _ruleEditor('all', 'All chosen together')
                   else
                     for (final k in blockSurfaces)
                       if (_items.contains(k)) ...[
                         _ruleEditor(
                           k,
                           surfaceNames[k]!.split(' (').first,
-                          locked,
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -396,7 +384,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                   ),
                   const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: locked ? null : _save,
+                    onPressed: _save,
                     child: Text(
                       st.active == null
                           ? 'Turn the blocker on'
