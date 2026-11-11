@@ -81,7 +81,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 ### 6. Daily goals (Full build only, optional)
 
-*Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day: 1 day, then 2 days after two misses in a row, then 4 days. A day you could not be read is never counted as a miss.
+*Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day only; miss that day too and the day after is blocked as well. A day you could not be read is never counted as a miss.
 
 - **Changing or stopping:** any time, but only after typing a paragraph of at least 50 words by hand (no paste). A running penalty still ends on its last day.
 - **Changing or stopping:** allowed any time, but after the first set-up it takes a typed paragraph of at least 50 words (no paste). A running penalty still ends on its last day.

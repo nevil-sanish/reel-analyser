@@ -14,8 +14,7 @@ import '../ui/liquid.dart';
 import '../ui/motion.dart';
 
 /// Settings → Daily goals (full build). A target of GitHub commits, Codeforces problems and LeetCode problems a day. Miss a
-/// day and Instagram (and YouTube, if chosen) is blocked the next day: 1 day after the first miss, 2 after two in a row, 4
-/// after three or more.
+/// day and Instagram (and YouTube, if chosen) is blocked the next day only; miss that day too and the day after is blocked.
 class GoalsScreen extends StatefulWidget {
   final AppServices services;
 
@@ -254,7 +253,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Miss one day: blocked for 1 day. Miss two in a row: 2 days. Three or more in a row: 4 days. A day you meet your goals ends the run. '
+                  'Miss a day: blocked the next day only. Miss that day too: the day after is blocked as well. A day you meet your goals ends the block after it. '
                   'Each day is checked automatically just after midnight, by your phone, against your local day. There is nothing to press. '
                   'Usernames are locked once used; changing one takes a day and a written reason.',
                   style: t.textTheme.bodySmall,

@@ -26,7 +26,7 @@ Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md
   - LeetCode: `POST leetcode.com/graphql` with `matchedUser` and `recentAcSubmissionList(limit 20)`; counts different `titleSlug` that day. Unofficial API: may stop working. Disclosed everywhere.
 - **Fail open:** a site that cannot be read is never a miss. A day is retried until it is 3 days old, then dropped as unknown. "At least n" counts that are not provably short are unknown, not misses.
 - **Judging:** a finished day is judged 20 minutes after midnight, once, using the goals that were in force that day (goals are stored with the date they start to count). Up to 7 days back.
-- **Penalty:** misses in a row n gives a block of **1 day, then 2, then 4 (the most)**, starting the day after the miss; a met day ends the run but never lifts a block already running; a block is never shortened. **Confirmed by the user (2026-11-09): 1, 2, then 4 days.** The handle-change reason may be sent to the user's own AI key (confirmed 2026-11-09).
+- **Penalty:** **changed 2026-11-11 (issue #5): each missed day blocks only the next day** (misses in a row block day after day); a met day adds no block and never lifts one already running. (Was 1, 2, 4 days until 1.1.1.2.) The handle-change reason may be sent to the user's own AI key (confirmed 2026-11-09).
 - **What is blocked:** the whole Instagram app (and YouTube if chosen). Not cancellable for the day. Goals can be edited only 00:00 to 00:10 after the first set-up.
 - Files: `mobile/lib/full/goals.dart` (fetchers, rules, engine), `goal_store.dart` (tables), `goals_screen.dart`, `mobile/test/goals_test.dart` (19 tests, all passed before the split).
 - **Kotlin, done and tested** (before the planned flavour split): `Punish` model in `BlockPolicy.kt`; `punish` kv in `CounterDb.kt`; `ReelCounterService.kt` blocks the whole app (`blockNow`, reason `commit`, no screen reading while blocked); `BlockActivity.kt` shows "Instagram is blocked ... opens again after <date>"; plugin method `punishSet`; 2 new Kotlin tests.
@@ -72,6 +72,6 @@ Chosen approach (reviewed): separate Dart entry points and matching Android flav
 
 Done and checked without the phone: TODO A, B, C, D, E and F. `flutter analyze` clean, 118 Dart tests, Kotlin `testFullDebugUnitTest` (81) and `testSemiDebugUnitTest` (33) pass, `tool/check_apks.sh` passes on freshly built release APKs (signer `CN=Reel Bot`, version code 40, no CAMERA permission). Both APKs, `SHA256SUMS` and `notes.md` are in `mobile/build/release-v1.1.1.0/`.
 
-Decisions: penalty 1, 2, 4 days; handle-change reason goes to the user's own AI key (both confirmed).
+Decisions: penalty 1 day per miss (since 2026-11-11, was 1, 2, 4); handle-change reason goes to the user's own AI key (both confirmed).
 
 **Left, needs the phone and the user:** TODO G steps 3 to 5 (install over the existing apps with `adb install -r`; the user taps "I agree" on `legal_v3`; check the five tabs, Semi's three, the Blocker tab, locked handles flow, a penalty block via a manual `punishSet`; then commit, push and `gh release create v1.1.1.0`). Not built in: rest days and a midnight "missed" notification (not requested). Known bypasses left in the Terms: phone clock, Accessibility off, Erase all my data.

@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'goal_store.dart';
 
 /// Daily goals (full build): a number of GitHub commits, LeetCode problems and Codeforces problems a day. Miss a day and
-/// Instagram (and YouTube, if chosen) is blocked, for longer after each miss in a row. Nothing leaves the phone except
+/// Instagram (and YouTube, if chosen) is blocked the next day. Nothing leaves the phone except
 /// the public username in the request to the site, and nothing is stored anywhere but on the phone.
 const goalSources = ['github', 'codeforces', 'leetcode'];
 const goalNames = {'github': 'GitHub commits', 'codeforces': 'Codeforces problems', 'leetcode': 'LeetCode problems'};
@@ -16,9 +16,6 @@ const goalUnits = {'github': 'commits', 'codeforces': 'problems', 'leetcode': 'p
 
 /// The only hosts the goals ever call. A test pins it.
 const goalHosts = {'api.github.com', 'codeforces.com', 'leetcode.com'};
-
-/// Blocked days after the 1st, 2nd and 3rd (or later) miss in a row.
-const penaltyDays = [1, 2, 4];
 
 final _handlePatterns = {
   'github': RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$'),
@@ -113,12 +110,13 @@ String addDays(String s, int n) {
 }
 
 /// The result of one finished day. Unknown (met == null) changes nothing. A met day ends the run of misses and leaves any block
-/// already running. A missed day adds to the run and blocks the days after it: 1, then 2, then 4 days, and never shortens a block.
+/// already running. A missed day adds to the run and blocks only the day after it, so misses in a row block day after day;
+/// a block is never shortened.
 Penalty applyDay(Penalty p, String date, bool? met) {
   if (met == null) return p;
   if (met) return Penalty(0, p.until);
   final streak = p.streak + 1;
-  final until = addDays(date, penaltyDays[math.min(streak, penaltyDays.length) - 1]);
+  final until = addDays(date, 1);
   final cur = p.until;
   return Penalty(streak, cur != null && cur.compareTo(until) > 0 ? cur : until);
 }

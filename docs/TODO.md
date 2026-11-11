@@ -5,7 +5,7 @@ Read [PROGRESS.md](PROGRESS.md) first. Work in this order; check each box when i
 ## What the user asked for (checklist, in their words, so nothing is lost)
 
 - [x] Feasibility opinion on punishing missed goals. Answered: GitHub, Codeforces easy; LeetCode fragile (unofficial); Google Tasks hard (needs a Google sign-in) and left out.
-- [~] GitHub commits, Codeforces and LeetCode per-day targets the user sets. If missed, the next day Instagram is fully blocked; missed again, 2 days; and so on up to 4 days. (Logic and screen built; see step D to finish.)
+- [~] GitHub commits, Codeforces and LeetCode per-day targets the user sets. If missed, the next day Instagram is fully blocked; each missed day blocks only the next day (changed 2026-11-11, issue #5). (Logic and screen built; see step D to finish.)
 - [ ] Nothing stored outside the phone, nothing against our policy. (Local only so far; policy texts must still cover the new items, step F.)
 - [ ] **Blocker as a bottom-nav tab, not a Settings page.** (Built in code, not yet compiled or seen on the phone.)
 - [ ] **About tab** with all about, legal, feedback, about the developer. (Built in code, not yet compiled or seen.)
@@ -91,7 +91,7 @@ Plan:
 
 ## Open questions for the user
 
-1. **Penalty length:** DECIDED 2026-11-09: 1, 2, then 4 days.
+1. **Penalty length:** DECIDED 2026-11-11 (issue #5): 1 day per missed day (was 1, 2, 4).
 2. **YouTube:** blocked as well as Instagram on a miss, or Instagram only? (The screen lets the user pick; default is Instagram.)
 3. **Analysis of a handle-change reason:** DECIDED 2026-11-09: yes, send it to the user's own AI key. (Was: is it fine to send the explanation to the user's own AI provider? If not, the only alternative is local rules (paste check, length, a few reason keywords), which cannot judge validity properly.)
 4. **Rest days** (a few per month, set in advance): wanted or not? Not in the request; offered as a safeguard.

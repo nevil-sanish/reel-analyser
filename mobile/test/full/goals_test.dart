@@ -29,19 +29,16 @@ void main() {
       expect(dayMet([gh], {'github': const Count.ok(3, exact: false)}), isTrue, reason: 'at least 3 already meets 2');
     });
 
-    test('the penalty is 1, then 2, then 4 days, and a met day ends the run', () {
+    test('each miss blocks only the next day, misses in a row block day after day, and a met day ends the run', () {
       var p = const Penalty(0, null);
       p = applyDay(p, '2026-11-02', false);
       expect((p.streak, p.until), (1, '2026-11-03'));
       p = applyDay(p, '2026-11-03', false);
-      expect((p.streak, p.until), (2, '2026-11-05'));
+      expect((p.streak, p.until), (2, '2026-11-04'));
       p = applyDay(p, '2026-11-04', false);
-      expect((p.streak, p.until), (3, '2026-11-08'));
-      p = applyDay(p, '2026-11-05', false);
-      expect(p.streak, 4);
-      expect(p.until, '2026-11-09', reason: 'never more than 4 days from the miss');
-      p = applyDay(p, '2026-11-06', true);
-      expect((p.streak, p.until), (0, '2026-11-09'), reason: 'a met day resets the run but does not lift a block');
+      expect((p.streak, p.until), (3, '2026-11-05'), reason: 'never more than 1 day from the miss');
+      p = applyDay(p, '2026-11-05', true);
+      expect((p.streak, p.until), (0, '2026-11-05'), reason: 'a met day resets the run and adds no block');
       p = applyDay(p, '2026-11-07', null);
       expect(p.streak, 0, reason: 'unknown changes nothing');
       p = applyDay(p, '2026-11-20', false);
@@ -212,7 +209,7 @@ void main() {
       expect(p.streak, 1, reason: 'the same day is not judged twice');
     });
 
-    test('misses in a row grow the block, a met day ends the run', () async {
+    test('each miss blocks the next day, a met day ends the run', () async {
       await setGoals('2026-11-01');
       final out = <(Penalty, Set<String>)>[];
       final f = fetcher({'2026-11-04': 1}); // the goal is met on the 4th only
@@ -222,7 +219,7 @@ void main() {
       expect(days.map((d) => d.$3).toList().reversed, [false, false, false, true, false, false]);
       expect(days.map((d) => d.$4).toList().reversed, [1, 2, 3, 0, 1, 2]);
       expect(p.streak, 2);
-      expect(p.until, '2026-11-08', reason: 'the 6th missed twice in a row: 2 days after the 6th');
+      expect(p.until, '2026-11-07', reason: 'the 6th was missed: only the 7th is blocked');
       expect(out.last.$2, {'instagram'});
     });
 
