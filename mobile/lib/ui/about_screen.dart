@@ -111,12 +111,19 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
             ),
+            Center(
+              child: TextButton(
+                onPressed: () => open(LegalScreen.support),
+                child: const Text('Refunds within 7 days · Support and Refund Policy'),
+              ),
+            ),
           ]),
           SectionCard(index: 3, title: 'About and legal', children: [
             _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
             _link(context, Icons.privacy_tip_outlined, 'Privacy Policy', () => open(LegalScreen.privacy)),
             _link(context, Icons.gavel_outlined, 'Terms of Use', () => open(LegalScreen.terms)),
             _link(context, Icons.info_outline, 'Disclaimer', () => open(LegalScreen.disclaimer)),
+            _link(context, Icons.receipt_long_outlined, 'Support and Refund Policy', () => open(LegalScreen.support)),
             _link(context, Icons.article_outlined, 'Open-source licenses',
                 () => showLicensePage(context: context, applicationName: 'Reel Analyser', applicationVersion: AppServices.version)),
           ]),

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'liquid.dart';
 
-/// The Privacy Policy, Terms of Use or Disclaimer, from the copy bundled in the app so it reads offline.
+/// The Privacy Policy, Terms of Use, Disclaimer or Support and Refund Policy, from the copy bundled in the app so it reads offline.
 /// The same files are the public versions on GitHub (mobile/assets/legal/).
 class LegalScreen extends StatelessWidget {
   final String title;
@@ -13,6 +13,7 @@ class LegalScreen extends StatelessWidget {
   static const privacy = LegalScreen(title: 'Privacy Policy', asset: 'assets/legal/privacy.md');
   static const terms = LegalScreen(title: 'Terms of Use', asset: 'assets/legal/terms.md');
   static const disclaimer = LegalScreen(title: 'Disclaimer', asset: 'assets/legal/disclaimer.md');
+  static const support = LegalScreen(title: 'Support and Refund Policy', asset: 'assets/legal/support.md');
 
   /// Headings (#, ##), bullets (-) and paragraphs, with **bold** runs: all the two documents use.
   static List<Widget> render(BuildContext context, String md) {

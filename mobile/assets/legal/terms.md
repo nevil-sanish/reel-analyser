@@ -1,12 +1,12 @@
 # Terms of Use
 
-Reel Analyser · Effective 11 November 2026 · Version 1.3
+Reel Analyser · Effective 11 November 2026 · Version 1.4
 
-By installing or using Reel Analyser you agree to these terms. If you do not agree, do not use the app.
+These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), the independent developer of Reel Analyser. By installing or using Reel Analyser you agree to these terms, the Privacy Policy, the Disclaimer and, if you support the app, the Support and Refund Policy. If you do not agree, do not use the app.
 
 ## 1. What the app is
 
-Reel Analyser turns the reels, shorts and pictures you share with it into searchable notes, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. In the full version it can also, if you set it up, block Instagram Reels, YouTube Shorts and reel pages in a browser once you pass a daily limit or outside the times you allow. It works on your phone with AI services you choose and pay for yourself.
+Reel Analyser turns the reels, shorts, LinkedIn posts and pictures you share with it into searchable notes, sorts them into folders, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. In the full version it can also, if you set it up, block Instagram Reels, YouTube Shorts and reel pages in a browser once you pass a daily limit or outside the times you allow. It works on your phone with AI services you choose and pay for yourself.
 
 ## 2. Who may use it
 
@@ -18,7 +18,7 @@ The app needs your own API keys for the AI services you want to use. You are res
 
 ## 4. Your content and your responsibility
 
-You are responsible for what you share with the app. Only analyse content you have the right to use, respect copyright and other people's privacy, and follow the terms of Instagram, YouTube and any AI provider. Notes are for your personal use. Do not use the app for anything unlawful, to harass others, or to bypass access controls, rate limits or any platform's rules. The app does not host or publish your content.
+You are responsible for what you share with the app. Only analyse content you have the right to use, respect copyright and other people's privacy, and follow the terms of Instagram, YouTube, LinkedIn and any AI provider. Notes are for your personal use. Do not use the app for anything unlawful, to harass others, or to bypass access controls, rate limits or any platform's rules. The app does not host or publish your content.
 
 ## 5. AI-generated notes can be wrong
 
@@ -49,36 +49,43 @@ Daily goals (full version) are an optional, self-imposed habit tool. You choose 
 
 ## 8. Not affiliated
 
-Reel Analyser is an independent app. It is not affiliated with, endorsed or sponsored by Instagram, Meta, YouTube, Google, OpenAI, Anthropic, Groq or Apify. All names and trademarks belong to their owners and are used only to say which services the app works with.
+Reel Analyser is an independent app. It is not affiliated with, endorsed or sponsored by Instagram, Meta, YouTube, Google, LinkedIn, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid. All names and trademarks belong to their owners and are used only to say which services the app works with.
 
 ## 9. Availability
 
-Instagram and YouTube can change or block how their pages are read, so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
+Instagram, YouTube and LinkedIn can change or block how their pages are read (LinkedIn posts that need a login cannot be read), so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
 
 ## 10. Permission to use the app
 
-We give you a personal, non-exclusive, non-transferable, revocable right to use the app for its intended purpose. You may not misrepresent the app as yours or remove its notices. Open-source components are covered by their own licences, listed in Settings → Open-source licenses.
+We give you a personal, non-exclusive, non-transferable, revocable right to use the app for its intended purpose. The source code of Reel Analyser is open source under the MIT License, which lets you use, copy, change and share the code on its terms; nothing here limits that licence. If you share a changed version, do not present it as made or endorsed by us, and use your own name and icon for it. Open-source components are covered by their own licences, listed in Settings → Open-source licenses.
 
-## 11. No warranty
+The app is distributed on GitHub Releases and on F-Droid. F-Droid builds the app from the same source code itself, signs it with its own key and delivers its updates; that copy does not check GitHub for updates. A copy from anywhere else is not ours, and we are not responsible for it.
+
+## 11. Free app and voluntary support
+
+The app is free, and every feature works without paying. You can choose to support the developer through Buy Me a Coffee or UPI from the About screen. Support is a voluntary gift: it buys nothing, unlocks nothing and creates no obligation for us to provide anything. Payments are handled by those services, your bank and the UPI network, not by the app. You can have your support refunded if you ask within 7 days, as set out in the Support and Refund Policy (Settings → About and legal), which is part of these terms.
+
+## 12. No warranty
 
 The app is provided "as is" and "as available", without warranties of any kind, including fitness for a particular purpose, accuracy or uninterrupted operation, to the extent the law allows.
 
-## 12. Limitation of liability
+## 13. Limitation of liability
 
-To the extent the law allows, we are not liable for indirect, incidental or consequential loss, lost data, lost profits, or charges made by third-party services using your keys. Our total liability for any claim is limited to the amount you paid for the app, which is zero if it is free. Nothing here limits liability that cannot be limited by law, including for fraud or for death or personal injury caused by negligence.
+To the extent the law allows, we are not liable for indirect, incidental or consequential loss, lost data, lost profits, or charges made by third-party services using your keys. Our total liability for any claim is limited to the amount you paid for the app, which is zero because it is free. A voluntary support payment is not a payment for the app, and its refund is governed by the Support and Refund Policy. Nothing here limits liability that cannot be limited by law, including for fraud or for death or personal injury caused by negligence.
 
-## 13. Ending
+## 14. Ending
 
 You can stop using the app at any time by uninstalling it. We may suspend or end access if you breach these terms.
 
-## 14. Changes
+## 15. Changes
 
 We may update these terms. The new version appears in the app with a new date, and continuing to use the app after that means you accept it.
 
-## 15. Governing law
+## 16. Governing law
 
 These terms are governed by the laws of India, and the courts of India have jurisdiction, without affecting any consumer rights you have under the law of your own country.
 
-## 16. Contact
+## 17. Contact and grievances
 
-https://github.com/nevil-sanish/reel-analyser/issues
+Nevil Mathew Sanish, nevilsanish@gmail.com (refunds, privacy, legal notices and grievances; we aim to reply within 15 days).
+Bugs and ideas: https://github.com/nevil-sanish/reel-analyser/issues

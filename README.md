@@ -258,8 +258,11 @@ The app's legal texts are bundled in the app (Settings → About and legal) and 
 - [Privacy Policy](mobile/assets/legal/privacy.md)
 - [Terms of Use](mobile/assets/legal/terms.md)
 - [Disclaimer](mobile/assets/legal/disclaimer.md)
+- [Support and Refund Policy](mobile/assets/legal/support.md): support is optional and buys nothing; any support is refunded if you email nevilsanish@gmail.com within 7 days with the transaction details
 
-Reel Analyser is an independent project and is not affiliated with Instagram, Meta, YouTube, Google, OpenAI, Anthropic, Groq or Apify.
+Security issues: see [SECURITY.md](SECURITY.md). Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md). Contact for refunds, privacy and legal matters: nevilsanish@gmail.com.
+
+Reel Analyser is an independent project and is not affiliated with Instagram, Meta, YouTube, Google, LinkedIn, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid.
 
 ## Docs
 

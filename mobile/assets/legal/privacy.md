@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 11 November 2026 · Version 1.3
+Reel Analyser · Effective 11 November 2026 · Version 1.4
 
 ## 1. The short version
 
@@ -9,11 +9,12 @@ Reel Analyser · Effective 11 November 2026 · Version 1.3
 - When you analyse a reel or ask a question, the content is sent straight from your phone to the AI service you chose, using your own API key. We never see it.
 - You can erase everything from Settings at any time.
 - The app never takes screenshots and never records your screen, your voice or any video of you.
+- Supporting the developer is optional. If you do, the payment service (Buy Me a Coffee or your UPI app) shares the usual payee details with him, and nothing else (section 5).
 - The optional features that read the Reels and Shorts screens (the counter and the Reel blocker) work only in the full version, only after you allow them inside the app, and you can withdraw that at any time.
 
 ## 2. Who we are
 
-Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "us"), published on GitHub as nevil-sanish. We are the controller of the little data the app handles, which is none that leaves your phone to us. Contact: https://github.com/nevil-sanish/reel-analyser/issues
+Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "us"), published on GitHub as nevil-sanish. We are the controller of the little data the app handles. None of it reaches us, except the details of a support payment and any email you choose to send us (section 5). Contact: nevilsanish@gmail.com, or https://github.com/nevil-sanish/reel-analyser/issues
 
 ## 3. What the app stores on your phone
 
@@ -41,13 +42,21 @@ We do not receive any of it. It goes directly from your phone to these services,
 - **Instagram (Meta) and YouTube (Google)**: to read the reel you shared, the app requests the public page or video of that link, like a web browser. They see your IP address and device details, as with any browser, and their own policies apply. The in-app link view loads the same pages.
 - **LinkedIn**: to read a LinkedIn post you shared, the app requests its public page (linkedin.com, without any login or account) and, for a picture or video post, its pictures or video from LinkedIn's media host (licdn.com). Tracking parameters in the shared link (such as who shared it) are removed first. LinkedIn sees your IP address and device details, as with any browser. Posts that need a login cannot be read.
 - **GitHub, Codeforces and LeetCode, only if you turn on Daily goals (full version)**: to read your own public activity, the app sends the site your public username (GitHub: api.github.com, a search for commits you authored on a given day; Codeforces: codeforces.com/api, your recent submissions; LeetCode: leetcode.com, the public profile query its own website uses, which is not an official API). It sends nothing else: no token, password, cookie or account. The site sees your IP address and device details, as with any browser, and its own policy applies. The answer is used on your phone and kept as a number per day. We never receive any of it. Requests happen when the app opens and in the background: automatically just after midnight, and about every 15 minutes while a day is waiting to be checked. There is no manual check.
-- **GitHub**: the full version checks once a day whether a newer release exists (your IP address is visible to GitHub). "Send feedback" opens a GitHub issue page in your browser with only the text you wrote; you decide whether to post it.
+- **GitHub**: versions downloaded from GitHub check once a day whether a newer release exists (your IP address is visible to GitHub). Versions installed from F-Droid do not check; F-Droid delivers their updates.
+- **Buy Me a Coffee and UPI**: only if you tap a support button in About. Buy Me a Coffee opens in your browser, and UPI opens your own UPI app with the developer's UPI ID filled in. The app sends nothing itself and never sees a payment. "Send feedback" opens a GitHub issue page in your browser with only the text you wrote; you decide whether to post it.
 
 Each AI provider handles what it receives under its own terms and privacy policy. Some providers treat free-tier and paid-tier data differently, including using free-tier content to improve their products. Check the terms of the key you use. We do not control this.
 
 We do not collect your name, email, contacts, location, advertising ID or device identifiers, and we do not send crash reports.
 
-## 5. Permissions and why
+## 5. Support payments and emails to us
+
+- **Support payments** (optional): if you support the developer through Buy Me a Coffee or UPI, the payment is handled by that service, your bank and the UPI network, under their own policies. They show the developer what they show any payee: usually your name or UPI ID, the amount, the date, a transaction reference and any message you add, and Buy Me a Coffee may share your email address. We never receive your card, bank account or PIN.
+- **Emails you send us** (for example to ask for a refund): we receive your email address and what you write.
+- **Why and how long:** only to keep a record of the payment, to answer you, to process refunds (see the Support and Refund Policy) and to meet tax and accounting law. Payment records are kept as long as that law requires. Emails are deleted within 12 months after your request is closed, unless they are needed as a payment record. None of this is ever put into the app, sold, or used for marketing.
+- **Your rights:** you can ask to see, correct or delete this information at nevilsanish@gmail.com. A payment record that the law requires us to keep is kept until that requirement ends.
+
+## 6. Permissions and why
 
 There are two versions. The **full** version has every feature. The **semi** version asks Android for nothing beyond the internet: no Accessibility, no Usage access, no notifications, no battery exemption, no Insights, no Reel blocker. It makes no network request except to the services you use.
 
@@ -62,7 +71,7 @@ There are two versions. The **full** version has every feature. The **semi** ver
 - **Battery optimisation exemption and Autostart** (optional, full version only): so Android does not stop background counting.
 - **Share target**: so Reel Analyser appears in the Share menu.
 
-## 6. Data retention
+## 7. Data retention
 
 - **Notes and chats**: kept until you delete them. Notes you have read move to the Archive after 3 days and are kept there until you delete them. Deleting removes them from the app straight away.
 - **Shared photos**: kept while a note or queued item uses them, then removed.
@@ -74,26 +83,28 @@ There are two versions. The **full** version has every feature. The **semi** ver
 - **Exports you make** (Downloads/ReelBot): kept until you delete those files. They are not encrypted, except API keys, which are included only if you choose that and are protected with your passphrase.
 - **Data held by AI providers and other services**: governed by their own policies. We cannot delete it for you; use your account with that provider.
 
-## 7. Deleting your data
+## 8. Deleting your data
 
 Settings → "Erase all my data" deletes every note, chat, queued item, photo, count, blocker rule and history, daily goals and their results, and key from the app. Uninstalling the app does the same. Files you exported must be deleted by you.
 
-## 8. Security
+## 9. Security
 
 Keys are kept in Android's hardware-backed encrypted storage and sent only over HTTPS, in request headers, never in web addresses. Exports with keys use AES-256-GCM with a key derived from your passphrase (PBKDF2-SHA256, 600,000 rounds); we cannot recover a forgotten passphrase. No system is perfectly secure, so keep your phone locked and your keys private.
 
-## 9. Children
+## 10. Children
 
 Reel Analyser is not directed at children. You must be at least 13 years old, or the minimum age in your country if higher. We do not knowingly collect data from children, and the app holds no data about anyone but its user on the phone.
 
-## 10. Your rights
+## 11. Your rights
 
-Everything the app holds is in the app: you can read, correct, export (Settings → Backup) and delete it yourself. Depending on where you live (for example under the EU GDPR, India's Digital Personal Data Protection Act 2023, or California law) you may have further rights to access, correct, erase, restrict or move your data and to withdraw consent. You can withdraw your permission to read the reel screens at any time, in the app (Settings → Set up Insights) or in Android settings. Because we hold none of your data, exercising them is done with the tools above. We do not sell or share personal data and do not use it for advertising.
+Everything the app holds is in the app: you can read, correct, export (Settings → Backup) and delete it yourself. Depending on where you live (for example under the EU GDPR, India's Digital Personal Data Protection Act 2023, or California law) you may have further rights to access, correct, erase, restrict or move your data and to withdraw consent. You can withdraw your permission to read the reel screens at any time, in the app (Settings → Set up Insights) or in Android settings. Because we hold none of the app's data, you exercise these rights with the tools above. For support payments and emails, see section 5. We do not sell or share personal data and do not use it for advertising.
 
-## 11. Changes
+## 12. Changes
 
 If this policy changes, the new version appears in the app and at the address below, with a new date. Material changes will be shown in the app before they apply.
 
-## 12. Contact
+## 13. Contact and grievances
 
-Questions or requests: https://github.com/nevil-sanish/reel-analyser/issues
+Privacy questions, requests and grievances (including under India's Digital Personal Data Protection Act 2023): Nevil Mathew Sanish, nevilsanish@gmail.com. We aim to reply within 15 days. Other questions: https://github.com/nevil-sanish/reel-analyser/issues
+
+If you are not satisfied with our answer, you can complain to the data protection authority where you live (in India, the Data Protection Board of India).

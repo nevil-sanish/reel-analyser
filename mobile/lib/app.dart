@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Once (and again if the documents change): the Terms and Privacy Policy, before anything else is used.
   Future<void> _askConsent() async {
     final k = widget.services.keys;
-    if (await k.flag('legal_v4') || !mounted) return;
+    if (await k.flag('legal_v5') || !mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -115,10 +115,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           title: const Text('Terms, Privacy and Disclaimer'),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
-                'with your own key. The terms, privacy policy and disclaimer were updated (new optional features of the full version were described). Please read them.'),
+                'with your own key. The legal texts were updated: LinkedIn and folders are described, there is a new Support and Refund Policy for the optional support payments, and a contact email. Please read them.'),
             const SizedBox(height: 8),
             Wrap(spacing: 4, children: [
-              for (final (label, page) in [('Privacy Policy', LegalScreen.privacy), ('Terms of Use', LegalScreen.terms), ('Disclaimer', LegalScreen.disclaimer)])
+              for (final (label, page) in [('Privacy Policy', LegalScreen.privacy), ('Terms of Use', LegalScreen.terms), ('Disclaimer', LegalScreen.disclaimer), ('Support and refunds', LegalScreen.support)])
                 ActionChip(label: Text(label), onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => page))),
             ]),
           ]),
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (ok == true) {
       try {
-        await k.setFlag('legal_v4');
+        await k.setFlag('legal_v5');
       } on Object catch (e) {
         debugPrint('Could not remember the agreement: $e');
       }

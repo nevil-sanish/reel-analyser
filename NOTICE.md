@@ -1,10 +1,10 @@
 # Notice
 
-Reel Analyser is an independent project by nevil-sanish, released under the MIT License (see LICENSE). Copyright (c) 2026 nevil-sanish.
+Reel Analyser is an independent project by Nevil Mathew Sanish (nevil-sanish), released under the MIT License (see LICENSE). Copyright (c) 2026 Nevil Mathew Sanish.
 
 ## Trademarks
 
-Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. GitHub is a trademark of GitHub, Inc. LeetCode and Codeforces are trademarks of their owners. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
+Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. LinkedIn is a trademark of LinkedIn Corporation (Microsoft). Buy Me a Coffee is a trademark of its owner. UPI is a trademark of the National Payments Corporation of India (NPCI). F-Droid is a trademark of F-Droid Limited. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. GitHub is a trademark of GitHub, Inc. LeetCode and Codeforces are trademarks of their owners. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
 
 ## Third-party software
 
@@ -16,4 +16,4 @@ Cormorant Garamond (Christian Thalmann, Catharsis Fonts) and Lato (Lukasz Dziedz
 
 ## Legal texts
 
-The Privacy Policy, Terms of Use and Disclaimer are in `mobile/assets/legal/`. They describe how the app handles data and what you can expect of it. They are not a substitute for legal advice.
+The Privacy Policy, Terms of Use, Disclaimer and Support and Refund Policy are in `mobile/assets/legal/`. They describe how the app handles data and what you can expect of it. They are not a substitute for legal advice.
