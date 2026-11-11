@@ -8,6 +8,7 @@ import 'liquid.dart';
 import 'motion.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
+import 'source_icon.dart';
 import 'theme.dart';
 
 /// The home tab: today at a glance, then chat over saved notes. Every chat is saved and can be reopened.
@@ -458,12 +459,6 @@ class _RecentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final icon = switch (reel.kind) {
-      'short' => Icons.smart_display_rounded,
-      'photo' => Icons.photo_rounded,
-      'post' => Icons.collections_rounded,
-      _ => Icons.movie_rounded,
-    };
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -473,11 +468,7 @@ class _RecentCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(8)),
-                  child: Icon(icon, size: 14, color: Brand.onGold),
-                ),
+                SourceIcon(reel.app, size: 24),
                 const Spacer(),
                 if (reel.seenAt == 0)
                   Container(width: 8, height: 8, decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle)),

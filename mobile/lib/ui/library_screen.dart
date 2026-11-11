@@ -11,6 +11,7 @@ import 'archive_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'motion.dart';
+import 'source_icon.dart';
 import 'theme.dart';
 import 'liquid.dart';
 
@@ -316,16 +317,18 @@ class _JobsCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(children: [
-                  Icon(
-                    switch (j.state) {
-                      JobState.done => Icons.check_circle_rounded,
-                      JobState.failed || JobState.retry => Icons.error_outline_rounded,
-                      JobState.stopped => Icons.stop_circle_outlined,
-                      _ => j.app == 'youtube' ? Icons.smart_display_outlined : j.app == 'photo' ? Icons.image_outlined : Icons.movie_outlined,
-                    },
-                    size: 22,
-                    color: j.state == JobState.done ? t.colorScheme.primary : t.colorScheme.onSurfaceVariant,
-                  ),
+                  switch (j.state) {
+                    JobState.done || JobState.failed || JobState.retry || JobState.stopped => Icon(
+                        switch (j.state) {
+                          JobState.done => Icons.check_circle_rounded,
+                          JobState.stopped => Icons.stop_circle_outlined,
+                          _ => Icons.error_outline_rounded,
+                        },
+                        size: 22,
+                        color: j.state == JobState.done ? t.colorScheme.primary : t.colorScheme.onSurfaceVariant,
+                      ),
+                    _ => SourceIcon(j.app, size: 22),
+                  },
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -481,12 +484,7 @@ class ReelCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(10)),
-                    child: Icon(photo ? Icons.photo_rounded : yt ? Icons.smart_display_rounded : Icons.movie_rounded,
-                        size: 16, color: Brand.onGold),
-                  ),
+                  SourceIcon(reel.app),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : 'Instagram') : '@${reel.author}',
