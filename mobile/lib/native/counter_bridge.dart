@@ -86,7 +86,8 @@ class CounterBridge {
       (await _ch.invokeListMethod<Uint8List>('videoFrames', {'path': path, 'count': count}) ?? []).toList();
 
   /// Opens a web page in the browser (feedback goes to the project's GitHub issues this way).
-  Future<void> openUrl(String url) => _ch.invokeMethod('openUrl', {'url': url});
+  /// False when no app on the phone can open it.
+  Future<bool> openUrl(String url) async => await _ch.invokeMethod<bool>('openUrl', {'url': url}) ?? false;
 
   /// Opens Android's share sheet with [text].
   Future<void> shareText(String text, {String? subject}) => _ch.invokeMethod('shareText', {'text': text, 'subject': subject});

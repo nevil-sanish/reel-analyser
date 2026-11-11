@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import 'developer_card.dart';
@@ -9,6 +10,10 @@ import 'update_flow.dart';
 
 /// The developer's Buy Me a Coffee page. Opened in the browser; the app sends nothing itself.
 const buyMeACoffee = 'https://buymeacoffee.com/nevilsanish';
+
+/// The developer's UPI ID. The button opens the person's UPI app; they choose the amount there.
+const upiId = 'nevilsanish@oksbi';
+final upiLink = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent('Nevil Sanish')}&cu=INR&tn=${Uri.encodeComponent('Support Reel Analyser')}';
 
 /// The About tab: who made the app, feedback, updates, and every legal text. In both builds.
 class AboutScreen extends StatelessWidget {
@@ -66,13 +71,28 @@ class AboutScreen extends StatelessWidget {
             FilledButton.tonalIcon(onPressed: () => _feedback(context), icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
           ]),
           SectionCard(index: 2, title: 'Support the app', children: [
-            const Text('Reel Analyser is free, with no ads and no tracking. If it helps you, you can buy the developer a coffee.'),
-            const SizedBox(height: 8),
+            const Text('Reel Analyser is free and will always stay free to use, with no ads and no tracking. '
+                'Support is entirely optional: it only helps the developer keep improving this app and build more apps like it in the future.'),
+            const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () => services.bridge.openUrl(buyMeACoffee),
               icon: const Icon(Icons.local_cafe_rounded),
               label: const Text('Buy me a coffee'),
             ),
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              onPressed: () async {
+                if (await services.bridge.openUrl(upiLink)) return;
+                await Clipboard.setData(const ClipboardData(text: upiId));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No UPI app found. UPI ID $upiId copied.')));
+                }
+              },
+              icon: const Icon(Icons.currency_rupee_rounded),
+              label: const Text('Support with UPI'),
+            ),
+            const SizedBox(height: 4),
+            Text('UPI ID: $upiId', style: Theme.of(context).textTheme.bodySmall),
           ]),
           SectionCard(index: 3, title: 'About and legal', children: [
             _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
