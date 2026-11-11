@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelbrain/core/models.dart';
+import 'package:reelbrain/pipeline/gemini.dart';
 import 'package:reelbrain/pipeline/linkedin.dart';
 
 // Shapes copied from public, logged-out LinkedIn post pages (2026-11), with made-up content.
@@ -61,5 +62,36 @@ void main() {
     const r = Reel(url: 'https://www.linkedin.com/posts/x-123', app: 'linkedin', title: 't', summary: '', savedAt: 0);
     expect(r.kind, 'linkedin');
     expect(isReelLink(r.url), isTrue);
+  });
+
+  const mixed = """<html><head>
+<script type="application/ld+json">{"@context":"http://schema.org","@type":"SocialMediaPosting","articleBody":"Our launch: two clips and photos.",
+"author":{"name":"Test Co","@type":"Organization"},
+"image":[{"url":"https://media.licdn.com/dms/image/v2/A/feedshare-shrink_800/0/1"},{"url":"https://media.licdn.com/dms/image/v2/B/videocover-high/0/1"}],
+"video":[{"@type":"VideoObject","contentUrl":"https://dms.licdn.com/playlist/vid/v2/V1/mp4/0/1","thumbnailUrl":"https://media.licdn.com/dms/image/v2/V1/videocover/0/1"},
+{"@type":"VideoObject","contentUrl":"https://dms.licdn.com/playlist/vid/v2/V2/mp4/0/1"},
+{"@type":"VideoObject","contentUrl":"https://evil.com/v3.mp4"}]}</script>
+</head></html>""";
+
+  test('a post with pictures and several videos keeps all of them (video covers are not pictures)', () {
+    final p = parseLinkedIn(mixed);
+    expect(p.videos, ['https://dms.licdn.com/playlist/vid/v2/V1/mp4/0/1', 'https://dms.licdn.com/playlist/vid/v2/V2/mp4/0/1']);
+    expect(p.images, ['https://media.licdn.com/dms/image/v2/A/feedshare-shrink_800/0/1']);
+    expect(p.thumbnail, contains('videocover'));
+    expect(p.text, startsWith('Our launch'));
+  });
+
+  test('the parts of a post become one note without losing a transcript', () {
+    const pics = Analysis('Launch photos', 'Photos of the stage.', ['Big stage'], ['launch'], overview: ['Stage photos']);
+    const v1 = Analysis('Launch keynote', 'The keynote.', ['New app', 'big stage'], ['launch', 'keynote'], transcript: 'Hello all');
+    const v2 = Analysis('', 'A demo.', ['Demo'], ['demo'], transcript: 'Watch this', mentions: ['Flutter']);
+    final m = mergeAnalyses([('Pictures', pics), ('Video 1', v1), ('Video 2', v2)]);
+    expect(m.title, 'Launch photos');
+    expect(m.summary, contains('Video 2: A demo.'));
+    expect(m.keyPoints, ['Big stage', 'New app', 'Demo']);
+    expect(m.tags, ['launch', 'keynote', 'demo']);
+    expect(m.transcript, 'Video 1:\nHello all\n\nVideo 2:\nWatch this');
+    expect(m.mentions, ['Flutter']);
+    expect(identical(mergeAnalyses([('Video', v1)]), v1), isTrue);
   });
 }

@@ -637,31 +637,38 @@ class Runner {
     if (p.isEmpty) {
       return _failed('LinkedIn did not show this post without a login (HTTP ${r.statusCode}). Only public posts can be read.');
     }
-    _step(p.videoUrl.isNotEmpty ? 'Got the video' : 'Got the post', 0.35);
+    _step(p.videos.isEmpty ? 'Got the post' : 'Got the post and ${p.videos.length == 1 ? 'its video' : '${p.videos.length} videos'}', 0.35);
     _name(p.text.isNotEmpty ? p.text : p.author);
     final context = [
       'LinkedIn post',
       if (p.author.isNotEmpty) 'Author: ${p.author}',
       if (p.text.isNotEmpty) 'Post text: ${p.text}',
+      if (p.images.isNotEmpty || p.videos.length > 1)
+        'The post has ${p.images.length} picture(s) and ${p.videos.length} video(s); this part is one of them.',
     ].join('\n');
     final caption = p.text.length > 2000 ? p.text.substring(0, 2000) : p.text;
-    if (p.videoUrl.isNotEmpty) {
-      final path = await _download(p.videoUrl, '${item.id}', referer: 'https://www.linkedin.com/', prefix: 'linkedin');
-      if (path != null) {
-        final file = File(path);
-        try {
-          await _save(item, await _video(file, context), 'done', 0, author: p.author, caption: caption);
-          return 'done';
-        } on GeminiException catch (e) {
-          if (e.kind != GeminiFailure.rejected) rethrow;
-        } finally {
-          if (await file.exists()) await file.delete();
-        }
-      }
-    }
+    // Every part of the post is analysed: the pictures together, then each video, all with the post text. Then one note.
+    final parts = <(String, Analysis)>[];
     final pics = [for (final i in p.images) ?await _bytes(i)];
     if (pics.isNotEmpty) {
-      await _save(item, await _pictures(pics, context), 'done', 0, author: p.author, caption: caption);
+      _step('Reading ${pics.length == 1 ? 'the picture' : 'the ${pics.length} pictures'}', 0.4);
+      parts.add((pics.length == 1 ? 'Picture' : 'Pictures', await _pictures(pics, context)));
+    }
+    for (final (i, url) in p.videos.indexed) {
+      _step(p.videos.length == 1 ? 'Watching the video' : 'Watching video ${i + 1} of ${p.videos.length}', 0.45 + 0.4 * i / p.videos.length);
+      final path = await _download(url, '${item.id}-$i', referer: 'https://www.linkedin.com/', prefix: 'linkedin');
+      if (path == null) continue;
+      final file = File(path);
+      try {
+        parts.add((p.videos.length == 1 ? 'Video' : 'Video ${i + 1}', await _video(file, context)));
+      } on GeminiException catch (e) {
+        if (e.kind != GeminiFailure.rejected) rethrow;
+      } finally {
+        if (await file.exists()) await file.delete();
+      }
+    }
+    if (parts.isNotEmpty) {
+      await _save(item, mergeAnalyses(parts), 'done', 0, author: p.author, caption: caption);
       return 'done';
     }
     final a = await _captionAndThumbnail(context, p.thumbnail.isEmpty ? null : await _bytes(p.thumbnail));

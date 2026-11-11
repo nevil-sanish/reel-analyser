@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'gemini.dart';
+
 /// LinkedIn posts (1.2.0.0, both builds). A public post's page, fetched without any login, carries the post as schema.org
 /// JSON-LD (`SocialMediaPosting`, `VideoObject` or `Article`): its full text, author, pictures and, for a video, a direct mp4
 /// link on LinkedIn's media host. This is the same public data a search engine sees. Nothing is fetched with an account, and
@@ -8,12 +10,19 @@ class LinkedInPost {
   final String author;
   final String text;
   final List<String> images;
-  final String videoUrl;
-  final String thumbnail;
-  const LinkedInPost({this.author = '', this.text = '', this.images = const [], this.videoUrl = '', this.thumbnail = ''});
 
-  bool get isEmpty => text.isEmpty && images.isEmpty && videoUrl.isEmpty;
+  /// Every video of the post, in order (most posts have none or one).
+  final List<String> videos;
+  final String thumbnail;
+  const LinkedInPost({this.author = '', this.text = '', this.images = const [], this.videos = const [], this.thumbnail = ''});
+
+  String get videoUrl => videos.isEmpty ? '' : videos.first;
+  bool get isEmpty => text.isEmpty && images.isEmpty && videos.isEmpty;
 }
+
+/// The most of each kind a post is analysed with.
+const maxLinkedInVideos = 3;
+const maxLinkedInImages = 10;
 
 /// A desktop-class mobile browser, as a logged-out visitor.
 const linkedInUserAgent =
@@ -60,8 +69,14 @@ String _name(Object? v) => switch (v) {
 
 /// Reads a public post page. Fields it cannot find stay empty.
 LinkedInPost parseLinkedIn(String html) {
-  var author = '', text = '', video = '', thumb = '';
-  final images = <String>[];
+  var author = '', text = '', thumb = '';
+  final images = <String>[], videos = <String>[];
+  void addVideo(Object? v) {
+    for (final u in _urls(v)) {
+      if (isLinkedInMedia(u) && !videos.contains(u)) videos.add(u);
+    }
+  }
+
   for (final m in RegExp(r'<script type="application/ld\+json">(.*?)</script>', dotAll: true).allMatches(html)) {
     Object? j;
     try {
@@ -75,15 +90,24 @@ LinkedInPost parseLinkedIn(String html) {
     final body = [j['articleBody'], j['description'], j['text'], j['headline']].whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty);
     if (text.isEmpty && body.isNotEmpty) text = body.reduce((a, b) => a.length >= b.length ? a : b);
     if (author.isEmpty) author = _name(j['author']).isNotEmpty ? _name(j['author']) : _name(j['creator']);
-    if (video.isEmpty) video = _urls(j['contentUrl']).where(isLinkedInMedia).firstOrNull ?? '';
+    addVideo(j['contentUrl']);
+    // A post can also carry its videos as nested VideoObjects.
+    for (final v in [j['video'], j['associatedMedia']].expand((v) => v is List ? v : [v])) {
+      if (v is Map && '${v['@type']}' == 'VideoObject') {
+        addVideo(v['contentUrl']);
+        if (thumb.isEmpty) thumb = _urls(v['thumbnailUrl']).where(isLinkedInMedia).firstOrNull ?? '';
+      }
+    }
     if (thumb.isEmpty) thumb = _urls(j['thumbnailUrl']).where(isLinkedInMedia).firstOrNull ?? '';
     for (final u in _urls(j['image'])) {
-      if (isLinkedInMedia(u) && !images.contains(u) && !u.contains('company-logo') && !u.contains('profile-')) images.add(u);
+      if (isLinkedInMedia(u) && !images.contains(u) && !u.contains('company-logo') && !u.contains('profile-') && !u.contains('videocover')) {
+        images.add(u);
+      }
     }
   }
   if (text.isEmpty) text = _meta(html, 'og:description');
   if (text.isEmpty) text = _meta(html, 'og:title');
-  if (images.isEmpty && video.isEmpty) {
+  if (images.isEmpty && videos.isEmpty) {
     final og = _meta(html, 'og:image');
     // The generic LinkedIn logo is on static.licdn.com; a post's own picture is on media.licdn.com.
     if (isLinkedInMedia(og) && og.contains('media.licdn.com')) images.add(og);
@@ -93,5 +117,41 @@ LinkedInPost parseLinkedIn(String html) {
     final bar = t.lastIndexOf(' | ');
     if (bar > 0) author = t.substring(bar + 3).split(' | ').first.trim();
   }
-  return LinkedInPost(author: author, text: text, images: images.take(10).toList(), videoUrl: video, thumbnail: thumb);
+  return LinkedInPost(
+      author: author,
+      text: text,
+      images: images.take(maxLinkedInImages).toList(),
+      videos: videos.take(maxLinkedInVideos).toList(),
+      thumbnail: thumb);
+}
+
+/// One note from several parts of a post (its pictures and each video), each already analysed with the post text as context.
+/// No extra AI call: titles and summaries come from the parts, lists are joined without repeats, and transcripts keep a heading
+/// per part so nothing said in any video is lost.
+Analysis mergeAnalyses(List<(String, Analysis)> parts) {
+  if (parts.length == 1) return parts.single.$2;
+  List<String> union(Iterable<String> xs, int max) {
+    final out = <String>[], seen = <String>{};
+    for (final x in xs) {
+      final k = x.trim().toLowerCase();
+      if (k.isEmpty || !seen.add(k)) continue;
+      out.add(x.trim());
+      if (out.length == max) break;
+    }
+    return out;
+  }
+
+  String joined(String Function(Analysis) f) =>
+      [for (final (label, a) in parts) if (f(a).trim().isNotEmpty) '$label:\n${f(a).trim()}'].join('\n\n');
+  final as = [for (final (_, a) in parts) a];
+  return Analysis(
+    as.map((a) => a.title.trim()).firstWhere((t) => t.isNotEmpty, orElse: () => ''),
+    [for (final (label, a) in parts) if (a.summary.trim().isNotEmpty) '$label: ${a.summary.trim()}'].join('\n\n'),
+    union(as.expand((a) => a.keyPoints), 12),
+    union(as.expand((a) => a.tags), 10),
+    overview: union(as.expand((a) => a.overview), 12),
+    mentions: union(as.expand((a) => a.mentions), 20),
+    transcript: joined((a) => a.transcript),
+    onScreenText: joined((a) => a.onScreenText),
+  );
 }

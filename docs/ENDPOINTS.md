@@ -122,6 +122,7 @@ Rules for every `IG-*` call:
 - **Owner** `lib/pipeline/linkedin.dart` (parse) and `Runner._linkedin` (fetch). Links come from `ShareUrls` (Kotlin): `linkedin.com/posts/…`, `/feed/update/…`, `/pulse/…` on any subdomain, and `lnkd.in/…`; the query (utm_*, `rcm`) is dropped.
 - **Request:** `GET {link}` with a mobile Chrome User-Agent, no cookies, no login. Redirects are followed (lnkd.in).
 - **Response:** HTML with schema.org JSON-LD: `SocialMediaPosting` (`articleBody`, `author.name`, `image[]`), `VideoObject` (`description`, `contentUrl` mp4 on `dms.licdn.com`, `thumbnailUrl`) or `Article`. Fallback: `og:description`, `og:title`, `og:image` (only `media.licdn.com`).
+- **Every part:** all pictures (up to 10) and every video (up to 3, top-level `contentUrl` or nested `video[]`/`associatedMedia[]` VideoObjects) are analysed, each with the post text, and merged into one note (`mergeAnalyses`, no extra AI call; transcripts keep a heading per video). Video covers are not counted as pictures.
 - **Video:** `GET contentUrl` with `Referer: https://www.linkedin.com/`, 100 MB cap, deleted after the analysis. Checked 2026-11-11: HTTP 200 `video/mp4` without a login.
 - **Media allowlist:** only `https://*.licdn.com`. Company logos and profile pictures are skipped.
 - **Errors:** 429/5xx and timeouts → retried later with the rest of the queue, not in a loop; 999 (LinkedIn's network limit) → failed at once, never retried; no readable post (login wall, not public) → failed note with that reason.
