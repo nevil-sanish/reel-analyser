@@ -146,13 +146,33 @@ class _BlockerScreenState extends State<BlockerScreen>
     _load();
   }
 
+  Future<void> _removeForGood() async {
+    final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
+    if (!mounted) return;
+    final ok = await askParagraph(
+      context,
+      title: 'Remove for good',
+      intro: 'To remove the blocker and all its rules, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
+          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. Your paragraph is checked with your own AI key and is not stored.',
+      action: 'Remove the blocker',
+      verify: (text) => judgeParagraph(ask, action: 'remove the reel blocker and all its rules for good', reason: text),
+    );
+    if (!ok || !mounted) return;
+    await _bridge.removeForGood();
+    _say('The blocker is removed.');
+    _load();
+  }
+
   Future<void> _cancelToday() async {
+    final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
+    if (!mounted) return;
     final ok = await askParagraph(
       context,
       title: 'Turn off for today',
       intro: 'To turn the block off until midnight, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. The text is not sent or stored.',
+          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. Your paragraph is checked with your own AI key and is not stored.',
       action: 'Turn off for today',
+      verify: (text) => judgeParagraph(ask, action: 'turn the reel blocker off for the rest of today', reason: text),
     );
     if (!ok || !mounted) return;
     await _bridge.cancelToday();
@@ -436,15 +456,7 @@ class _BlockerScreenState extends State<BlockerScreen>
             TextButton.icon(
               icon: const Icon(Icons.delete_forever_outlined),
               label: const Text('Remove the blocker for good'),
-              onPressed: () async {
-                final done = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RemoveBlockerScreen(_bridge),
-                  ),
-                );
-                if (done == true) _load();
-              },
+              onPressed: _removeForGood,
             ),
           ],
         ],
@@ -453,96 +465,6 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 }
 
-/// Removing the blocker for good takes a paragraph written by hand about why.
-class RemoveBlockerScreen extends StatefulWidget {
-  final BlockerBridge bridge;
-  const RemoveBlockerScreen(this.bridge, {super.key});
-
-  @override
-  State<RemoveBlockerScreen> createState() => _RemoveBlockerScreenState();
-}
-
-class _RemoveBlockerScreenState extends State<RemoveBlockerScreen> {
-  final _guard = ParagraphGuard();
-  final _c = TextEditingController();
-  String? _msg;
-
-  void _changed(String v) {
-    final refused = _guard.accept(v, DateTime.now());
-    if (refused != null) {
-      // Put the old text back: a paste or a burst of fast typing isn't taken.
-      _c.value = TextEditingValue(
-        text: _guard.text,
-        selection: TextSelection.collapsed(offset: _guard.text.length),
-      );
-      setState(() => _msg = refused);
-      return;
-    }
-    if (_msg != null) setState(() => _msg = null);
-  }
-
-  Future<void> _remove() async {
-    final bad = _guard.check();
-    if (bad != null) return setState(() => _msg = bad);
-    await widget.bridge.removeForGood();
-    if (mounted) Navigator.pop(context, true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return LiquidScaffold(
-      appBar: AppBar(title: const Text('Remove for good')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
-          Text(
-            'Why do you need to remove the blocker for good?',
-            style: t.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Write at least ${ParagraphGuard.minWords} words in your own words, by hand. Pasting is not accepted, and the text is '
-            'checked for wording typical of AI. If you only need a break, turn it off for today instead.',
-            style: t.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _c,
-            minLines: 6,
-            maxLines: 12,
-            onChanged: _changed,
-            // No Paste in the menu.
-            contextMenuBuilder: (context, state) =>
-                AdaptiveTextSelectionToolbar.editable(
-                  clipboardStatus: ClipboardStatus.notPasteable,
-                  onCopy: null,
-                  onCut: null,
-                  onPaste: null,
-                  onSelectAll: null,
-                  onLookUp: null,
-                  onSearchWeb: null,
-                  onShare: null,
-                  onLiveTextInput: null,
-                  anchors: state.contextMenuAnchors,
-                ),
-            decoration: const InputDecoration(hintText: 'Type here…'),
-          ),
-          if (_msg != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(_msg!, style: TextStyle(color: t.colorScheme.error)),
-            ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _remove,
-            child: const Text('Remove the blocker'),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class BlockHistoryScreen extends StatelessWidget {
   final BlockerBridge bridge;

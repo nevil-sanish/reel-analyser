@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 import '../ui/liquid.dart';
 import 'blocker.dart';
 
-/// Asks for a paragraph typed by hand (at least 50 words, no paste, not too fast, no typical AI wording). Resolves true when it is
-/// accepted, false when the person backs out. Without [verify] nothing is sent anywhere; with it, the paragraph that passed the
-/// local checks is also given to [verify], which returns a message when it is refused. Nothing is stored.
+/// Asks for a paragraph typed by hand: at least 50 words, no paste, not typed too fast, not written too quickly, no typical AI
+/// wording. When those pass, [verify] (in practice [judgeParagraph] with the person's own AI key) decides whether it is a valid
+/// reason and returns a message when it is not. Resolves true when it is accepted, false when the person backs out. Nothing is stored.
 Future<bool> askParagraph(
   BuildContext context, {
   required String title,
   required String intro,
   required String action,
-  Future<String?> Function(String text)? verify,
+  required Future<String?> Function(String text) verify,
 }) async =>
     await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => _ParagraphScreen(title, intro, action, verify))) ?? false;
 
 class _ParagraphScreen extends StatefulWidget {
   final String title, intro, action;
-  final Future<String?> Function(String text)? verify;
+  final Future<String?> Function(String text) verify;
   const _ParagraphScreen(this.title, this.intro, this.action, this.verify);
 
   @override
@@ -49,14 +49,11 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
   Future<void> _go() async {
     final bad = _guard.check();
     if (bad != null) return setState(() => _msg = bad);
-    final verify = widget.verify;
-    if (verify != null) {
-      setState(() => _checking = true);
-      final refused = await verify(_guard.text);
-      if (!mounted) return;
-      setState(() => _checking = false);
-      if (refused != null) return setState(() => _msg = refused);
-    }
+    setState(() => _checking = true);
+    final refused = await widget.verify(_guard.text);
+    if (!mounted) return;
+    setState(() => _checking = false);
+    if (refused != null) return setState(() => _msg = refused);
     if (mounted) Navigator.pop(context, true);
   }
 
