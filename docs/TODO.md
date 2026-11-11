@@ -106,3 +106,7 @@ Plan:
 - With Accessibility off or the reel-screen opt-in off, a penalty cannot block anything. The goals screen warns about Accessibility; also warn when the opt-in is off.
 - Google Tasks is not in 1.1.1.0 (needs a Google sign-in, against "no account, no server"). Revisit later if wanted.
 - Make sure the Semi legal texts and the update check still work (Semi opens the release page to update; Full downloads the APK).
+
+## 1.2.0.0: before the release (reminder from the user, 2026-11-11)
+
+- [ ] **Issue #2: test the GitHub, Codeforces and LeetCode daily goals on the phone, at the end, before releasing 1.2.0.0.** Remind the user.

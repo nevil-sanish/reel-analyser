@@ -45,7 +45,7 @@ object FlavorMethods {
                 "markOpened" -> {
                     prefs().edit().putLong(Digest.LAST_OPENED, System.currentTimeMillis()).apply()
                     val now = System.currentTimeMillis()
-                    CounterPlugin.io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now); BlockPhotos.sweep(ctx, localDate(now)) } } // retention: see the Privacy Policy
+                    CounterPlugin.io.execute { runCatching { CounterDb.get(ctx).prune(localDate(now), now); BlockPhotos.wipe(ctx) } } // retention: see the Privacy Policy
                     result.success(null)
                 }
                 "blockState" -> result.success(blockState())
@@ -57,8 +57,13 @@ object FlavorMethods {
                     BlockPhotos.wipe(ctx)
                     result.success(null)
                 }
-                "blockCancel" -> result.success(launch(
-                    Intent(ctx, BlockActivity::class.java).putExtra(BlockActivity.MODE, "cancel")))
+                "blockCancel" -> { // the app has already taken the typed paragraph
+                    val db = CounterDb.get(ctx)
+                    val now = System.currentTimeMillis()
+                    db.saveBlockState(db.currentBlockState(now).copy(suspendedDate = localDate(now)))
+                    db.addEvent(now, "cancelled")
+                    result.success(null)
+                }
                 "punishSet" -> {
                     val apps = call.argument<List<String>>("apps").orEmpty().filter { it == "instagram" || it == "youtube" }.toSet()
                     CounterDb.get(ctx).setPunish(Punish(call.argument<String>("until"), apps, call.argument<Int>("streak") ?: 0))
@@ -105,11 +110,9 @@ object FlavorMethods {
             val db = CounterDb.get(ctx)
             val s = db.currentBlockState(now)
             val date = localDate(now)
-            val photo = BlockPhotos.today(ctx, date)
             return mapOf(
                 "active" to s.active?.toJson(), "pending" to s.pending?.toJson(), "pendingFrom" to s.pendingFrom,
                 "suspendedToday" to (s.suspendedDate == date),
-                "photo" to if (s.suspendedDate == date && photo.isFile) photo.path else null,
                 "nextEdit" to BlockPolicy.nextMidnight(now),
                 "used" to db.usedToday(date), "now" to now,
             )

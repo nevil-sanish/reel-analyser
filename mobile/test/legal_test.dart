@@ -26,11 +26,11 @@ void main() {
     }
   });
 
-  test('they say what matters about the screen, the opt-in, the blocker and the photo', () {
+  test('they say what matters about the screen, the opt-in, the blocker and the paragraph', () {
     final p = read('privacy');
     expect(p, contains('never takes screenshots'));
     expect(p, contains('Allow reading the reel screens'));
-    expect(p, contains('face photo'));
+    expect(p, contains('No photo is taken'));
     expect(p, contains('semi'));
     expect(p, isNot(contains('keeps recent screen text')));
     expect(read('terms'), contains('## 6. The Reel blocker'));

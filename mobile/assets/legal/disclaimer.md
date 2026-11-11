@@ -22,7 +22,7 @@ The AI services use your own keys. Their charges, quotas, rate limits and data p
 
 ## 5. The Reel blocker
 
-The Reel blocker is a personal self-control aid. It is not guaranteed to block everything or to work on every phone, app version or browser, and it can be bypassed. Do not rely on it for the safety, wellbeing or supervision of anyone. Do not use it on someone else's phone without their knowledge and agreement. The photo and typed-paragraph checks are best-effort and can be wrong.
+The Reel blocker is a personal self-control aid. It is not guaranteed to block everything or to work on every phone, app version or browser, and it can be bypassed. Do not rely on it for the safety, wellbeing or supervision of anyone. Do not use it on someone else's phone without their knowledge and agreement. The typed-paragraph checks are best-effort and can be wrong.
 
 ## 6. Daily goals
 

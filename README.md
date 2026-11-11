@@ -74,7 +74,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **Schedule:** any number of time slots when reels are allowed (for example 18:00 to 19:00). Outside them they are blocked. A reel is watched only when both the limit and the slots allow it.
 - **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
 - **Locked rules:** after the first set-up, changing the rules takes a 50-word paragraph typed by hand (no paste), checked with your own AI key; an accepted change starts at the next 00:00.
-- **Turn off for today:** needs a photo of a face with your phone's camera app. It is checked on the phone, shown on a card with a quote and a last yes or no, kept for the day and then deleted. Saying no keeps the block.
+- **Turn off for today:** needs a paragraph of at least 50 words typed by hand (no paste; typing very fast locks the field until you stop for 2 seconds). It is checked on the phone and not stored.
 - **Remove for good:** needs a paragraph of at least 50 words typed by hand: no paste, not too fast, no typical AI wording. These checks are best-effort.
 - **History:** dates and kinds of limit hits and cancel attempts. No photos, no text.
 - **It can be bypassed** (turn Accessibility off, change the clock, use another browser or app). It is a nudge for you, not a lock, and not for use on anyone else's phone.
@@ -132,7 +132,6 @@ The Kotlin side is a Flutter **plugin** rather than code in `MainActivity`. That
 | `reel_brain.db` (SQLite) | Dart | `reels`: notes (title, summary, key points, tags, author, source, seen/archived). `chats`: saved conversations. `meta`: a lock so the app and the background job never analyse at the same time. |
 | Encrypted secure storage | Dart | API keys (several Gemini, OpenAI, Claude, Groq, Apify) and small flags (theme, intro seen). |
 | `files/photos/*.jpg` | Kotlin | Photos you shared, kept so their notes can show them. |
-| `files/blocker/<date>.jpg` | Kotlin | Today's face photo if you cancelled the block, deleted after the day. |
 | `cache/ig/*.mp4` | Kotlin | A downloaded reel, deleted right after analysis. |
 | `Downloads/ReelBot/` | you | Export: `library.json` (notes and saved chats) plus one Markdown file per note. |
 

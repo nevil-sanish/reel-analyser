@@ -78,7 +78,7 @@ class ReelCounterService : AccessibilityService() {
         sink = CounterSink(db)
         tracker = ReelTracker(AlertingSink())
         meter = BlockMeter(sink)
-        BlockPhotos.sweep(this, localDate(System.currentTimeMillis()))
+        BlockPhotos.wipe(this)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
         running = true
     }

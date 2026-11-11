@@ -49,7 +49,7 @@ void main() {
       for (final ch in text.split('')) {
         s += ch;
         now = now.add(every ~/ 4);
-        expect(g.accept(s, now), isTrue);
+        expect(g.accept(s, now), isNull);
       }
       return s;
     }
@@ -62,10 +62,10 @@ void main() {
 
     test('a paste is refused, and so is a chunk bigger than a swiped word', () {
       final g = ParagraphGuard();
-      expect(g.accept('hello', t0), isTrue);
-      expect(g.accept('hello $para', t0), isFalse);
+      expect(g.accept('hello', t0), isNull);
+      expect(g.accept('hello $para', t0), ParagraphGuard.pasteMessage);
       expect(g.text, 'hello');
-      expect(g.accept('hello there friend', t0), isTrue);
+      expect(g.accept('hello there friend', t0), isNull);
     });
 
     test('too short, or written too fast, is refused', () {
@@ -73,8 +73,27 @@ void main() {
       typeAll(short, 'I want it gone because it is hard.');
       expect(short.check(), contains('at least'));
       final fast = ParagraphGuard();
-      typeAll(fast, para, every: const Duration(milliseconds: 20));
+      typeAll(fast, para, every: const Duration(milliseconds: 400));
       expect(fast.check(), contains('by hand'));
+    });
+
+    test('typing very fast locks the field until 2 seconds pass with no typing', () {
+      final g = ParagraphGuard();
+      var now = t0, s = '';
+      String? last;
+      for (var i = 0; i < 30 && last == null; i++) {
+        s += 'a';
+        now = now.add(const Duration(milliseconds: 30));
+        last = g.accept(s, now);
+      }
+      expect(last, ParagraphGuard.slowMessage);
+      final kept = g.text;
+      now = now.add(const Duration(milliseconds: 1500));
+      expect(g.accept('${kept}b', now), ParagraphGuard.slowMessage, reason: 'still in the cooldown');
+      now = now.add(const Duration(milliseconds: 1900));
+      expect(g.accept('${kept}b', now), ParagraphGuard.slowMessage, reason: 'the try restarted the cooldown');
+      now = now.add(const Duration(milliseconds: 2000));
+      expect(g.accept('${kept}b', now), isNull, reason: '2 seconds without typing');
     });
 
     test('wording and dashes typical of AI are refused', () {

@@ -82,7 +82,6 @@ class BlockerState {
   final BlockConfig? pending;
   final int pendingFrom;
   final bool suspendedToday;
-  final String? photo;
   final int nextEdit;
   final Map<String, int> used;
 
@@ -91,7 +90,6 @@ class BlockerState {
     this.pending,
     this.pendingFrom = 0,
     this.suspendedToday = false,
-    this.photo,
     this.nextEdit = 0,
     this.used = const {},
   });
@@ -101,7 +99,6 @@ class BlockerState {
     pending: BlockConfig.parse(m['pending'] as String?),
     pendingFrom: (m['pendingFrom'] as num?)?.toInt() ?? 0,
     suspendedToday: m['suspendedToday'] == true,
-    photo: m['photo'] as String?,
     nextEdit: (m['nextEdit'] as num?)?.toInt() ?? 0,
     used: {
       for (final e in (m['used'] as Map? ?? const {}).entries)
@@ -158,7 +155,7 @@ class BlockerBridge {
 
   Future<void> removeForGood() => _ch.invokeMethod('blockRemove');
 
-  /// Opens the photo flow that cancels the block for today.
+  /// Turns the block off until midnight. The caller has already taken the typed paragraph.
   Future<void> cancelToday() => _ch.invokeMethod('blockCancel');
 
   Future<List<BlockEvent>> history() async => [
@@ -181,6 +178,14 @@ class ParagraphGuard {
   static const minWords = 50;
   static const minTyping = Duration(seconds: 90);
 
+  /// Typing faster than [maxBurst] characters within [burstWindow] locks the field. It opens again only after [cooldown] with
+  /// no typing at all; every try while locked starts the cooldown again.
+  static const maxBurst = 25;
+  static const burstWindow = Duration(seconds: 2);
+  static const cooldown = Duration(seconds: 2);
+  static const pasteMessage = "Pasted text isn't accepted. Type it yourself.";
+  static const slowMessage = 'Slow down. Stop typing for 2 seconds, then go on.';
+
   static const _tells = [
     'as an ai',
     'language model',
@@ -198,16 +203,34 @@ class ParagraphGuard {
   String _text = '';
   DateTime? _first;
   DateTime? _last;
+  DateTime? _lockedUntil;
+  final _recent = <(DateTime, int)>[];
 
   String get text => _text;
 
-  /// Takes the field's new value; false when it must be refused (the caller puts the old text back).
-  bool accept(String next, DateTime now) {
-    if (next.length - _text.length > maxJump) return false;
+  /// Takes the field's new value. Null when it is taken; otherwise the message to show, and the caller puts the old text back.
+  String? accept(String next, DateTime now) {
+    final locked = _lockedUntil;
+    if (locked != null && now.isBefore(locked)) {
+      _lockedUntil = now.add(cooldown);
+      return slowMessage;
+    }
+    final added = next.length - _text.length;
+    if (added > maxJump) return pasteMessage;
+    if (added > 0) {
+      _recent
+        ..removeWhere((e) => now.difference(e.$1) >= burstWindow)
+        ..add((now, added));
+      if (_recent.fold(0, (n, e) => n + e.$2) > maxBurst) {
+        _recent.clear();
+        _lockedUntil = now.add(cooldown);
+        return slowMessage;
+      }
+    }
     _first ??= now;
     _last = now;
     _text = next;
-    return true;
+    return null;
   }
 
   Duration get typedFor =>

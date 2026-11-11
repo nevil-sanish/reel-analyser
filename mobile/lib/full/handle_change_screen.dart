@@ -56,9 +56,10 @@ class _HandleChangeScreenState extends State<HandleChangeScreen> {
   }
 
   void _changed(String v) {
-    if (!_guard.accept(v, DateTime.now())) {
+    final refused = _guard.accept(v, DateTime.now());
+    if (refused != null) {
       _reason.value = TextEditingValue(text: _guard.text, selection: TextSelection.collapsed(offset: _guard.text.length));
-      setState(() => _msg = "Pasted text isn't accepted. Type it yourself.");
+      setState(() => _msg = refused);
       return;
     }
     if (_msg != null) setState(() => _msg = null);

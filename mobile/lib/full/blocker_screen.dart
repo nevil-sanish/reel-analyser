@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -70,7 +68,7 @@ class _BlockerScreenState extends State<BlockerScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState s) {
     if (s == AppLifecycleState.resumed) {
-      _load(keepEdits: true); // back from the photo flow
+      _load(keepEdits: true);
     }
   }
 
@@ -140,6 +138,20 @@ class _BlockerScreenState extends State<BlockerScreen>
       _ => 'Those rules are not valid.',
     });
     _edits.clear();
+    _load();
+  }
+
+  Future<void> _cancelToday() async {
+    final ok = await askParagraph(
+      context,
+      title: 'Turn off for today',
+      intro: 'To turn the block off until midnight, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
+          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. The text is not sent or stored.',
+      action: 'Turn off for today',
+    );
+    if (!ok || !mounted) return;
+    await _bridge.cancelToday();
+    _say('The block is off for today. It comes back at midnight.');
     _load();
   }
 
@@ -285,20 +297,9 @@ class _BlockerScreenState extends State<BlockerScreen>
                     const SizedBox(height: 10),
                     Text('Today: ${_used(st, st.active!)}'),
                   ],
-                  if (st.suspendedToday && st.photo != null) ...[
+                  if (st.suspendedToday) ...[
                     const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.file(
-                        File(st.photo!),
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'You cancelled the block today. It comes back at midnight, and this photo is deleted.',
-                    ),
+                    const Text('You turned the block off for today. It comes back at midnight.'),
                   ],
                 ],
               ),
@@ -402,9 +403,9 @@ class _BlockerScreenState extends State<BlockerScreen>
               label: Text(
                 st.suspendedToday
                     ? 'Already off for today'
-                    : 'Turn off for today (face photo)',
+                    : 'Turn off for today (50-word paragraph)',
               ),
-              onPressed: st.suspendedToday ? null : _bridge.cancelToday,
+              onPressed: st.suspendedToday ? null : _cancelToday,
             ),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -442,13 +443,14 @@ class _RemoveBlockerScreenState extends State<RemoveBlockerScreen> {
   String? _msg;
 
   void _changed(String v) {
-    if (!_guard.accept(v, DateTime.now())) {
-      // Put the old text back: a paste isn't taken.
+    final refused = _guard.accept(v, DateTime.now());
+    if (refused != null) {
+      // Put the old text back: a paste or a burst of fast typing isn't taken.
       _c.value = TextEditingValue(
         text: _guard.text,
         selection: TextSelection.collapsed(offset: _guard.text.length),
       );
-      setState(() => _msg = 'Pasted text isn\'t accepted. Type it yourself.');
+      setState(() => _msg = refused);
       return;
     }
     if (_msg != null) setState(() => _msg = null);
