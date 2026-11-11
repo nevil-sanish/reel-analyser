@@ -109,4 +109,4 @@ Plan:
 
 ## 1.2.0.0: before the release (reminder from the user, 2026-11-11)
 
-- [ ] **Issue #2: test the GitHub, Codeforces and LeetCode daily goals on the phone, at the end, before releasing 1.2.0.0.** Remind the user.
+- [ ] **Issue #2: the user tests the GitHub, Codeforces and LeetCode daily goals on the phone with their own accounts.** Released in 1.2.0.0 without that test, at the user's request (2026-11-11); keep #2 open until they confirm.

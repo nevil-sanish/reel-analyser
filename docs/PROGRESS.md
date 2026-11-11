@@ -2,7 +2,13 @@
 
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
-## Where things stand
+## Latest (2026-11-11): v1.2.0.0 released
+
+- v1.2.0.0 is the Latest release on GitHub (both APKs and SHA256SUMS). It closes issues #1, #3, #4, #5, #7, #8, #9, #10 and #11; see RELEASES.md for what is in it and what was checked.
+- Still open: **#2** (the user tests the GitHub, Codeforces and LeetCode goals with their own accounts) and **#6** (F-Droid, next).
+- The sections below are older hand-off notes from 2026-11-09 and describe past states.
+
+## Where things stood (2026-11-09)
 
 - **Released and published:** v1.1.0.0 (Latest on GitHub, both APKs, `nevil-sanish/reel-analyser`). `main` is at `ff4f860`. Everything up to and including the new gold-and-white design and logo is in it.
 - **Not committed, not released:** the 1.1.1.0 work (Daily goals, the Full/Semi split, the new tabs, updated legal texts). It is all in the working tree. A full copy as one patch is in `mobile/build/backup-1.1.1.0-wip/all-changes.patch` (git-ignored folder; `git apply` it onto `ff4f860` to restore).
