@@ -50,11 +50,11 @@ Later, reproducible builds (as LocalSend does) would let F-Droid ship the develo
 
 ## Steps to submit (needs your own GitLab account)
 
-1. Release the version the recipes point to (`commit: v1.2.1.0`, versionCode 44) on GitHub, so the tag exists.
+1. Release the version the recipes point to (tag v1.2.1.0, `commit:` its full hash d7013c3…, versionCode 44) on GitHub. fdroiddata wants the full commit hash, not a tag.
 2. Sign in at gitlab.com and fork https://gitlab.com/fdroid/fdroiddata.
 3. In the fork, copy `fdroid/app.reelbrain.yml` and `fdroid/app.reelbrain.semi.yml` into `metadata/`, commit, and push to a new branch.
 4. Optional but recommended: run `fdroid build -v -l app.reelbrain` in the fork (needs fdroidserver and an Android SDK), or let the merge request's CI pipeline build it.
-5. Open a merge request to fdroiddata titled "New app: Reel Analyser (and Reel Analyser Semi)". Fill in the template's checklist: MIT licence, the source link, the anti-features above, and that the Full build's self-updater is disabled in F-Droid builds.
+5. Open one merge request per app (fdroiddata allows one app per MR), titled "New app: Reel Analyser" and "New app: Reel Analyser Semi". Fill in the template's checklist: MIT licence, the source link, the anti-features above, and that the Full build's self-updater is disabled in F-Droid builds.
 6. Answer the reviewers' questions in the merge request. After it is merged, the apps appear on f-droid.org after the next build cycle, often a few days.
 
 Screenshots are optional. If you want them, add clean ones (no personal notes, contacts or chats) as `mobile/android/app/src/<flavour>/play/listings/en-US/graphics/phone-screenshots/1.png`, `2.png` and so on.

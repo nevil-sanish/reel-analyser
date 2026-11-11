@@ -24,7 +24,7 @@ Repo: https://github.com/nevil-sanish/reel-analyser.git
 Builds:
   - versionName: 1.2.1
     versionCode: 44
-    commit: v1.2.1.0
+    commit: d7013c3d99cee01ba0804bea0bb9b250df093c9e
     subdir: mobile
     output: build/app/outputs/flutter-apk/app-full-release.apk
     srclibs:
