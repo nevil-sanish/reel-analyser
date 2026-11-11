@@ -4,7 +4,7 @@ Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md
 
 ## Latest (2026-11-11): v1.2.1.0 released
 
-- v1.2.1.0: LinkedIn multi-part analysis, the Support and Refund Policy and updated legal texts, and F-Droid groundwork. The F-Droid recipes are in `fdroid/`, and [FDROID.md](FDROID.md) explains them and the submission steps, which need the user's GitLab account.
+- v1.2.1.0: LinkedIn multi-part analysis, the Support and Refund Policy and updated legal texts, and F-Droid groundwork. The F-Droid recipes are in `fdroid/`, and [FDROID.md](FDROID.md) explains them. Both apps were submitted on 2026-11-11 as fdroiddata MRs !56876 (Full) and !56877 (Semi); they are waiting for review and for F-Droid to trigger CI.
 
 - v1.2.0.0 is the Latest release on GitHub (both APKs and SHA256SUMS). It closes issues #1, #3, #4, #5, #7, #8, #9, #10 and #11; see RELEASES.md for what is in it and what was checked.
 - Still open: **#2** (the user tests the GitHub, Codeforces and LeetCode goals with their own accounts) and **#6** (F-Droid, next).

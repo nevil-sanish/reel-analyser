@@ -48,6 +48,13 @@ F-Droid signs its builds with its own key, so an F-Droid install and a GitHub in
 
 Later, reproducible builds (as LocalSend does) would let F-Droid ship the developer's own signed APK instead. That would need the GitHub release to be the same build as F-Droid's, which today it is not, because GitHub builds keep the in-app updater.
 
+## Submitted (2026-11-11)
+
+- Full: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/56876 (`metadata/app.reelbrain.yml`)
+- Semi: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/56877 (`metadata/app.reelbrain.semi.yml`)
+- From the fork gitlab.com/nevilsanish/fdroiddata, branches `app.reelbrain` and `app.reelbrain.semi`. F-Droid signs with its own key (no reproducible build, by choice).
+- GitLab won't run CI on the fork without identity verification (phone or card). As F-Droid's template says, that was skipped, and both MRs ask the F-Droid team to trigger CI. Watch the MRs for reviewer comments and CI results.
+
 ## Steps to submit (needs your own GitLab account)
 
 1. Release the version the recipes point to (tag v1.2.1.0, `commit:` its full hash d7013c3…, versionCode 44) on GitHub. fdroiddata wants the full commit hash, not a tag.
