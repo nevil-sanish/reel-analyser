@@ -7,6 +7,9 @@ import 'liquid.dart';
 import 'section_card.dart';
 import 'update_flow.dart';
 
+/// The developer's Buy Me a Coffee page. Opened in the browser; the app sends nothing itself.
+const buyMeACoffee = 'https://buymeacoffee.com/nevilsanish';
+
 /// The About tab: who made the app, feedback, updates, and every legal text. In both builds.
 class AboutScreen extends StatelessWidget {
   final AppServices services;
@@ -62,7 +65,16 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 8),
             FilledButton.tonalIcon(onPressed: () => _feedback(context), icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
           ]),
-          SectionCard(index: 2, title: 'About and legal', children: [
+          SectionCard(index: 2, title: 'Support the app', children: [
+            const Text('Reel Analyser is free, with no ads and no tracking. If it helps you, you can buy the developer a coffee.'),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => services.bridge.openUrl(buyMeACoffee),
+              icon: const Icon(Icons.local_cafe_rounded),
+              label: const Text('Buy me a coffee'),
+            ),
+          ]),
+          SectionCard(index: 3, title: 'About and legal', children: [
             _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
             _link(context, Icons.privacy_tip_outlined, 'Privacy Policy', () => open(LegalScreen.privacy)),
             _link(context, Icons.gavel_outlined, 'Terms of Use', () => open(LegalScreen.terms)),

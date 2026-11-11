@@ -110,3 +110,4 @@ Plan:
 ## 1.2.0.0: before the release (reminder from the user, 2026-11-11)
 
 - [ ] **Issue #2: test the GitHub, Codeforces and LeetCode daily goals on the phone, at the end, before releasing 1.2.0.0.** Remind the user.
+- [ ] **Create the Buy Me a Coffee page buymeacoffee.com/nevilsanish** (the About tab's button opens it; issue #10). Or tell Claude the real username.
