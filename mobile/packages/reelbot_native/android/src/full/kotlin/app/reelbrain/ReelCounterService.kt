@@ -108,7 +108,7 @@ class ReelCounterService : AccessibilityService() {
         if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && !tracker.active && !meter.active) return
         val now = System.currentTimeMillis()
         if (now - lastEval >= 250) evaluate()
-        if (tracker.active && !ticking) {
+        if ((tracker.active || meter.active) && !ticking) {
             ticking = true
             handler.postDelayed(tick, 1000)
         }
@@ -137,7 +137,9 @@ class ReelCounterService : AccessibilityService() {
         val r = Rect().also(root::getBoundsInScreen)
         val obs = DetectionRules.read(app, nodes, Box(r.left, r.top, r.right, r.bottom))
         tracker.observe(now, app, obs.inReels, obs.item)
-        enforce(now, if (obs.inReels) app else null)
+        // Whole-app time: anywhere in the app counts, and past the rule the app itself is blocked, not just its reels.
+        val whole = app in (currentState(now).active?.wholeApp ?: emptySet())
+        enforce(now, if (obs.inReels || whole) app else null)
         if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CAPTURE, false)) capture(now, app, obs, nodes)
     }
 

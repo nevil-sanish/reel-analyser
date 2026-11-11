@@ -75,6 +75,15 @@ class BlockPolicyTest {
         assertNull(BlockPolicy.effective(saved, at(0, 0, 10)).pending)
     }
 
+    @Test fun `whole-app choice round-trips, only for Instagram and YouTube that are blocked`() {
+        val w = separate.copy(wholeApp = setOf("instagram"))
+        assertEquals(w, BlockConfig.parse(w.toJson()))
+        assertEquals(emptySet<String>(), BlockConfig.parse(separate.toJson())!!.wholeApp)
+        val odd = BlockConfig.parse("""{"mode":"shared","items":["instagram"],"rules":{},"wholeApp":["instagram","youtube","browser"]}""")!!
+        assertEquals(setOf("instagram"), odd.wholeApp)
+        assertTrue(BlockPolicy.describe(w, "instagram", "limit").contains("of Instagram."))
+    }
+
     @Test fun `json round trip and damaged values`() {
         assertEquals(separate, BlockConfig.parse(separate.toJson()))
         assertEquals(shared, BlockConfig.parse(shared.toJson()))

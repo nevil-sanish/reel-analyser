@@ -14,14 +14,16 @@ data class BlockRule(val limitMin: Int?, val intervals: List<Interval>)
 
 /**
  * What the user chose to block. `items` are `instagram`, `youtube` and `browser`. In `shared` mode one rule (`all`)
- * covers them together, and their reel time is added up; in `separate` mode each item has its own rule.
+ * covers them together, and their reel time is added up; in `separate` mode each item has its own rule. Apps in [wholeApp]
+ * (`instagram`, `youtube`) count all the time spent in the app, not only reels, and past the rule the whole app is blocked.
  */
-data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<String, BlockRule>) {
+data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<String, BlockRule>, val wholeApp: Set<String> = emptySet()) {
     fun ruleFor(surface: String) = rules[if (mode == "shared") "all" else surface]
 
     fun toJson(): String = JSONObject().apply {
         put("mode", mode)
         put("items", JSONArray(items.sorted()))
+        put("wholeApp", JSONArray(wholeApp.sorted()))
         put("rules", JSONObject().also { o ->
             for ((k, r) in rules) o.put(k, JSONObject().apply {
                 put("limitMin", r.limitMin ?: JSONObject.NULL)
@@ -32,6 +34,7 @@ data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<
 
     companion object {
         val surfaces = setOf("instagram", "youtube", "browser")
+        val wholeAppSurfaces = setOf("instagram", "youtube")
 
         /** Null for anything that isn't a well-formed config, so a damaged value never blocks or crashes. */
         fun parse(json: String?): BlockConfig? = try {
@@ -47,7 +50,9 @@ data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<
                 }.filter { it.start in 0..1439 && it.end in 0..1439 && it.start != it.end }
                 BlockRule(lim, iv)
             }
-            BlockConfig(mode, items, rules)
+            val whole = o.optJSONArray("wholeApp")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
+                .filter { it in wholeAppSurfaces && it in items }.toSet()
+            BlockConfig(mode, items, rules, whole)
         } catch (e: Exception) {
             null
         }
@@ -109,12 +114,16 @@ object BlockPolicy {
 
     private fun hhmm(m: Int) = "%02d:%02d".format(m / 60, m % 60)
 
-    fun name(surface: String) = when (surface) { "instagram" -> "Instagram Reels"; "youtube" -> "YouTube Shorts"; else -> "Reels and Shorts on the web" }
+    fun name(surface: String, whole: Boolean = false) = when (surface) {
+        "instagram" -> if (whole) "Instagram" else "Instagram Reels"
+        "youtube" -> if (whole) "YouTube" else "YouTube Shorts"
+        else -> "Reels and Shorts on the web"
+    }
 
     /** The line the block screen shows. */
     fun describe(cfg: BlockConfig?, surface: String, reason: String): String {
         val r = cfg?.ruleFor(surface)
-        val what = if (cfg?.mode == "shared") "Reels and Shorts" else name(surface)
+        val what = if (cfg?.mode == "shared") "Reels and Shorts" else name(surface, cfg?.wholeApp?.contains(surface) == true)
         return if (reason == "limit") {
             val m = r?.limitMin ?: 0
             "You have used your daily limit of ${if (m % 60 == 0) "${m / 60} h" else if (m > 60) "${m / 60} h ${m % 60} min" else "$m min"} of $what."

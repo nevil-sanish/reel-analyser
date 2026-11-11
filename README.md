@@ -73,6 +73,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **Limits:** one shared daily limit for everything you picked, or one for each, in minutes or hours. It counts time on reels only.
 - **Schedule:** any number of time slots when reels are allowed (for example 18:00 to 19:00). Outside them they are blocked. A reel is watched only when both the limit and the slots allow it.
 - **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
+- **Reels only or whole app:** for Instagram and YouTube you choose whether only reel time counts (and only reels are blocked) or all time in the app counts (and the whole app is blocked past the rule).
 - **Locked rules:** after the first set-up, changing the rules takes a 50-word paragraph typed by hand (no paste), checked with your own AI key; an accepted change starts at the next 00:00.
 - **Turn off for today:** needs a paragraph of at least 50 words typed by hand (no paste; typing very fast locks the field until you stop for 2 seconds). It is checked on the phone and not stored.
 - **Remove for good:** needs a paragraph of at least 50 words typed by hand: no paste, not too fast, no typical AI wording. These checks are best-effort.

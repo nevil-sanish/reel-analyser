@@ -50,6 +50,7 @@ class _BlockerScreenState extends State<BlockerScreen>
   var _consent = false;
   var _mode = 'shared';
   final _items = <String>{};
+  final _whole = <String>{};
   final _edits = <String, _RuleEdit>{};
 
   @override
@@ -86,6 +87,9 @@ class _BlockerScreenState extends State<BlockerScreen>
       _items
         ..clear()
         ..addAll(c?.items ?? const <String>{});
+      _whole
+        ..clear()
+        ..addAll(c?.wholeApp ?? const <String>{});
       _edits
         ..clear()
         ..addAll({
@@ -109,6 +113,7 @@ class _BlockerScreenState extends State<BlockerScreen>
       _mode,
       {..._items},
       {for (final k in keys) k: _edits[k]!.rule},
+      wholeApp: _whole.intersection(_items),
     );
     if (c.rules.values.every(
       (r) => r.limitMin == null && r.intervals.isEmpty,
@@ -351,6 +356,26 @@ class _BlockerScreenState extends State<BlockerScreen>
                         () => v == true ? _items.add(k) : _items.remove(k),
                       ),
                     ),
+                  for (final k in blockSurfaces)
+                    if (wholeAppSurfaces.contains(k) && _items.contains(k))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${surfaceNames[k]!.split(' ').first}: what to count and block', style: t.textTheme.bodySmall),
+                            const SizedBox(height: 4),
+                            SegmentedButton<bool>(
+                              segments: const [
+                                ButtonSegment(value: false, label: Text('Reels only')),
+                                ButtonSegment(value: true, label: Text('Whole app')),
+                              ],
+                              selected: {_whole.contains(k)},
+                              onSelectionChanged: (v) => setState(() => v.first ? _whole.add(k) : _whole.remove(k)),
+                            ),
+                          ],
+                        ),
+                      ),
                   const SizedBox(height: 8),
                   SegmentedButton<String>(
                     segments: const [
@@ -380,7 +405,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                       ],
                   const SizedBox(height: 8),
                   Text(
-                    'A reel can be watched only when both the limit and the time slots allow it.',
+                    'A reel can be watched only when both the limit and the time slots allow it. With Whole app, all your time in Instagram or YouTube counts, and past the limit or outside the time slots the app itself does not open.',
                     style: t.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),

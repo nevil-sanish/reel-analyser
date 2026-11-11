@@ -29,6 +29,8 @@ class BlockRule {
 }
 
 const blockSurfaces = ['instagram', 'youtube', 'browser'];
+const wholeAppSurfaces = {'instagram', 'youtube'};
+const wholeAppNames = {'instagram': 'the whole Instagram app', 'youtube': 'the whole YouTube app'};
 const surfaceNames = {
   'instagram': 'Instagram Reels',
   'youtube': 'YouTube Shorts',
@@ -40,11 +42,15 @@ class BlockConfig {
   final String mode;
   final Set<String> items;
   final Map<String, BlockRule> rules;
-  const BlockConfig(this.mode, this.items, this.rules);
+
+  /// Instagram and YouTube apps whose whole-app time counts (and that are blocked whole); the rest count reel time only.
+  final Set<String> wholeApp;
+  const BlockConfig(this.mode, this.items, this.rules, {this.wholeApp = const {}});
 
   String toJson() => jsonEncode({
     'mode': mode,
     'items': items.toList()..sort(),
+    'wholeApp': wholeApp.toList()..sort(),
     'rules': {
       for (final e in rules.entries)
         e.key: {
@@ -70,6 +76,7 @@ class BlockConfig {
                 TimeSlot((i[0] as num).toInt(), (i[1] as num).toInt()),
             ]),
         },
+        wholeApp: {for (final i in o['wholeApp'] as List? ?? const []) '$i'},
       );
     } on Object {
       return null;
@@ -263,9 +270,10 @@ String describeRules(BlockConfig c) {
     r.limitMin == null ? 'no daily limit' : 'daily limit ${r.limitMin} min',
     r.intervals.isEmpty ? 'any time of day' : 'allowed only at ${r.intervals.join(', ')}',
   ].join(', ');
-  final names = [for (final k in blockSurfaces) if (c.items.contains(k)) surfaceNames[k]!];
+  String name(String k) => c.wholeApp.contains(k) ? wholeAppNames[k]! : surfaceNames[k]!;
+  final names = [for (final k in blockSurfaces) if (c.items.contains(k)) name(k)];
   if (c.mode == 'shared') return '${names.join(', ')} together: ${c.rules['all'] == null ? 'no rule' : rule(c.rules['all']!)}';
-  return [for (final k in blockSurfaces) if (c.items.contains(k)) '${surfaceNames[k]}: ${c.rules[k] == null ? 'no rule' : rule(c.rules[k]!)}'].join('; ');
+  return [for (final k in blockSurfaces) if (c.items.contains(k)) '${name(k)}: ${c.rules[k] == null ? 'no rule' : rule(c.rules[k]!)}'].join('; ');
 }
 
 const ruleChangeSystem = 'You decide whether someone may change the self-imposed limits of their reel blocker (Instagram Reels, '
