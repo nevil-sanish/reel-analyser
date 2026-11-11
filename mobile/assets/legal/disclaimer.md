@@ -1,6 +1,6 @@
 # Disclaimer
 
-Reel Analyser · Effective 10 November 2026 · Version 1.1
+Reel Analyser · Effective 11 November 2026 · Version 1.2
 
 Please read this with the Terms of Use and the Privacy Policy.
 

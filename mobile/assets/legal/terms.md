@@ -1,6 +1,6 @@
 # Terms of Use
 
-Reel Analyser · Effective 10 November 2026 · Version 1.2
+Reel Analyser · Effective 11 November 2026 · Version 1.3
 
 By installing or using Reel Analyser you agree to these terms. If you do not agree, do not use the app.
 

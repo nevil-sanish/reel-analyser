@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 10 November 2026 · Version 1.2
+Reel Analyser · Effective 11 November 2026 · Version 1.3
 
 ## 1. The short version
 
