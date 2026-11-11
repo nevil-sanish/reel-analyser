@@ -1,0 +1,54 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Needs the user's own key for a proprietary AI service (Gemini, OpenAI,
+      Claude or Groq), and reads public Instagram, YouTube and LinkedIn pages; the
+      optional daily goals read GitHub, Codeforces and LeetCode.
+Categories:
+  - AI Chat
+  - Digital Wellbeing
+  - Habit Tracker
+  - Note
+License: MIT
+AuthorName: Nevil Mathew Sanish
+AuthorEmail: nevilsanish@gmail.com
+SourceCode: https://github.com/nevil-sanish/reel-analyser
+IssueTracker: https://github.com/nevil-sanish/reel-analyser/issues
+Changelog: https://github.com/nevil-sanish/reel-analyser/releases
+Donate: https://buymeacoffee.com/nevilsanish
+
+AutoName: Reel Analyser
+
+RepoType: git
+Repo: https://github.com/nevil-sanish/reel-analyser.git
+
+Builds:
+  - versionName: 1.2.1
+    versionCode: 44
+    commit: v1.2.1.0
+    subdir: mobile
+    output: build/app/outputs/flutter-apk/app-full-release.apk
+    srclibs:
+      - flutter@stable
+    rm:
+      - mobile/android/app/src/semi/play
+    prebuild:
+      - flutterVersion=$(sed -n -E 's/.*"flutter"[^"]*"([^"]+)".*/\1/p' .fvmrc)
+      - '[[ $flutterVersion ]]'
+      - git -C $$flutter$$ checkout -f $flutterVersion
+      - sed -i -e '/REQUEST_INSTALL_PACKAGES/d' packages/reelbot_native/android/src/full/AndroidManifest.xml
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get --enforce-lockfile
+    scandelete:
+      - mobile/.pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --flavor full -t lib/main_full.dart
+        --dart-define=FDROID=true
+    ndk: r28c
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+UpdateCheckData: mobile/pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
+CurrentVersion: 1.2.1
+CurrentVersionCode: 44

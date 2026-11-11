@@ -276,3 +276,4 @@ Reel Analyser is an independent project and is not affiliated with Instagram, Me
 | [TESTS.md](docs/TESTS.md) | Test catalogue with IDs |
 | [RESEARCH.md](docs/RESEARCH.md) | Survey of ~30 open-source Instagram/YouTube fetchers |
 | [RELEASES.md](docs/RELEASES.md) | Commits, keeping docs in step, GitHub Releases |
+| [FDROID.md](docs/FDROID.md) | F-Droid recipes, the issues found, and how to submit both apps |
