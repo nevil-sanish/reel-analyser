@@ -118,6 +118,16 @@ Rules for every `IG-*` call:
 
 ## 3. Third-party APIs
 
+### LI-POST: LinkedIn public post page (1.2.0.0, both builds)
+- **Owner** `lib/pipeline/linkedin.dart` (parse) and `Runner._linkedin` (fetch). Links come from `ShareUrls` (Kotlin): `linkedin.com/posts/…`, `/feed/update/…`, `/pulse/…` on any subdomain, and `lnkd.in/…`; the query (utm_*, `rcm`) is dropped.
+- **Request:** `GET {link}` with a mobile Chrome User-Agent, no cookies, no login. Redirects are followed (lnkd.in).
+- **Response:** HTML with schema.org JSON-LD: `SocialMediaPosting` (`articleBody`, `author.name`, `image[]`), `VideoObject` (`description`, `contentUrl` mp4 on `dms.licdn.com`, `thumbnailUrl`) or `Article`. Fallback: `og:description`, `og:title`, `og:image` (only `media.licdn.com`).
+- **Video:** `GET contentUrl` with `Referer: https://www.linkedin.com/`, 100 MB cap, deleted after the analysis. Checked 2026-11-11: HTTP 200 `video/mp4` without a login.
+- **Media allowlist:** only `https://*.licdn.com`. Company logos and profile pictures are skipped.
+- **Errors:** 429/5xx and timeouts → retry later; no readable post (login wall, not public) → failed note with that reason.
+- **Why not a library:** open-source LinkedIn scrapers either log in with the user's account (cookies; against our no-login rule and LinkedIn's terms for automated access) or use the same public JSON-LD. The public page is enough for public posts.
+
+
 ### APIFY-RUN: Apify Instagram scraper (optional)
 - **Phase** 1 · **cascade step** 6 · only if the user saved an Apify key · owner `lib/pipeline/apify.dart`
 - **Request:** `POST https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?timeout=120`

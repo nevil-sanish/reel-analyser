@@ -36,4 +36,14 @@ class ShareUrlsTest {
         assertNull(ShareUrls.extract("https://www.instagram.com/someuser/"))
         assertNull(ShareUrls.extract("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
     }
+
+    @Test fun `linkedin posts lose the tracking query`() {
+        val l = ShareUrls.extract("Look https://www.linkedin.com/posts/jasonhaider_when-confronted-ugcPost-7221657670615719939-vqwI?utm_source=social_share_send&rcm=ACoAAE8J now")!!
+        assertEquals("https://www.linkedin.com/posts/jasonhaider_when-confronted-ugcPost-7221657670615719939-vqwI", l.url)
+        assertEquals("linkedin", l.app)
+        assertEquals("7221657670615719939", l.code)
+        assertEquals("linkedin", ShareUrls.extract("https://in.linkedin.com/feed/update/urn:li:activity:7525935221964451840/")!!.app)
+        assertEquals("https://lnkd.in/gAbC12", ShareUrls.extract("see https://lnkd.in/gAbC12")!!.url)
+        assertNull(ShareUrls.extract("https://www.linkedin.com/in/someone"))
+    }
 }

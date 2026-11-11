@@ -4,9 +4,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../app_services.dart';
 import '../core/models.dart';
 
-const _pageHosts = ['instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net', 'youtube.com', 'youtu.be', 'ytimg.com', 'google.com', 'gstatic.com', 'googlevideo.com', 'googleusercontent.com'];
+const _pageHosts = ['instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net', 'youtube.com', 'youtu.be', 'ytimg.com', 'google.com', 'gstatic.com', 'googlevideo.com', 'googleusercontent.com', 'linkedin.com', 'lnkd.in', 'licdn.com'];
 
-/// Whether the in-app page may go to [url]: https only, on a host of Instagram, YouTube or the login and consent pages they use.
+/// Whether the in-app page may go to [url]: https only, on a host of Instagram, YouTube, LinkedIn or the login and consent pages they use.
 bool allowedPage(String url) {
   if (url == 'about:blank') return true;
   final u = Uri.tryParse(url);

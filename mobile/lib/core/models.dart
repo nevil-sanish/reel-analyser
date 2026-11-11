@@ -23,10 +23,12 @@ class Reel {
   final int step;
   final int savedAt;
 
-  /// Library filter: `reel` (Instagram reel), `post` (Instagram photo post), `short` (YouTube), `photo` (shared picture).
+  /// Library filter: `reel` (Instagram reel), `post` (Instagram photo post), `short` (YouTube), `photo` (shared picture),
+  /// `linkedin` (a LinkedIn post).
   String get kind => switch (app) {
         'youtube' => 'short',
         'photo' => 'photo',
+        'linkedin' => 'linkedin',
         _ => url.contains('instagram.com/p/') ? 'post' : 'reel',
       };
 
@@ -151,12 +153,13 @@ class Folder {
   const Folder(this.id, this.name);
 }
 
-/// A note's link may come from an imported file, so only Instagram and YouTube https links are ever opened.
+/// A note's link may come from an imported file, so only Instagram, YouTube and LinkedIn https links are ever opened.
 bool isReelLink(String url) {
   final u = Uri.tryParse(url);
   if (u == null || u.scheme != 'https') return false;
   final h = u.host.toLowerCase();
-  return h == 'instagram.com' || h.endsWith('.instagram.com') || h == 'youtube.com' || h.endsWith('.youtube.com') || h == 'youtu.be';
+  return h == 'instagram.com' || h.endsWith('.instagram.com') || h == 'youtube.com' || h.endsWith('.youtube.com') || h == 'youtu.be' ||
+      h == 'linkedin.com' || h.endsWith('.linkedin.com') || h == 'lnkd.in';
 }
 
 const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

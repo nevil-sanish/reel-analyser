@@ -41,7 +41,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   String get _folderName => _folder == 0 ? 'All' : _folders.firstWhere((f) => f.id == _folder, orElse: () => const Folder(0, 'All')).name;
 
   void _toggle(Reel r) => setState(() => _selected.contains(r.url) ? _selected.remove(r.url) : _selected.add(r.url));
-  static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
+  static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'linkedin': 'LinkedIn', 'photo': 'Photos'};
   int _waiting = 0;
   List<PendingItem> _queued = [];
   List<Job> _shared = [];
@@ -264,7 +264,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   const SizedBox(height: 24),
                   Text(_query.trim().isEmpty ? 'Nothing saved yet' : 'No notes match', style: t.textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text(_query.trim().isEmpty ? 'In Instagram or YouTube, tap Share → Reel Analyser on a reel or short.' : 'Nothing saved matches “${_query.trim()}”. Try another word.',
+                  Text(_query.trim().isEmpty ? 'In Instagram, YouTube or LinkedIn, tap Share → Reel Analyser on a reel, short or post.' : 'Nothing saved matches “${_query.trim()}”. Try another word.',
                       textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ]),
               ),
@@ -586,7 +586,7 @@ class ReelCard extends StatelessWidget {
                   SourceIcon(reel.app),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : 'Instagram') : '@${reel.author}',
+                    child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : reel.app == 'linkedin' ? 'LinkedIn' : 'Instagram') : '@${reel.author}',
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),

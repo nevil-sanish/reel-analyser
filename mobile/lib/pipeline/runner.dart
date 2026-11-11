@@ -13,6 +13,7 @@ import '../data/library_db.dart';
 import '../native/counter_bridge.dart';
 import 'apify.dart';
 import 'gemini.dart';
+import 'linkedin.dart';
 import 'providers.dart';
 
 /// The keys that can make notes: Gemini (several, taken in turn) for video, OpenAI and Claude from frames.
@@ -61,7 +62,7 @@ class Job {
     // Nothing known yet: say what it is and when it was shared; the name replaces this once it is fetched.
     final t = DateTime.fromMillisecondsSinceEpoch(i.createdAt);
     String two(int n) => n.toString().padLeft(2, '0');
-    final kind = i.app == 'youtube' ? 'YouTube Short' : i.url.contains('/p/') ? 'Instagram post' : 'Instagram reel';
+    final kind = i.app == 'youtube' ? 'YouTube Short' : i.app == 'linkedin' ? 'LinkedIn post' : i.url.contains('/p/') ? 'Instagram post' : 'Instagram reel';
     return i.createdAt == 0 ? kind : '$kind shared ${two(t.hour)}:${two(t.minute)}';
   }
 }
@@ -558,6 +559,7 @@ class Runner {
       return switch (item.app) {
         'youtube' => await _youtube(item),
         'photo' => await _photo(item),
+        'linkedin' => await _linkedin(item),
         _ => await _instagram(item),
       };
     } on GeminiException catch (e) {
@@ -576,6 +578,8 @@ class Runner {
                   'up to 3 times, then makes the note from what it has.'
             : 'Instagram is limiting requests right now. Reel Analyser retries on its own in a few minutes.',
       );
+    } on TimeoutException {
+      throw _RetryLater('the site did not answer in time');
     } on SocketException catch (e) {
       throw _RetryLater('no network ($e)');
     } on http.ClientException catch (e) {
@@ -614,6 +618,51 @@ class Runner {
       jpegs,
       err,
     );
+  }
+
+  /// LinkedIn: the public post page (no login) gives the text, author, pictures and, for a video, the mp4. The video is
+  /// watched like a reel; otherwise the pictures, otherwise the text alone. The page and the video are not kept.
+  Future<String> _linkedin(PendingItem item) async {
+    final u = Uri.parse(item.url);
+    if (!isLinkedInHost(u.host)) return _failed('Not a LinkedIn link.');
+    _step('Fetching from LinkedIn', 0.12);
+    final r = await _stoppable(client.get(u, headers: {'User-Agent': linkedInUserAgent, 'Accept-Language': 'en-US,en;q=0.9'}))
+        .timeout(const Duration(seconds: 30));
+    if (r.statusCode == 429 || r.statusCode >= 500) throw GeminiException(GeminiFailure.retryLater, 'LinkedIn is busy (HTTP ${r.statusCode})');
+    final p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
+    if (p.isEmpty) {
+      return _failed('LinkedIn did not show this post without a login (HTTP ${r.statusCode}). Only public posts can be read.');
+    }
+    _step(p.videoUrl.isNotEmpty ? 'Got the video' : 'Got the post', 0.35);
+    _name(p.text.isNotEmpty ? p.text : p.author);
+    final context = [
+      'LinkedIn post',
+      if (p.author.isNotEmpty) 'Author: ${p.author}',
+      if (p.text.isNotEmpty) 'Post text: ${p.text}',
+    ].join('\n');
+    final caption = p.text.length > 2000 ? p.text.substring(0, 2000) : p.text;
+    if (p.videoUrl.isNotEmpty) {
+      final path = await _download(p.videoUrl, '${item.id}', referer: 'https://www.linkedin.com/', prefix: 'linkedin');
+      if (path != null) {
+        final file = File(path);
+        try {
+          await _save(item, await _video(file, context), 'done', 0, author: p.author, caption: caption);
+          return 'done';
+        } on GeminiException catch (e) {
+          if (e.kind != GeminiFailure.rejected) rethrow;
+        } finally {
+          if (await file.exists()) await file.delete();
+        }
+      }
+    }
+    final pics = [for (final i in p.images) ?await _bytes(i)];
+    if (pics.isNotEmpty) {
+      await _save(item, await _pictures(pics, context), 'done', 0, author: p.author, caption: caption);
+      return 'done';
+    }
+    final a = await _captionAndThumbnail(context, p.thumbnail.isEmpty ? null : await _bytes(p.thumbnail));
+    await _save(item, a, p.thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail', 0, author: p.author, caption: caption);
+    return p.thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail';
   }
 
   Future<String> _youtube(PendingItem item) async {
@@ -833,12 +882,12 @@ class Runner {
   }
 
   /// Apify's video link, downloaded now (CDN links expire). 100 MB cap, as in IG-CDN.
-  Future<String?> _download(String url, String code) async {
-    final f = File('${tempDir.path}/apify-$code.mp4');
+  Future<String?> _download(String url, String code, {String referer = 'https://www.instagram.com/', String prefix = 'apify'}) async {
+    final f = File('${tempDir.path}/$prefix-$code.mp4');
     try {
       final r = await client.send(
         http.Request('GET', Uri.parse(url))
-          ..headers['Referer'] = 'https://www.instagram.com/',
+          ..headers['Referer'] = referer,
       );
       if (r.statusCode != 200) return null;
       final sink = f.openWrite();

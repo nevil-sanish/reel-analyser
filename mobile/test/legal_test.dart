@@ -38,6 +38,7 @@ void main() {
     expect(read('terms'), contains('blocked for the next day only'));
     expect(read('privacy'), contains('Daily goals'));
     expect(read('privacy'), contains('When you press Organize'));
+    expect(read('privacy'), contains('without any login or account'));
     expect(read('privacy'), contains('api.github.com'));
     expect(read('privacy'), contains('not an official API'));
     expect(read('privacy'), contains('written reason for changing a username'));

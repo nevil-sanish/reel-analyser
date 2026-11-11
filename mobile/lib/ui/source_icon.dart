@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// A small badge for where a note came from: Instagram, YouTube, or a photo shared from the phone. Drawn here so no icon
+/// A small badge for where a note came from: Instagram, YouTube, LinkedIn, or a photo shared from the phone. Drawn here so no icon
 /// package or image asset is needed.
 class SourceIcon extends StatelessWidget {
-  /// The note's `app`: `instagram`, `youtube` or `photo`.
+  /// The note's `app`: `instagram`, `youtube`, `linkedin` or `photo`.
   final String app;
   final double size;
   const SourceIcon(this.app, {this.size = 28, super.key});
@@ -13,6 +13,7 @@ class SourceIcon extends StatelessWidget {
   static String label(String app) => switch (app) {
         'youtube' => 'YouTube',
         'photo' => 'Shared photo',
+        'linkedin' => 'LinkedIn',
         _ => 'Instagram',
       };
 
@@ -23,6 +24,12 @@ class SourceIcon extends StatelessWidget {
       'youtube' => DecoratedBox(
           decoration: BoxDecoration(color: const Color(0xFFFF0000), borderRadius: r),
           child: Center(child: Icon(Icons.play_arrow_rounded, size: size * 0.72, color: Colors.white)),
+        ),
+      'linkedin' => DecoratedBox(
+          decoration: BoxDecoration(color: const Color(0xFF0A66C2), borderRadius: r),
+          child: Center(
+            child: Text('in', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * 0.5, height: 1, fontFamily: 'sans-serif')),
+          ),
         ),
       'photo' => DecoratedBox(
           decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: r),
