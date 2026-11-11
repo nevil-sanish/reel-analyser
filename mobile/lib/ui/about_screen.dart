@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
+import '../core/distribution.dart';
 import 'developer_card.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
@@ -119,7 +120,15 @@ class AboutScreen extends StatelessWidget {
             ),
           ]),
           SectionCard(index: 3, title: 'About and legal', children: [
-            _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
+            if (fromFdroid)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.system_update_outlined),
+                title: const Text('Updates come from F-Droid'),
+                subtitle: Text('You have ${AppServices.version}'),
+              )
+            else
+              _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
             _link(context, Icons.privacy_tip_outlined, 'Privacy Policy', () => open(LegalScreen.privacy)),
             _link(context, Icons.gavel_outlined, 'Terms of Use', () => open(LegalScreen.terms)),
             _link(context, Icons.info_outline, 'Disclaimer', () => open(LegalScreen.disclaimer)),

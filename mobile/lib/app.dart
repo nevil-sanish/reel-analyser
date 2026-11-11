@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'app_services.dart';
 import 'features.dart';
+import 'core/distribution.dart';
 import 'data/update_check.dart';
 import 'pipeline/background.dart';
 import 'ui/chat_screen.dart';
@@ -142,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// A banner when GitHub has a newer APK. Silent when offline or rate-limited.
   Future<void> _checkUpdate() async {
+    if (fromFdroid) return;
     final s = widget.services, now = DateTime.now().millisecondsSinceEpoch;
     if (now - await s.keys.updateCheckedAt < const Duration(days: 1).inMilliseconds) return;
     await s.keys.setUpdateCheckedAt(now);

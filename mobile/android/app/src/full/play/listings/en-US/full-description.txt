@@ -1,0 +1,32 @@
+Share a reel, a YouTube Short, a public LinkedIn post or a picture to Reel Analyser, and it becomes a searchable note: a title, a summary, key points, tags and the transcript. Then ask questions about everything you saved.
+
+<b>Notes and folders</b>
+<ul>
+<li>Notes from Instagram reels and posts, YouTube Shorts, public LinkedIn posts (text, pictures or video) and shared pictures</li>
+<li>Your own folders. New notes go into the matching folder on save, and Organize sorts everything with your AI key, suggesting new folders only for real topics</li>
+<li>Chat with all your notes, with one note, or with one folder</li>
+<li>Share a note with its link, or share a chat</li>
+<li>Archive, search, export and import, light and dark themes</li>
+</ul>
+
+<b>Private by design</b>
+<ul>
+<li>No account, no ads, no analytics, no tracking, no servers of our own</li>
+<li>Notes stay on your phone. A reel goes straight from your phone to the AI service you choose (Gemini, OpenAI, Claude or Groq), with your own API key</li>
+<li>LinkedIn and Instagram pages are read like a browser would, with no login</li>
+</ul>
+
+<b>Full build extras (all optional)</b>
+<ul>
+<li>Insights: how many reels and shorts you watched and your time in Instagram and YouTube</li>
+<li>Reel blocker: daily limits and allowed times for Instagram Reels, YouTube Shorts and reel pages in a browser, or for the whole Instagram or YouTube app. Changing the rules takes a typed, AI-checked reason and starts at midnight</li>
+<li>Daily goals: GitHub commits, Codeforces and LeetCode problems a day. Missing a day blocks Instagram the next day</li>
+</ul>
+
+The counter and the blocker use Android's Accessibility service, only after you switch it on and also allow it inside the app. It reads only the Instagram, YouTube and browser screens to tell that a reel is showing. It never takes screenshots, never records the screen and never sends anything off the phone. Usage access is used only for time in Instagram and YouTube.
+
+If you want none of this, install Reel Analyser Semi instead: the same notes app with only the internet permission.
+
+The app is free and always will be. Supporting the developer is optional, from the About screen.
+
+Reel Analyser is not affiliated with Instagram, Meta, YouTube, Google, LinkedIn or any AI provider. It needs your own API key for an AI service (Gemini has a free tier).
