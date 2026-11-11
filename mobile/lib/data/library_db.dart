@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 7,
+        version: 8,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -30,6 +30,7 @@ class LibraryDb {
           await _v5(db);
           await _v6(db);
           await _v7(db);
+          await _v8(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
@@ -38,6 +39,7 @@ class LibraryDb {
           if (from < 5) await _v5(db);
           if (from < 6) await _v6(db);
           if (from < 7) await _v7(db);
+          if (from < 8) await _v8(db);
         },
       ),
     );
@@ -91,6 +93,73 @@ class LibraryDb {
   /// Version 7 was daily goals (full build). Those tables now belong to `lib/full/goal_store.dart`, which creates them itself, so this
   /// build keeps the version number (a phone that already has v7 must not see it go down) and creates nothing.
   static Future<void> _v7(Database db) async {}
+
+  /// Version 8: folders (1.2.0.0). A note is in at most one folder; `folder_items` is kept apart from `reels` so re-saving or
+  /// re-analysing a note, Undo after a delete and export never touch it. Rows of deleted notes are ignored, not cleaned.
+  /// `folder_chats` holds one independent thread per folder (id 0 = the All folder).
+  static Future<void> _v8(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE, createdAt INTEGER NOT NULL)');
+    await db.execute('CREATE TABLE IF NOT EXISTS folder_items (url TEXT PRIMARY KEY, folderId INTEGER NOT NULL)');
+    await db.execute('CREATE TABLE IF NOT EXISTS folder_chats (folderId INTEGER PRIMARY KEY, updatedAt INTEGER NOT NULL, turns TEXT NOT NULL)');
+  }
+
+  /// Oldest first.
+  Future<List<Folder>> folders() async => [
+        for (final r in await _db.query('folders', orderBy: 'createdAt, id')) Folder(r['id'] as int, r['name'] as String),
+      ];
+
+  /// The new folder's id, or null when a folder of that name (any case) already exists or the name is empty or "All".
+  Future<int?> addFolder(String name, int now) async {
+    final n = name.trim();
+    if (n.isEmpty || n.toLowerCase() == 'all') return null;
+    final id = await _db.insert('folders', {'name': n, 'createdAt': now}, conflictAlgorithm: ConflictAlgorithm.ignore);
+    return id == 0 ? null : id;
+  }
+
+  /// False when another folder already has that name.
+  Future<bool> renameFolder(int id, String name) async {
+    final n = name.trim();
+    if (n.isEmpty || n.toLowerCase() == 'all') return false;
+    try {
+      return await _db.update('folders', {'name': n}, where: 'id = ?', whereArgs: [id]) == 1;
+    } on DatabaseException {
+      return false;
+    }
+  }
+
+  /// The folder and its chat go; its notes stay, in All only.
+  Future<void> deleteFolder(int id) => _db.transaction((t) async {
+        await t.delete('folders', where: 'id = ?', whereArgs: [id]);
+        await t.delete('folder_items', where: 'folderId = ?', whereArgs: [id]);
+        await t.delete('folder_chats', where: 'folderId = ?', whereArgs: [id]);
+      });
+
+  /// Note link → folder id, for every note that is in a folder.
+  Future<Map<String, int>> folderOf() async => {
+        for (final r in await _db.query('folder_items')) r['url'] as String: r['folderId'] as int,
+      };
+
+  /// Puts each note in its folder (null = All only), all at once.
+  Future<void> setFolders(Map<String, int?> byUrl) => _db.transaction((t) async {
+        for (final e in byUrl.entries) {
+          if (e.value == null) {
+            await t.delete('folder_items', where: 'url = ?', whereArgs: [e.key]);
+          } else {
+            await t.insert('folder_items', {'url': e.key, 'folderId': e.value}, conflictAlgorithm: ConflictAlgorithm.replace);
+          }
+        }
+      });
+
+  /// The folder's chat thread (empty when none yet).
+  Future<List<String>> folderChat(int folderId) async {
+    final r = await _db.query('folder_chats', where: 'folderId = ?', whereArgs: [folderId]);
+    return r.isEmpty ? [] : [for (final t in jsonDecode(r.first['turns'] as String) as List) '$t'];
+  }
+
+  Future<void> saveFolderChat(int folderId, List<String> turns, int now) => turns.isEmpty
+      ? _db.delete('folder_chats', where: 'folderId = ?', whereArgs: [folderId])
+      : _db.insert('folder_chats', {'folderId': folderId, 'updatedAt': now, 'turns': jsonEncode(turns)},
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
   /// The open database, for the full build's own stores.
   Database get raw => _db;
@@ -182,6 +251,9 @@ class LibraryDb {
     await _db.delete('reels');
     await _db.delete('chats');
     await _db.delete('note_chats');
+    await _db.delete('folders');
+    await _db.delete('folder_items');
+    await _db.delete('folder_chats');
     await _db.update('meta', {'v': 0}, where: "k = 'gemini_turn'");
   }
 

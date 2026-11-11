@@ -8,12 +8,63 @@ import 'liquid.dart';
 import 'motion.dart';
 import 'theme.dart';
 
-/// The chat bot of one analysis. Its thread is saved with the note and holds only this conversation;
-/// the model is given nothing but this note.
+/// One saved chat thread and what it may know: a single note, or one folder's notes.
+class ChatThread {
+  final String title, heading, intro, shareSubject;
+  final String? link;
+  final bool brief;
+  final List<String> starters;
+  final Future<List<String>> Function() load;
+
+  /// Saves the thread; an empty list removes it.
+  final Future<void> Function(List<String> turns) save;
+  final Future<String> Function(String provider, List<String> turns, String? model) ask;
+  const ChatThread({
+    required this.title,
+    required this.heading,
+    required this.intro,
+    required this.shareSubject,
+    this.link,
+    this.brief = false,
+    this.starters = const [],
+    required this.load,
+    required this.save,
+    required this.ask,
+  });
+
+  /// The chat bot of one analysis: the model is given nothing but this note.
+  factory ChatThread.note(AppServices s, Reel reel) => ChatThread(
+        title: 'Chat about this note',
+        heading: reel.title,
+        intro: 'Ask anything about this analysis. This chat only knows this note.',
+        shareSubject: reel.title,
+        link: reel.app == 'photo' ? null : reel.url,
+        brief: true,
+        starters: const ['What can I do with this?', 'Quote the key claims'],
+        load: () => s.library.noteChat(reel.url),
+        save: (t) => t.isEmpty ? s.library.deleteNoteChat(reel.url) : s.library.saveNoteChat(reel.url, t, DateTime.now().millisecondsSinceEpoch),
+        ask: (p, t, m) => s.noteChat(p, reel, t, model: m),
+      );
+
+  /// A folder's own thread (id 0 = All): the model is given only that folder's notes.
+  factory ChatThread.folder(AppServices s, int id, String name) => ChatThread(
+        title: 'Chat · $name',
+        heading: name,
+        intro: 'Ask anything about the notes in this folder. This chat only knows them, and its thread is separate from every other folder.',
+        shareSubject: 'Chat about $name',
+        starters: const ['What are the main ideas here?', 'Make me a short study list', 'What should I try first?'],
+        load: () => s.library.folderChat(id),
+        save: (t) => s.library.saveFolderChat(id, t, DateTime.now().millisecondsSinceEpoch),
+        ask: (p, t, m) => s.folderChat(p, id, name, t, model: m),
+      );
+}
+
+/// A chat screen over one [ChatThread]. The thread holds only this conversation.
 class NoteChatScreen extends StatefulWidget {
   final AppServices services;
-  final Reel reel;
-  const NoteChatScreen(this.services, this.reel, {super.key});
+  final ChatThread thread;
+  NoteChatScreen(this.services, Reel reel, {super.key}) : thread = ChatThread.note(services, reel);
+  const NoteChatScreen.thread(this.services, this.thread, {super.key});
 
   @override
   State<NoteChatScreen> createState() => _NoteChatScreenState();
@@ -51,7 +102,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
   }
 
   Future<void> _load() async {
-    final turns = await s.library.noteChat(widget.reel.url);
+    final turns = await widget.thread.load();
     final p = await s.chatProviders();
     if (!mounted) return;
     setState(() {
@@ -117,7 +168,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       builder: (c) => AlertDialog(
         title: const Text('Clear this chat?'),
         content: const Text(
-          'Only the conversation is removed. The note stays.',
+          'Only the conversation is removed. The notes stay.',
         ),
         actions: [
           TextButton(
@@ -132,7 +183,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       ),
     );
     if (ok != true) return;
-    await s.library.deleteNoteChat(widget.reel.url);
+    await widget.thread.save(const []);
     if (mounted) setState(() => _turns = []);
   }
 
@@ -155,17 +206,13 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
       final sent = [
         for (final t in recent) t == kBriefLabel ? kBriefPrompt : t,
       ];
-      a = await s.noteChat(_provider!, widget.reel, sent, model: _model);
+      a = await widget.thread.ask(_provider!, sent, _model);
     } on Exception catch (e) {
       a = 'Couldn\'t answer: $e';
     }
     _turns.add(a.trim().isEmpty ? '(no answer)' : a.trim());
     // Saved even if the screen was closed while the answer was coming.
-    await s.library.saveNoteChat(
-      widget.reel.url,
-      _turns,
-      DateTime.now().millisecondsSinceEpoch,
-    );
+    await widget.thread.save(_turns);
     if (!mounted) return;
     Haptics.select();
     setState(() => _busy = false);
@@ -187,7 +234,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
     final t = Theme.of(context);
     return LiquidScaffold(
       appBar: AppBar(
-        title: const Text('Chat about this note'),
+        title: Text(widget.thread.title),
         actions: [
           if (_turns.isNotEmpty)
             IconButton(
@@ -195,11 +242,11 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
               icon: const Icon(Icons.ios_share_rounded),
               onPressed: () => s.bridge.shareText(
                 [
-                  'Chat about: ${widget.reel.title}',
-                  if (widget.reel.app != 'photo') widget.reel.url,
+                  'Chat about: ${widget.thread.heading}',
+                  ?widget.thread.link,
                   for (final (i, m) in _turns.indexed) '\n${i.isEven ? 'Me' : 'Reel Analyser'}: $m',
                 ].join('\n'),
-                subject: widget.reel.title,
+                subject: widget.thread.shareSubject,
               ),
             ),
           if (_turns.isNotEmpty)
@@ -220,7 +267,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     children: [
                       Text(
-                        widget.reel.title,
+                        widget.thread.heading,
                         style: t.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -228,28 +275,27 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                       const SizedBox(height: 8),
                       Text(
                         _providers.isEmpty
-                            ? 'Add a Gemini, OpenAI, Claude or Groq key in Settings to chat about this note.'
-                            : 'Ask anything about this analysis. This chat only knows this note.',
+                            ? 'Add a Gemini, OpenAI, Claude or Groq key in Settings to chat.'
+                            : widget.thread.intro,
                         style: t.textTheme.bodyLarge?.copyWith(
                           color: t.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (_providers.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.bolt_rounded),
-                          label: const Text('Short & simple, nothing lost'),
-                          onPressed: () => _send(kBriefLabel),
-                        ),
-                        const SizedBox(height: 10),
+                        if (widget.thread.brief) ...[
+                          FilledButton.icon(
+                            icon: const Icon(Icons.bolt_rounded),
+                            label: const Text('Short & simple, nothing lost'),
+                            onPressed: () => _send(kBriefLabel),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            for (final i in const [
-                              'What can I do with this?',
-                              'Quote the key claims',
-                            ])
+                            for (final i in widget.thread.starters)
                               ActionChip(
                                 label: Text(i),
                                 onPressed: () => _send(i),
@@ -286,7 +332,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                         child: Wrap(
                           spacing: 8,
                           children: [
-                            if (_turns.isNotEmpty)
+                            if (_turns.isNotEmpty && widget.thread.brief)
                               ActionChip(
                                 avatar: const Icon(
                                   Icons.bolt_rounded,

@@ -8,6 +8,8 @@ import '../core/models.dart';
 import '../native/counter_bridge.dart';
 import '../pipeline/runner.dart';
 import 'archive_screen.dart';
+import 'folders_ui.dart';
+import 'note_chat_screen.dart';
 import 'reel_screen.dart';
 import 'settings_screen.dart';
 import 'motion.dart';
@@ -28,8 +30,15 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   List<Reel> _reels = [];
   String _kind = 'all';
   final _selected = <String>{};
+  List<Folder> _folders = [];
+  Map<String, int> _folderOf = {};
 
-  List<Reel> get _visible => [for (final r in _reels) if (_kind == 'all' || r.kind == _kind) r];
+  /// The open folder; 0 = All.
+  int _folder = 0;
+
+  List<Reel> get _inFolder => _folder == 0 ? _reels : [for (final r in _reels) if (_folderOf[r.url] == _folder) r];
+  List<Reel> get _visible => [for (final r in _inFolder) if (_kind == 'all' || r.kind == _kind) r];
+  String get _folderName => _folder == 0 ? 'All' : _folders.firstWhere((f) => f.id == _folder, orElse: () => const Folder(0, 'All')).name;
 
   void _toggle(Reel r) => setState(() => _selected.contains(r.url) ? _selected.remove(r.url) : _selected.add(r.url));
   static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'photo': 'Photos'};
@@ -75,8 +84,13 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     final queued = await s.bridge.pendingItems(status: 'queued');
     final shared = s.runner.lockBusy ? await Runner.sharedJobs(s.sharedDir, DateTime.now().millisecondsSinceEpoch) : <Job>[];
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
+    final folders = await s.library.folders();
+    final folderOf = await s.library.folderOf();
     if (!mounted) return;
     setState(() {
+      _folders = folders;
+      _folderOf = folderOf;
+      if (!folders.any((f) => f.id == _folder)) _folder = 0;
       _reels = reels;
       _queued = queued;
       _shared = shared;
@@ -119,10 +133,31 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 setState(_selected.clear);
                 await bulkAction(context, s, picked, a, _reload);
               },
+              onMove: () async {
+                final picked = [for (final r in _reels) if (_selected.contains(r.url)) r];
+                if (await moveToFolder(context, s, picked)) {
+                  setState(_selected.clear);
+                  _reload();
+                }
+              },
             )
           : AppBar(
               title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w700)),
               actions: [
+                IconButton(
+                  tooltip: 'Organize into folders',
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  onPressed: _reels.isEmpty ? null : () => organize(context, s, _reload),
+                ),
+                IconButton(
+                  tooltip: 'New folder',
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  onPressed: () async {
+                    final id = await createFolder(context, s);
+                    await _reload();
+                    if (id != null && mounted) setState(() => _folder = id);
+                  },
+                ),
                 IconButton(tooltip: 'Archive', icon: const Icon(Icons.inventory_2_outlined), onPressed: () => _open(ArchiveScreen(s))),
               ],
             ),
@@ -141,15 +176,49 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               },
             ),
             const SizedBox(height: 12),
+            if (_folders.isNotEmpty) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final f in [const Folder(0, 'All'), ..._folders])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onLongPress: f.id == 0 ? null : () => manageFolder(context, s, f, _reload),
+                        child: ChoiceChip(
+                          avatar: Icon(f.id == 0 ? Icons.all_inbox_rounded : Icons.folder_rounded, size: 18),
+                          label: Text('${f.name} ${f.id == 0 ? _reels.length : _reels.where((r) => _folderOf[r.url] == f.id).length}'),
+                          selected: _folder == f.id,
+                          showCheckmark: false,
+                          onSelected: (_) {
+                            Haptics.select();
+                            setState(() {
+                              _folder = f.id;
+                              _kind = 'all';
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              _FolderChatCard(
+                name: _folderName,
+                count: _inFolder.length,
+                onTap: () => _open(NoteChatScreen.thread(s, ChatThread.folder(s, _folder, _folderName))),
+              ),
+              const SizedBox(height: 4),
+            ],
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(children: [
                 for (final k in _kinds.entries)
-                  if (k.key == 'all' || _reels.any((r) => r.kind == k.key))
+                  if (k.key == 'all' || _inFolder.any((r) => r.kind == k.key))
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text('${k.value} ${k.key == 'all' ? _reels.length : _reels.where((r) => r.kind == k.key).length}'),
+                      label: Text('${k.value} ${k.key == 'all' ? _inFolder.length : _inFolder.where((r) => r.kind == k.key).length}'),
                       selected: _kind == k.key,
                       showCheckmark: false,
                       onSelected: (_) {
@@ -213,6 +282,36 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The open folder's own chat: it knows only the notes in this folder.
+class _FolderChatCard extends StatelessWidget {
+  final String name;
+  final int count;
+  final VoidCallback onTap;
+  const _FolderChatCard({required this.name, required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.forum_rounded, size: 18, color: Brand.onGold),
+        ),
+        title: Text('Chat with $name', style: t.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+        subtitle: Text('Answers only from the $count ${count == 1 ? 'note' : 'notes'} in ${name == 'All' ? 'your library' : 'this folder'}'),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () {
+          Haptics.select();
+          onTap();
+        },
       ),
     );
   }
@@ -544,12 +643,14 @@ PreferredSizeWidget selectionBar({
   required VoidCallback onAll,
   required bool archived,
   required Future<void> Function(String action) onAction,
+  VoidCallback? onMove,
 }) =>
     AppBar(
       leading: IconButton(tooltip: 'Cancel', icon: const Icon(Icons.close_rounded), onPressed: onClose),
       title: Text('$count selected'),
       actions: [
         IconButton(tooltip: 'Select all', icon: const Icon(Icons.select_all_rounded), onPressed: onAll),
+        if (onMove != null) IconButton(tooltip: 'Move to folder', icon: const Icon(Icons.drive_file_move_outline), onPressed: onMove),
         IconButton(tooltip: 'Mark read', icon: const Icon(Icons.done_all_rounded), onPressed: () => onAction('read')),
         IconButton(tooltip: 'Mark unread', icon: const Icon(Icons.mark_email_unread_outlined), onPressed: () => onAction('unread')),
         IconButton(

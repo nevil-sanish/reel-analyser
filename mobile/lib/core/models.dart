@@ -144,6 +144,13 @@ class Reel {
   static List<String> _strings(Object? v) => v is List ? v.map((e) => '$e').toList() : const [];
 }
 
+/// A folder of notes. Every note is also in All, which is not a row.
+class Folder {
+  final int id;
+  final String name;
+  const Folder(this.id, this.name);
+}
+
 /// A note's link may come from an imported file, so only Instagram and YouTube https links are ever opened.
 bool isReelLink(String url) {
   final u = Uri.tryParse(url);

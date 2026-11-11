@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import 'core/models.dart';
 import 'data/key_store.dart';
 import 'data/library_db.dart';
+import 'data/folders.dart';
 import 'native/counter_bridge.dart';
 import 'features.dart';
 import 'pipeline/gemini.dart';
@@ -94,8 +95,8 @@ class AppServices {
   /// overview, summary, key points, mentions, transcript, on-screen text, caption, author and link.
   /// Notes that match the question's words come first. A size cap keeps the request within a model's window:
   /// notes past it fall back to title + overview.
-  Future<String> notesContext(String question, {int budget = 300000}) async {
-    final all = await library.reels();
+  Future<String> notesContext(String question, {int budget = 300000, List<Reel>? only}) async {
+    final all = only ?? await library.reels();
     final words = question.toLowerCase().split(RegExp(r'\W+')).where((w) => w.length > 3).toSet();
     String text(Reel r) =>
         '${r.title} ${r.overview} ${r.summary} ${r.keyPoints} ${r.mentions} ${r.tags} ${r.transcript} ${r.onScreenText} ${r.caption}'.toLowerCase();
@@ -124,6 +125,40 @@ class AppServices {
         'never from general knowledge. Cite the note titles you used. If the notes do not cover the question, '
         'say that they do not and stop. Keep answers short.\n\nSaved notes:\n$notes';
     return _complete(provider, system, turns, model);
+  }
+
+  /// The notes of a folder (every note for the All folder, id 0), library and archive.
+  Future<List<Reel>> folderNotes(int folderId) async {
+    final all = await library.reels();
+    if (folderId == 0) return all;
+    final of = await library.folderOf();
+    return [for (final r in all) if (of[r.url] == folderId) r];
+  }
+
+  /// One chat turn in a folder's own thread: only that folder's notes are given to the model.
+  Future<String> folderChat(String provider, int folderId, String folderName, List<String> turns, {String? model}) async {
+    final notes = await folderNotes(folderId);
+    if (notes.isEmpty) return 'This folder is empty.';
+    final ctx = await notesContext(turns.last, only: notes);
+    final system = 'You are Reel Analyser. The saved notes below, from the folder "$folderName", are everything you know: answer ONLY '
+        'from them, never from general knowledge or other folders. Cite the note titles you used. If the notes do not cover the '
+        'question, say that they do not and stop. Keep answers short.\n\nSaved notes:\n$ctx';
+    return _complete(provider, system, turns, model);
+  }
+
+  /// Organize: asks the first AI provider with a key to sort every note, in chunks. Throws when there is no key or no usable answer.
+  Future<OrganizePlan> organize() async {
+    final notes = await library.reels();
+    final folders = await library.folders();
+    final plan = OrganizePlan();
+    var ok = false;
+    for (var i = 0; i < notes.length; i += organizeChunk) {
+      final chunk = notes.sublist(i, (i + organizeChunk).clamp(0, notes.length));
+      final answer = await _askOnce(organizeSystem, organizeRequest(folders, chunk));
+      ok = plan.addAnswer(answer, folders, chunk) || ok;
+    }
+    if (!ok && notes.isNotEmpty) throw GeminiException(GeminiFailure.rejected, 'The AI did not give a usable answer. Try again.');
+    return plan;
   }
 
   /// One chat turn about a single note: that note is all the model is given, and [turns] is only that note's thread.

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/models.dart';
+import '../data/folders.dart';
 import '../data/library_db.dart';
 import '../native/counter_bridge.dart';
 import 'apify.dart';
@@ -785,8 +786,7 @@ class Runner {
   }) async {
     _step('Saving the note', 0.95);
     _name(a.title);
-    await library.saveReel(
-      Reel(
+    final saved = Reel(
         url: item.url.isEmpty ? 'local:${item.id}' : item.url,
         app: item.app,
         title: _ctx.title = a.title.isEmpty
@@ -807,8 +807,17 @@ class Runner {
         analysis: analysis,
         step: step,
         savedAt: item.createdAt == 0 ? now() : item.createdAt,
-      ),
-    );
+      );
+    await library.saveReel(saved);
+    await _sortIntoFolder(saved);
+  }
+
+  /// A new note goes into the folder its words clearly match (no AI call). A note already in a folder keeps it.
+  Future<void> _sortIntoFolder(Reel r) async {
+    final folders = await library.folders();
+    if (folders.isEmpty || (await library.folderOf()).containsKey(r.url)) return;
+    final f = matchFolder(r, folders);
+    if (f != null) await library.setFolders({r.url: f});
   }
 
   Future<List<int>?> _bytes(String url) async {

@@ -18,7 +18,8 @@ Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "u
 ## 3. What the app stores on your phone
 
 - **Notes** you create by sharing a reel, short or photo: title, summary, key points, tags, transcript, on-screen text, caption, author name, link, and a picture for photo notes.
-- **Chats** with your notes.
+- **Chats** with your notes, including one chat per note and one per folder.
+- **Folders** you make or accept, and which note is in which folder.
 - **Share queue**: the items waiting to be analysed and their status.
 - **API keys** you enter, kept in Android's encrypted storage (Keystore).
 - **Settings**: theme, a few on/off flags.
@@ -34,7 +35,7 @@ All of this lives in the app's private storage, which other apps cannot read. An
 
 We do not receive any of it. It goes directly from your phone to these services, only when you use the feature:
 
-- **Google Gemini API** (ai.google.dev): the video, frames, thumbnail and caption of a reel you share; or your saved notes and question when you chat. Used with your Gemini key.
+- **Google Gemini API** (ai.google.dev): the video, frames, thumbnail and caption of a reel you share; or your saved notes and question when you chat (a folder's chat sends only that folder's notes). When you press Organize, the title, tags and first line of each note are sent so they can be sorted into folders. Used with your Gemini key.
 - **OpenAI, Anthropic (Claude), Groq**: the same kind of content, only if you add that provider's key and it is used as a fallback or for chat.
 - **Apify** (optional): the reel's link code, only if you add an Apify token and Instagram will not hand over the video.
 - **Instagram (Meta) and YouTube (Google)**: to read the reel you shared, the app requests the public page or video of that link, like a web browser. They see your IP address and device details, as with any browser, and their own policies apply. The in-app link view loads the same pages.
