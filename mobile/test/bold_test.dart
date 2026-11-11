@@ -17,4 +17,8 @@ void main() {
   test('text without marks is unchanged', () {
     expect(boldSpans('plain ** text').toPlainText(), 'plain ** text');
   });
+
+  test('a line starting with * or - becomes a bullet', () {
+    expect(boldSpans('Ideas:\n* **One:** a\n  - two\nnot * this').toPlainText(), 'Ideas:\n• One: a\n  • two\nnot * this');
+  });
 }

@@ -18,6 +18,9 @@ class ChatThread {
 
   /// Saves the thread; an empty list removes it.
   final Future<void> Function(List<String> turns) save;
+
+  /// The input box's hint.
+  final String hint;
   final Future<String> Function(String provider, List<String> turns, String? model) ask;
   const ChatThread({
     required this.title,
@@ -27,6 +30,7 @@ class ChatThread {
     this.link,
     this.brief = false,
     this.starters = const [],
+    this.hint = 'Ask about this note…',
     required this.load,
     required this.save,
     required this.ask,
@@ -53,6 +57,7 @@ class ChatThread {
         intro: 'Ask anything about the notes in this folder. This chat only knows them, and its thread is separate from every other folder.',
         shareSubject: 'Chat about $name',
         starters: const ['What are the main ideas here?', 'Make me a short study list', 'What should I try first?'],
+        hint: id == 0 ? 'Ask about all your notes…' : 'Ask about $name…',
         load: () => s.library.folderChat(id),
         save: (t) => s.library.saveFolderChat(id, t, DateTime.now().millisecondsSinceEpoch),
         ask: (p, t, m) => s.folderChat(p, id, name, t, model: m),
@@ -244,7 +249,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                 [
                   'Chat about: ${widget.thread.heading}',
                   ?widget.thread.link,
-                  for (final (i, m) in _turns.indexed) '\n${i.isEven ? 'Me' : 'Reel Analyser'}: $m',
+                  for (final (i, m) in _turns.indexed) '\n${i.isEven ? 'Me' : 'Reel Analyser'}: ${boldSpans(m).toPlainText()}',
                 ].join('\n'),
                 subject: widget.thread.shareSubject,
               ),
@@ -371,8 +376,8 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
                             maxLines: 4,
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _send(),
-                            decoration: const InputDecoration(
-                              hintText: 'Ask about this note…',
+                            decoration: InputDecoration(
+                              hintText: widget.thread.hint,
                               filled: false,
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,

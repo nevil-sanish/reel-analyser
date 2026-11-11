@@ -485,8 +485,10 @@ class _RecentCard extends StatelessWidget {
   }
 }
 
-/// `**word**` shows as bold and `*word*` as italic instead of with the asterisks; the rest of the text is left as it is.
+/// `**word**` shows as bold and `*word*` as italic instead of with the asterisks, and a line starting with `* ` or `- ` gets
+/// a `•` bullet; the rest of the text is left as it is.
 TextSpan boldSpans(String text) {
+  text = text.replaceAllMapped(RegExp(r'^(\s*)[*-] ', multiLine: true), (m) => '${m[1]}• ');
   final out = <TextSpan>[];
   var last = 0;
   for (final m in RegExp(r'\*\*(.+?)\*\*|\*([^*\s][^*\n]*?)\*', dotAll: true).allMatches(text)) {

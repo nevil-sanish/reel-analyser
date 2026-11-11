@@ -124,7 +124,8 @@ Rules for every `IG-*` call:
 - **Response:** HTML with schema.org JSON-LD: `SocialMediaPosting` (`articleBody`, `author.name`, `image[]`), `VideoObject` (`description`, `contentUrl` mp4 on `dms.licdn.com`, `thumbnailUrl`) or `Article`. Fallback: `og:description`, `og:title`, `og:image` (only `media.licdn.com`).
 - **Video:** `GET contentUrl` with `Referer: https://www.linkedin.com/`, 100 MB cap, deleted after the analysis. Checked 2026-11-11: HTTP 200 `video/mp4` without a login.
 - **Media allowlist:** only `https://*.licdn.com`. Company logos and profile pictures are skipped.
-- **Errors:** 429/5xx and timeouts → retry later; no readable post (login wall, not public) → failed note with that reason.
+- **Errors:** 429/5xx and timeouts → retried later with the rest of the queue, not in a loop; 999 (LinkedIn's network limit) → failed at once, never retried; no readable post (login wall, not public) → failed note with that reason.
+- **No ban risk:** no account, no cookies, no login: there is nothing to ban. One GET per post the person shares themself, from their own phone, like opening the link in a browser; no crawling, no background polling.
 - **Why not a library:** open-source LinkedIn scrapers either log in with the user's account (cookies; against our no-login rule and LinkedIn's terms for automated access) or use the same public JSON-LD. The public page is enough for public posts.
 
 

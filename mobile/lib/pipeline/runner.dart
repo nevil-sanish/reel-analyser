@@ -628,6 +628,10 @@ class Runner {
     _step('Fetching from LinkedIn', 0.12);
     final r = await _stoppable(client.get(u, headers: {'User-Agent': linkedInUserAgent, 'Accept-Language': 'en-US,en;q=0.9'}))
         .timeout(const Duration(seconds: 30));
+    // 999 is LinkedIn's "too many requests from this network" answer: never retried, so the app never keeps knocking.
+    if (r.statusCode == 999) {
+      return _failed('LinkedIn is limiting requests from this network right now. Nothing was retried; share the post again later.');
+    }
     if (r.statusCode == 429 || r.statusCode >= 500) throw GeminiException(GeminiFailure.retryLater, 'LinkedIn is busy (HTTP ${r.statusCode})');
     final p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
     if (p.isEmpty) {

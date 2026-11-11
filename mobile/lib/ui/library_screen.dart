@@ -206,7 +206,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 260),
                 switchInCurve: Curves.easeOutCubic,
-                transitionBuilder: (c, a) => FadeTransition(opacity: a, child: SizeTransition(sizeFactor: a, alignment: Alignment.topCenter, child: c)),
+                // Fade only: a size transition clips the card's soft shadow into a box.
+                transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
                 child: _FolderChatCard(
                 key: ValueKey(_folder),
                 name: _folderName,
