@@ -88,6 +88,9 @@ class CounterBridge {
   /// Opens a web page in the browser (feedback goes to the project's GitHub issues this way).
   Future<void> openUrl(String url) => _ch.invokeMethod('openUrl', {'url': url});
 
+  /// Opens Android's share sheet with [text].
+  Future<void> shareText(String text, {String? subject}) => _ch.invokeMethod('shareText', {'text': text, 'subject': subject});
+
   /// Deletes files in the app's photo folder that aren't in [keep].
   Future<void> sweepPhotos(List<String> keep) => _ch.invokeMethod('sweepPhotos', {'keep': keep});
 

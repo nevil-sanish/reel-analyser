@@ -102,6 +102,10 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancelAll()
                 null
             }
+            "shareText" -> result.success(launchIntent(ctx, Intent.createChooser(
+                Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, call.argument<String>("subject"))
+                    .putExtra(Intent.EXTRA_TEXT, call.argument<String>("text")!!), null)))
             "openUrl" -> result.success(launchIntent(ctx, Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url")!!))))
             else -> if (!FlavorMethods.handle(ctx, call, result)) result.notImplemented()
         }

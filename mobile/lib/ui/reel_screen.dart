@@ -50,6 +50,14 @@ class _ReelScreenState extends State<ReelScreen> {
                 MaterialPageRoute(builder: (_) => WebScreen(services, url: reel.url, title: reel.title)),
               ),
             ),
+          IconButton(
+            tooltip: 'Share',
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: () {
+              Haptics.select();
+              services.bridge.shareText(reel.toShareText(), subject: reel.title);
+            },
+          ),
           if (reel.app != 'photo')
             IconButton(
               tooltip: 'Copy link',

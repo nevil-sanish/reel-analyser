@@ -128,6 +128,19 @@ class Reel {
         '',
       ].join('\n');
 
+  /// The note as plain text for the share sheet: the analysis and the link it came from (not the long transcript).
+  String toShareText() => [
+        title,
+        if (app != 'photo') url,
+        '',
+        if (overview.isNotEmpty) ...[for (final o in overview) '• $o', ''],
+        summary,
+        if (keyPoints.isNotEmpty) ...['', 'Key points:', for (final k in keyPoints) '• $k'],
+        if (mentions.isNotEmpty) ...['', 'Mentioned: ${mentions.join(', ')}'],
+        '',
+        'Shared from Reel Analyser',
+      ].join('\n');
+
   static List<String> _strings(Object? v) => v is List ? v.map((e) => '$e').toList() : const [];
 }
 

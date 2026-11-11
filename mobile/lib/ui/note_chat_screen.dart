@@ -191,6 +191,19 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         actions: [
           if (_turns.isNotEmpty)
             IconButton(
+              tooltip: 'Share this chat',
+              icon: const Icon(Icons.ios_share_rounded),
+              onPressed: () => s.bridge.shareText(
+                [
+                  'Chat about: ${widget.reel.title}',
+                  if (widget.reel.app != 'photo') widget.reel.url,
+                  for (final (i, m) in _turns.indexed) '\n${i.isEven ? 'Me' : 'Reel Analyser'}: $m',
+                ].join('\n'),
+                subject: widget.reel.title,
+              ),
+            ),
+          if (_turns.isNotEmpty)
+            IconButton(
               tooltip: 'Clear chat',
               icon: const Icon(Icons.delete_sweep_outlined),
               onPressed: _clear,
