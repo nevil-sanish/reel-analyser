@@ -6,6 +6,7 @@ import 'developer_card.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
 import 'section_card.dart';
+import 'theme.dart';
 import 'update_flow.dart';
 
 /// The developer's Buy Me a Coffee page. Opened in the browser; the app sends nothing itself.
@@ -71,28 +72,45 @@ class AboutScreen extends StatelessWidget {
             FilledButton.tonalIcon(onPressed: () => _feedback(context), icon: const Icon(Icons.feedback_outlined), label: const Text('Send feedback')),
           ]),
           SectionCard(index: 2, title: 'Support the app', children: [
-            const Text('Reel Analyser is free and will always stay free to use, with no ads and no tracking. '
-                'Support is entirely optional: it only helps the developer keep improving this app and build more apps like it in the future.'),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => services.bridge.openUrl(buyMeACoffee),
-              icon: const Icon(Icons.local_cafe_rounded),
-              label: const Text('Buy me a coffee'),
-            ),
+            const _FreeForever(),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => services.bridge.openUrl(buyMeACoffee),
+                  icon: const Icon(Icons.local_cafe_rounded),
+                  label: const Text('Buy a coffee'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    if (await services.bridge.openUrl(upiLink)) return;
+                    await Clipboard.setData(const ClipboardData(text: upiId));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No UPI app found. UPI ID $upiId copied.')));
+                    }
+                  },
+                  icon: const Icon(Icons.currency_rupee_rounded),
+                  label: const Text('UPI'),
+                ),
+              ),
+            ]),
             const SizedBox(height: 8),
-            FilledButton.tonalIcon(
-              onPressed: () async {
-                if (await services.bridge.openUrl(upiLink)) return;
-                await Clipboard.setData(const ClipboardData(text: upiId));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No UPI app found. UPI ID $upiId copied.')));
-                }
-              },
-              icon: const Icon(Icons.currency_rupee_rounded),
-              label: const Text('Support with UPI'),
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () async {
+                  await Clipboard.setData(const ClipboardData(text: upiId));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('UPI ID copied')));
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Text('UPI ID: $upiId  ·  tap to copy', style: Theme.of(context).textTheme.bodySmall),
+                ),
+              ),
             ),
-            const SizedBox(height: 4),
-            Text('UPI ID: $upiId', style: Theme.of(context).textTheme.bodySmall),
           ]),
           SectionCard(index: 3, title: 'About and legal', children: [
             _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
@@ -105,6 +123,44 @@ class AboutScreen extends StatelessWidget {
           Center(child: Text('Reel Analyser ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
+    );
+  }
+}
+
+/// The promise first: free forever. Support only helps future work.
+class _FreeForever extends StatelessWidget {
+  const _FreeForever();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final dark = t.brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: dark ? const Color(0xFF2A2412) : Brand.goldPale,
+        border: Border.all(color: Brand.gold.withValues(alpha: 0.4)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
+          child: const Icon(Icons.favorite_rounded, size: 18, color: Brand.onGold),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Free, always', style: Brand.serif(t.textTheme.titleMedium, size: 20, weight: 700)),
+            const SizedBox(height: 4),
+            Text(
+              'Reel Analyser is free and will always stay free to use, with no ads and no tracking. '
+              'Support is entirely optional: it only helps the developer keep improving this app and build more apps like it in the future.',
+              style: t.textTheme.bodyMedium,
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 }

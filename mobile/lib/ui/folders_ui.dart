@@ -211,7 +211,8 @@ Future<Set<String>> _approve(BuildContext context, List<(String, List<String>)> 
                   CheckboxListTile(
                     value: ticked.contains(name),
                     onChanged: (v) => set(() => v == true ? ticked.add(name) : ticked.remove(name)),
-                    title: Text('$name · ${urls.length} notes'),
+                    secondary: Icon(Icons.create_new_folder_rounded, color: Theme.of(c).colorScheme.primary),
+                    title: Text('$name · ${urls.length} notes', style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(urls.take(3).map((u) => notes[u]?.title ?? '').where((t) => t.isNotEmpty).join(' · '),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
                   ),
@@ -222,7 +223,10 @@ Future<Set<String>> _approve(BuildContext context, List<(String, List<String>)> 
               child: Row(children: [
                 TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Skip all')),
                 const Spacer(),
-                FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Create ticked')),
+                FilledButton(
+                  onPressed: ticked.isEmpty ? null : () => Navigator.pop(c, true),
+                  child: Text('Create ${ticked.length} ${ticked.length == 1 ? 'folder' : 'folders'}'),
+                ),
               ]),
             ),
           ]),

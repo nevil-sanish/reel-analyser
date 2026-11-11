@@ -187,7 +187,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                         onLongPress: f.id == 0 ? null : () => manageFolder(context, s, f, _reload),
                         child: ChoiceChip(
                           avatar: Icon(f.id == 0 ? Icons.all_inbox_rounded : Icons.folder_rounded, size: 18),
-                          label: Text('${f.name} ${f.id == 0 ? _reels.length : _reels.where((r) => _folderOf[r.url] == f.id).length}'),
+                          label: _ChipLabel(f.name, f.id == 0 ? _reels.length : _reels.where((r) => _folderOf[r.url] == f.id).length, selected: _folder == f.id),
                           selected: _folder == f.id,
                           showCheckmark: false,
                           onSelected: (_) {
@@ -203,10 +203,16 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                 ]),
               ),
               const SizedBox(height: 8),
-              _FolderChatCard(
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOutCubic,
+                transitionBuilder: (c, a) => FadeTransition(opacity: a, child: SizeTransition(sizeFactor: a, alignment: Alignment.topCenter, child: c)),
+                child: _FolderChatCard(
+                key: ValueKey(_folder),
                 name: _folderName,
                 count: _inFolder.length,
                 onTap: () => _open(NoteChatScreen.thread(s, ChatThread.folder(s, _folder, _folderName))),
+              ),
               ),
               const SizedBox(height: 4),
             ],
@@ -218,7 +224,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text('${k.value} ${k.key == 'all' ? _inFolder.length : _inFolder.where((r) => r.kind == k.key).length}'),
+                      label: _ChipLabel(k.value, k.key == 'all' ? _inFolder.length : _inFolder.where((r) => r.kind == k.key).length, selected: _kind == k.key),
                       selected: _kind == k.key,
                       showCheckmark: false,
                       onSelected: (_) {
@@ -270,7 +276,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               ),
             for (final (i, r) in _visible.indexed)
               Reveal(
-                key: ValueKey('reveal-${r.url}'),
+                // Keyed by the filter too, so switching folder or kind lets the list rise in again.
+                key: ValueKey('reveal-$_folder-$_kind-${r.url}'),
                 index: i,
                 // Only the first screenful rises into place; ones scrolled to later just appear.
                 animate: i < 8,
@@ -287,31 +294,81 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   }
 }
 
+/// A chip's name with its count in a small pill.
+class _ChipLabel extends StatelessWidget {
+  final String name;
+  final int count;
+  final bool selected;
+  const _ChipLabel(this.name, this.count, {required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text(name),
+      const SizedBox(width: 6),
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+        decoration: BoxDecoration(
+          gradient: selected ? Brand.gradient : null,
+          color: selected ? null : Brand.gold.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text('$count',
+            style: t.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w800, color: selected ? Brand.onGold : t.colorScheme.onSurfaceVariant)),
+      ),
+    ]);
+  }
+}
+
 /// The open folder's own chat: it knows only the notes in this folder.
 class _FolderChatCard extends StatelessWidget {
   final String name;
   final int count;
   final VoidCallback onTap;
-  const _FolderChatCard({required this.name, required this.count, required this.onTap});
+  const _FolderChatCard({required this.name, required this.count, required this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.forum_rounded, size: 18, color: Brand.onGold),
+    final dark = t.brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Pressable(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Brand.gold.withValues(alpha: 0.55)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: dark
+                  ? [const Color(0xFF2A2412), Brand.nightSurface]
+                  : [Brand.goldPale, Colors.white],
+            ),
+            boxShadow: [BoxShadow(color: Brand.gold.withValues(alpha: dark ? 0.08 : 0.16), blurRadius: 18, offset: const Offset(0, 6))],
+          ),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.forum_rounded, size: 20, color: Brand.onGold),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Chat with $name', style: Brand.serif(t.textTheme.titleMedium, size: 20, weight: 700)),
+                const SizedBox(height: 2),
+                Text('Answers only from the $count ${count == 1 ? 'note' : 'notes'} in ${name == 'All' ? 'your library' : 'this folder'}',
+                    style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+              ]),
+            ),
+            Icon(Icons.arrow_forward_rounded, color: t.colorScheme.primary),
+          ]),
         ),
-        title: Text('Chat with $name', style: t.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-        subtitle: Text('Answers only from the $count ${count == 1 ? 'note' : 'notes'} in ${name == 'All' ? 'your library' : 'this folder'}'),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () {
-          Haptics.select();
-          onTap();
-        },
       ),
     );
   }

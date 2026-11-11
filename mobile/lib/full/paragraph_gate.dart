@@ -43,8 +43,10 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
       setState(() => _msg = refused);
       return;
     }
-    if (_msg != null) setState(() => _msg = null);
+    setState(() => _msg = null);
   }
+
+  int get _words => _c.text.trim().isEmpty ? 0 : _c.text.trim().split(RegExp(r'\s+')).length;
 
   Future<void> _go() async {
     final bad = _guard.check();
@@ -84,9 +86,53 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
           ),
           decoration: const InputDecoration(hintText: 'Type here…'),
         ),
-        if (_msg != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_msg!, style: TextStyle(color: t.colorScheme.error))),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: (_words / ParagraphGuard.minWords).clamp(0, 1).toDouble()),
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, _) => LinearProgressIndicator(value: v, minHeight: 6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('$_words / ${ParagraphGuard.minWords} words',
+              style: t.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700, color: _words >= ParagraphGuard.minWords ? t.colorScheme.primary : t.colorScheme.onSurfaceVariant)),
+        ]),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _msg == null
+              ? const SizedBox(width: double.infinity)
+              : Container(
+                  key: ValueKey(_msg),
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: t.colorScheme.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: t.colorScheme.error.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Icon(Icons.info_outline_rounded, size: 20, color: t.colorScheme.error),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(_msg!, style: TextStyle(color: t.colorScheme.error, fontWeight: FontWeight.w600))),
+                  ]),
+                ),
+        ),
         const SizedBox(height: 16),
-        FilledButton(onPressed: _checking ? null : _go, child: Text(_checking ? 'Checking…' : widget.action)),
+        FilledButton.icon(
+          onPressed: _checking ? null : _go,
+          icon: _checking
+              ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.verified_outlined),
+          label: Text(_checking ? 'Checking with your AI…' : widget.action),
+        ),
       ]),
     );
   }
