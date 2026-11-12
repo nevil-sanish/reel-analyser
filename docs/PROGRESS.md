@@ -2,11 +2,12 @@
 
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
-## Latest (2026-11-12): v1.2.1.2 released
+## Latest (2026-11-12): v1.2.1.3 released
 
+- v1.2.1.3 (#12, still open): a share the background analysis could not finish now shows in a "Could not analyse N shares" card at the top of the Library (reason, Retry, Dismiss; last 7 days). Cause of the LinkedIn failures: LinkedIn sometimes answers the phone with HTTP 404 for a public post that loads fine from a computer, often when several posts are shared at once. The app never retries on its own and never logs in (no ban risk). Not fixed: the 404 itself.
 - v1.2.1.2: the update check runs on every app open, survives the GitHub API rate limit, retries dropped downloads and offers the release page on failure.
 - F-Droid closed !56876 and !56877 on 2026-11-12: the app is under 3 months old (Inclusion Policy). No code change needed; submit again from about 2027-02-05 (first commit 2026-11-05).
-- v1.2.1.1: delete a chat from the Ask screen (closes #13). Still open as well: **#12** ("linkedin is not working", not looked at yet).
+- v1.2.1.1: delete a chat from the Ask screen (closes #13). #12 (LinkedIn) is worked on in 1.2.1.3.
 - v1.2.1.0: LinkedIn multi-part analysis, the Support and Refund Policy and updated legal texts, and F-Droid groundwork. The F-Droid recipes are in `fdroid/`, and [FDROID.md](FDROID.md) explains them. Both apps were submitted on 2026-11-11 as fdroiddata MRs !56876 (Full) and !56877 (Semi); they are waiting for review and for F-Droid to trigger CI.
 
 - v1.2.0.0 is the Latest release on GitHub (both APKs and SHA256SUMS). It closes issues #1, #3, #4, #5, #7, #8, #9, #10 and #11; see RELEASES.md for what is in it and what was checked.

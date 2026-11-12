@@ -44,6 +44,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   static const _kinds = {'all': 'All', 'reel': 'Reels', 'short': 'Shorts', 'post': 'Posts', 'linkedin': 'LinkedIn', 'photo': 'Photos'};
   int _waiting = 0;
   List<PendingItem> _queued = [];
+  List<PendingItem> _failed = [];
   List<Job> _shared = [];
   DateTime _lastRun = DateTime.fromMillisecondsSinceEpoch(0);
   bool _hasKey = true;
@@ -82,6 +83,12 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     await s.library.archiveOld(DateTime.now().millisecondsSinceEpoch);
     final reels = await s.library.reels(query: _query, archived: false);
     final queued = await s.bridge.pendingItems(status: 'queued');
+    final failed = <PendingItem>[];
+    for (final f in recentFailures(await s.bridge.pendingItems(status: 'failed'), {for (final j in s.runner.jobs.value) j.id},
+        DateTime.now().millisecondsSinceEpoch)) {
+      // Shared again and saved since: the old failure no longer matters.
+      if (!await s.library.has(f.url)) failed.add(f);
+    }
     final shared = s.runner.lockBusy ? await Runner.sharedJobs(s.sharedDir, DateTime.now().millisecondsSinceEpoch) : <Job>[];
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
     final folders = await s.library.folders();
@@ -93,6 +100,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       if (!folders.any((f) => f.id == _folder)) _folder = 0;
       _reels = reels;
       _queued = queued;
+      _failed = failed;
       _shared = shared;
       _waiting = queued.length;
       _hasKey = hasKey;
@@ -247,6 +255,18 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               valueListenable: s.runner.jobs,
               builder: (context, jobs, _) => jobs.isEmpty ? const SizedBox.shrink() : _JobsCard(jobs, s.runner.cancel),
             ),
+            if (_failed.isNotEmpty)
+              _FailedCard(
+                _failed,
+                onRetry: (id) async {
+                  await s.bridge.setPendingStatus(id, 'queued');
+                  await _process();
+                },
+                onDismiss: (id) async {
+                  await s.bridge.setPendingStatus(id, 'dismissed');
+                  await _reload();
+                },
+              ),
             if (_waiting > 0 && s.runner.jobs.value.isEmpty)
               s.runner.lockBusy && _shared.isNotEmpty
                   ? _JobsCard(_shared, (id) async {
@@ -377,6 +397,71 @@ class _FolderChatCard extends StatelessWidget {
 
 /// Shown while the background task holds the queue: its stages live in another engine, so this lists what is still
 /// queued with a moving bar. Reels leave the list as they finish.
+/// Failed shares from the last 7 days, newest first, that the open app's progress list isn't already showing.
+/// A share analysed by the background task used to fail without a trace; the reason is kept on its queue row.
+List<PendingItem> recentFailures(List<PendingItem> failed, Set<int> shownIds, int now) => [
+      for (final f in failed.reversed)
+        if (!shownIds.contains(f.id) && now - f.createdAt < const Duration(days: 7).inMilliseconds) f,
+    ];
+
+/// Shares that could not be analysed, each with why, Retry and Dismiss.
+class _FailedCard extends StatelessWidget {
+  final List<PendingItem> items;
+  final Future<void> Function(int id) onRetry, onDismiss;
+  const _FailedCard(this.items, {required this.onRetry, required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(items.length == 1 ? 'Could not analyse 1 share' : 'Could not analyse ${items.length} shares', style: t.textTheme.titleMedium),
+            for (final i in items.take(5))
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Padding(padding: const EdgeInsets.only(top: 2), child: SourceIcon(i.app, size: 22)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(Job.labelFor(i), maxLines: 1, overflow: TextOverflow.ellipsis, style: t.textTheme.bodyLarge),
+                      Text(i.title.isEmpty ? 'It failed before the reason was kept. Tap Retry.' : i.title,
+                          maxLines: 4, overflow: TextOverflow.ellipsis,
+                          style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                      Row(children: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: const Text('Retry'),
+                          onPressed: () {
+                            Haptics.select();
+                            onRetry(i.id);
+                          },
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Haptics.select();
+                            onDismiss(i.id);
+                          },
+                          child: const Text('Dismiss'),
+                        ),
+                      ]),
+                    ]),
+                  ),
+                ]),
+              ),
+            if (items.length > 5)
+              Text('and ${items.length - 5} more', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 class _BackgroundCard extends StatelessWidget {
   final List<PendingItem> items;
   final Future<void> Function(int id) onStop;

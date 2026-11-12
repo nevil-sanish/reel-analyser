@@ -1,1 +1,1 @@
-Updates: the app checks for a new version every time it opens, works even when GitHub limits its update API, retries a dropped download, and offers the release page if the download still fails.
+LinkedIn: shares that could not be analysed now show at the top of the Library with the reason, a Retry and a Dismiss button, instead of disappearing.

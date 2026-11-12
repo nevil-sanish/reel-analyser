@@ -11,6 +11,9 @@ class PendingItem {
   final int createdAt;
   final String status;
 
+  /// The analysed note's title; for a failed item, why it failed.
+  final String title;
+
   const PendingItem({
     required this.id,
     required this.url,
@@ -20,6 +23,7 @@ class PendingItem {
     this.onScreenText = '',
     this.createdAt = 0,
     this.status = 'queued',
+    this.title = '',
   });
 
   factory PendingItem.fromMap(Map m) => PendingItem(
@@ -31,6 +35,7 @@ class PendingItem {
         onScreenText: m['onScreenText'] as String? ?? '',
         createdAt: (m['createdAt'] as num?)?.toInt() ?? 0,
         status: m['status'] as String? ?? 'queued',
+        title: m['title'] as String? ?? '',
       );
 }
 

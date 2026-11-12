@@ -396,7 +396,8 @@ class Runner {
           () => _process(item),
           zoneValues: {_ctxKey: ctx},
         );
-        await bridge.setPendingStatus(item.id, status, title: ctx.title);
+        // A failed row keeps its reason, so the Library can show it even when the background task ran it.
+        await bridge.setPendingStatus(item.id, status, title: status == 'failed' ? ctx.fail : ctx.title);
         if (status == 'failed') {
           lastProblem = 'Failed: ${ctx.fail}';
           job
@@ -635,7 +636,9 @@ class Runner {
     if (r.statusCode == 429 || r.statusCode >= 500) throw GeminiException(GeminiFailure.retryLater, 'LinkedIn is busy (HTTP ${r.statusCode})');
     final p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
     if (p.isEmpty) {
-      return _failed('LinkedIn did not show this post without a login (HTTP ${r.statusCode}). Only public posts can be read.');
+      // Even a public post is sometimes refused to a logged-out visitor; nothing is retried automatically.
+      return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Retry later, '
+          'or share a screenshot of the post instead; screenshots never contact LinkedIn.');
     }
     _step(p.videos.isEmpty ? 'Got the post' : 'Got the post and ${p.videos.length == 1 ? 'its video' : '${p.videos.length} videos'}', 0.35);
     _name(p.text.isNotEmpty ? p.text : p.author);

@@ -76,13 +76,13 @@ class CounterDb private constructor(ctx: Context) : SQLiteOpenHelper(ctx, "count
         val where = if (status == null) "" else "WHERE status = ?"
         val args = if (status == null) null else arrayOf(status)
         return readableDatabase.rawQuery(
-            "SELECT id, url, app, author, caption, on_screen_text, created_at, status FROM pending_items $where ORDER BY id", args
+            "SELECT id, url, app, author, caption, on_screen_text, created_at, status, title FROM pending_items $where ORDER BY id", args
         ).use { c ->
             buildList {
                 while (c.moveToNext()) add(mapOf(
                     "id" to c.getLong(0), "url" to c.getString(1), "app" to c.getString(2),
                     "author" to c.getString(3), "caption" to c.getString(4), "onScreenText" to c.getString(5),
-                    "createdAt" to c.getLong(6), "status" to c.getString(7),
+                    "createdAt" to c.getLong(6), "status" to c.getString(7), "title" to c.getString(8),
                 ))
             }
         }
