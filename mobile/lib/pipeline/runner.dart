@@ -207,11 +207,9 @@ class Runner {
       // others are being analysed start at once on a free worker instead of waiting for the whole batch to end.
       // An item that asked to retry later is not tried again until the next run.
       _stop = false;
-      final base = _turn;
       final limit = _workerCount;
       final active = <Future<void>>[];
       final known = <int>{};
-      var slot = 0;
       Future<void> refill() async {
         for (final i in await bridge.pendingItems(status: 'queued')) {
           if (tried.contains(i.id) || !known.add(i.id)) continue;
@@ -225,7 +223,7 @@ class Runner {
         await refill();
         while (active.length < limit && _pending.isNotEmpty) {
           late Future<void> w;
-          w = _worker(base + slot++, tried).then((n) {
+          w = _worker(tried).then((n) {
             finished += n;
             active.remove(w);
           });
@@ -375,7 +373,7 @@ class Runner {
   }
 
   /// Takes reels off the queue until it is empty or the run must stop; returns how many it finished.
-  Future<int> _worker(int turn, Set<int> tried) async {
+  Future<int> _worker(Set<int> tried) async {
     var done = 0;
     while (!_stop && _pending.isNotEmpty) {
       final item = _pending.removeFirst();
@@ -383,7 +381,10 @@ class Runner {
       await library.extendLock(
         now(),
       ); // a long queue must not let the background task start a second run
-      _turn++;
+      // Every reel starts on the key after the last one used, and the place is saved at once, so a run that is
+      // killed or a reel shared later still moves on to the next key.
+      final turn = _turn++;
+      await saveTurn(_turn);
       final job = _jobById[item.id]!;
       final ctx = _ItemCtx(turn, job);
       job.state = JobState.running;
@@ -426,7 +427,7 @@ class Runner {
         // Errors too, not just Exceptions: an uncaught one used to leave the item queued with no reason shown.
         final why = describeError(e);
         lastProblem = 'Failed: $why';
-        await bridge.setPendingStatus(item.id, 'failed');
+        await bridge.setPendingStatus(item.id, 'failed', title: why);
         job
           ..state = JobState.failed
           ..stage = why;
@@ -626,6 +627,18 @@ class Runner {
   Future<String> _linkedin(PendingItem item) async {
     final u = Uri.parse(item.url);
     if (!isLinkedInHost(u.host)) return _failed('Not a LinkedIn link.');
+    final opened = File(linkedInPagePath(tempDir.path, item.id));
+    if (await opened.exists()) {
+      final html = await opened.readAsString();
+      await opened.delete();
+      _step('Reading the page you opened', 0.12);
+      final p = parseLinkedIn(html);
+      if (p.isEmpty) {
+        return _failed('The page you opened did not show the post (LinkedIn may have asked to sign in). '
+            'Share a screenshot of the post instead; screenshots never contact LinkedIn.');
+      }
+      return _linkedinPost(item, p);
+    }
     _step('Fetching from LinkedIn', 0.12);
     final r = await _stoppable(client.get(u, headers: {'User-Agent': linkedInUserAgent, 'Accept-Language': 'en-US,en;q=0.9'}))
         .timeout(const Duration(seconds: 30));
@@ -637,9 +650,13 @@ class Runner {
     final p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
     if (p.isEmpty) {
       // Even a public post is sometimes refused to a logged-out visitor; nothing is retried automatically.
-      return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Retry later, '
-          'or share a screenshot of the post instead; screenshots never contact LinkedIn.');
+      return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Read in app '
+          'to open it here, or share a screenshot of the post instead; screenshots never contact LinkedIn.');
     }
+    return _linkedinPost(item, p);
+  }
+
+  Future<String> _linkedinPost(PendingItem item, LinkedInPost p) async {
     _step(p.videos.isEmpty ? 'Got the post' : 'Got the post and ${p.videos.length == 1 ? 'its video' : '${p.videos.length} videos'}', 0.35);
     _name(p.text.isNotEmpty ? p.text : p.author);
     final context = [

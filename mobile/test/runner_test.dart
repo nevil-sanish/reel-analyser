@@ -12,6 +12,7 @@ import 'package:reelbrain/data/library_db.dart';
 import 'package:reelbrain/native/counter_bridge.dart';
 import 'package:reelbrain/pipeline/background.dart';
 import 'package:reelbrain/pipeline/gemini.dart';
+import 'package:reelbrain/pipeline/linkedin.dart';
 import 'package:reelbrain/pipeline/runner.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -255,6 +256,36 @@ void main() {
         gemini: ['K1', 'K2']).processQueue();
     expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']), ['K1', 'K2']);
     expect(b2.statuses[4], 'done');
+  });
+
+  test('every reel starts on the key after the last one used, across runs and within one run', () async {
+    var saved = 0;
+    Runner keyed(FakeBridge b, List<String> keys) => Runner(
+          bridge: b,
+          library: db,
+          client: MockClient((r) async => http.Response(_gemOk(), 200)),
+          keys: () async => AnalysisKeys(gemini: keys),
+          apifyKey: () async => null,
+          makeGemini: (k) => Gemini(MockClient((r) async {
+                requests.add(r);
+                return http.Response(_gemOk(), 200);
+              }), k, pollEvery: Duration.zero),
+          tempDir: tmp,
+          sharedDir: tmp,
+          rateWait: Duration.zero,
+          readTurn: () async => saved,
+          saveTurn: (v) async => saved = v,
+        );
+    String short(int id) => 'https://www.youtube.com/shorts/key${id}xxxx';
+    for (var id = 10; id < 13; id++) {
+      await keyed(FakeBridge([PendingItem(id: id, url: short(id), app: 'youtube', createdAt: id)]), ['K1', 'K2', 'K3']).processQueue();
+    }
+    expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']), ['K1', 'K2', 'K3']);
+    requests.clear();
+    await keyed(FakeBridge([for (var id = 20; id < 24; id++) PendingItem(id: id, url: short(id), app: 'youtube', createdAt: id)]), ['K1', 'K2'])
+        .processQueue();
+    expect(requests.where(isGenerate).map((r) => r.headers['x-goog-api-key']).toList()..sort(), ['K1', 'K1', 'K2', 'K2']);
+    expect(saved, 7);
   });
 
   test('a 429 on every key waits once and tries again in the same run', () async {
@@ -598,6 +629,30 @@ void main() {
     expect(b.statuses[1], 'done');
     final top = (await db.reels(archived: false)).first;
     expect((top.title, top.seenAt, top.archived), ('Rice', 0, false));
+  });
+
+  test('a LinkedIn page opened with Read in app is analysed without fetching from LinkedIn, then removed', () async {
+    const li = PendingItem(id: 9, url: 'https://www.linkedin.com/posts/someone_post-activity-1', app: 'linkedin', createdAt: 7);
+    final page = File(linkedInPagePath(tmp.path, 9));
+    await page.writeAsString('<script type="application/ld+json">'
+        '{"@type":"SocialMediaPosting","articleBody":"How to cook rice well","author":{"name":"Ann"}}</script>');
+    final b = FakeBridge([li]);
+    final run = runner(b, (r) async => http.Response(_gemOk(), 200));
+    expect(await run.processQueue(), 1);
+    expect(requests.where((r) => isLinkedInHost(r.url.host)), isEmpty);
+    expect(b.statuses[9], 'text-only');
+    expect((await db.reels()).single.title, 'Rice');
+    expect(await page.exists(), isFalse);
+  });
+
+  test('a Read in app page without the post fails with a reason and contacts nobody', () async {
+    const li = PendingItem(id: 9, url: 'https://www.linkedin.com/posts/someone_post-activity-1', app: 'linkedin', createdAt: 7);
+    await File(linkedInPagePath(tmp.path, 9)).writeAsString('<html>Sign in</html>');
+    final b = FakeBridge([li]);
+    await runner(b, (r) async => http.Response(_gemOk(), 200)).processQueue();
+    expect(requests, isEmpty);
+    expect(b.statuses[9], 'failed');
+    expect(b.titles[9], contains('did not show the post'));
   });
 
   test('T-LIB-04 Undo helpers: mark unread, restore a deleted chat with its id', () async {

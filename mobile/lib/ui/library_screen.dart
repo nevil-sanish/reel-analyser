@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_services.dart';
 import '../core/models.dart';
 import '../native/counter_bridge.dart';
+import '../pipeline/linkedin.dart';
 import '../pipeline/runner.dart';
 import 'archive_screen.dart';
 import 'folders_ui.dart';
@@ -15,6 +16,7 @@ import 'settings_screen.dart';
 import 'motion.dart';
 import 'source_icon.dart';
 import 'theme.dart';
+import 'web_screen.dart';
 import 'liquid.dart';
 
 class LibraryScreen extends StatefulWidget {
@@ -262,6 +264,14 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                   await s.bridge.setPendingStatus(id, 'queued');
                   await _process();
                 },
+                onRead: (i) async {
+                  final html = await Navigator.push<String>(
+                      context, MaterialPageRoute(builder: (_) => WebScreen(s, url: i.url, title: 'LinkedIn post', readPost: true)));
+                  if (html == null) return;
+                  await File(linkedInPagePath(s.runner.tempDir.path, i.id)).writeAsString(html);
+                  await s.bridge.setPendingStatus(i.id, 'queued');
+                  await _process();
+                },
                 onDismiss: (id) async {
                   await s.bridge.setPendingStatus(id, 'dismissed');
                   await _reload();
@@ -408,7 +418,8 @@ List<PendingItem> recentFailures(List<PendingItem> failed, Set<int> shownIds, in
 class _FailedCard extends StatelessWidget {
   final List<PendingItem> items;
   final Future<void> Function(int id) onRetry, onDismiss;
-  const _FailedCard(this.items, {required this.onRetry, required this.onDismiss});
+  final Future<void> Function(PendingItem item) onRead;
+  const _FailedCard(this.items, {required this.onRetry, required this.onRead, required this.onDismiss});
 
   @override
   Widget build(BuildContext context) {
@@ -432,7 +443,16 @@ class _FailedCard extends StatelessWidget {
                       Text(i.title.isEmpty ? 'It failed before the reason was kept. Tap Retry.' : i.title,
                           maxLines: 4, overflow: TextOverflow.ellipsis,
                           style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                      Row(children: [
+                      Wrap(children: [
+                        if (i.app == 'linkedin')
+                          TextButton.icon(
+                            icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                            label: const Text('Read in app'),
+                            onPressed: () {
+                              Haptics.select();
+                              onRead(i);
+                            },
+                          ),
                         TextButton.icon(
                           icon: const Icon(Icons.refresh_rounded, size: 18),
                           label: const Text('Retry'),

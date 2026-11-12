@@ -20,6 +20,9 @@ class LinkedInPost {
   bool get isEmpty => text.isEmpty && images.isEmpty && videos.isEmpty;
 }
 
+/// Where "Read in app" leaves the page it loaded for the share [id]; the next run reads it instead of fetching from LinkedIn.
+String linkedInPagePath(String dir, int id) => '$dir/linkedin-page-$id.html';
+
 /// The most of each kind a post is analysed with.
 const maxLinkedInVideos = 3;
 const maxLinkedInImages = 10;

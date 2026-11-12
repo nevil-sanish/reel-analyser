@@ -2,8 +2,10 @@
 
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
-## Latest (2026-11-12): v1.2.1.3 released
+## Latest (2026-11-12): v1.2.1.3 released; 1.2.1.4 ready, NOT released or committed (user said stop)
 
+- **LinkedIn (#12): full details and what to check next are in [LINKEDIN.md](LINKEDIN.md).**
+- 1.2.1.4 (uncommitted, not built or released): Gemini keys rotate per analysis and the place is saved at once (closes #15). Failed LinkedIn shares have Read in app (in-app page, no login; the loaded HTML is analysed instead of fetching). On the phone a public post gave LinkedIn "Page not found" even in the in-app page at 15:28 and loaded a minute later, so the 404 is intermittent per network; open-source scrapers either need a login (ban risk) or a paid fetch service (Scrapfly, Bright Data). #12 stays open.
 - v1.2.1.3 (#12, still open): a share the background analysis could not finish now shows in a "Could not analyse N shares" card at the top of the Library (reason, Retry, Dismiss; last 7 days). Cause of the LinkedIn failures: LinkedIn sometimes answers the phone with HTTP 404 for a public post that loads fine from a computer, often when several posts are shared at once. The app never retries on its own and never logs in (no ban risk). Not fixed: the 404 itself.
 - v1.2.1.2: the update check runs on every app open, survives the GitHub API rate limit, retries dropped downloads and offers the release page on failure.
 - F-Droid closed !56876 and !56877 on 2026-11-12: the app is under 3 months old (Inclusion Policy). No code change needed; submit again from about 2027-02-05 (first commit 2026-11-05).

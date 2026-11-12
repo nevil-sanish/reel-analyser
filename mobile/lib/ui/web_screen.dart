@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
+import '../pipeline/linkedin.dart';
 
 const _pageHosts = ['instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net', 'youtube.com', 'youtu.be', 'ytimg.com', 'google.com', 'gstatic.com', 'googlevideo.com', 'googleusercontent.com', 'linkedin.com', 'lnkd.in', 'licdn.com'];
 
@@ -20,7 +23,10 @@ class WebScreen extends StatefulWidget {
   final AppServices services;
   final String url;
   final String title;
-  const WebScreen(this.services, {required this.url, required this.title, super.key});
+
+  /// For a LinkedIn share the app could not fetch: an Analyse button returns the loaded page's HTML to the caller.
+  final bool readPost;
+  const WebScreen(this.services, {required this.url, required this.title, this.readPost = false, super.key});
 
   @override
   State<WebScreen> createState() => _WebScreenState();
@@ -46,6 +52,19 @@ class _WebScreenState extends State<WebScreen> {
         },
       ))
       ..loadRequest(Uri.parse(isReelLink(widget.url) ? widget.url : 'about:blank'));
+  }
+
+  Future<void> _analyse() async {
+    final r = await _web.runJavaScriptReturningResult('document.documentElement.outerHTML');
+    var html = '$r';
+    if (html.startsWith('"')) html = jsonDecode(html) as String;
+    if (!mounted) return;
+    if (parseLinkedIn(html).isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('This page does not show the post. If LinkedIn asks you to sign in, share a screenshot of the post instead.')));
+      return;
+    }
+    Navigator.pop(context, html);
   }
 
   @override
@@ -86,6 +105,9 @@ class _WebScreenState extends State<WebScreen> {
                   ),
                 )
               : WebViewWidget(controller: _web),
+          floatingActionButton: widget.readPost && !_failed && _progress >= 100
+              ? FloatingActionButton.extended(onPressed: _analyse, icon: const Icon(Icons.auto_awesome), label: const Text('Analyse this post'))
+              : null,
         ),
       );
 }

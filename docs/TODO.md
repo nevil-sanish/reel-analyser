@@ -1,3 +1,10 @@
+# To do next (2026-11-12)
+
+- [ ] LinkedIn (#12): work through "What to check next" in [LINKEDIN.md](LINKEDIN.md).
+- [ ] #2: you test the daily goals with your own accounts.
+- [ ] #6 F-Droid: submit again from about 2027-02-05 (the app must be 3 months old).
+- [ ] Key rotation (#15): on the phone with 2+ Gemini keys, check that the progress line shows key 1, 2, 3 in turn.
+
 # To do for 1.1.1.0 (written 2026-11-09, about 21:20 IST)
 
 Read [PROGRESS.md](PROGRESS.md) first. Work in this order; check each box when it is true. Nothing here is released; the user wants 1.1.1.0 built, tested on the phone, committed and published when it is all done.
