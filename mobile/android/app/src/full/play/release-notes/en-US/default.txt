@@ -1,1 +1,1 @@
-LinkedIn posts with several pictures and videos: each one is analysed and merged into one note, with a transcript per video. New Support and Refund Policy (refunds within 7 days by email), updated Privacy Policy, Terms and Disclaimer. Folder chat shows bullet lists properly.
+Delete a chat from the Ask screen: a Delete button on the open chat and a delete icon on every saved chat, both with Undo.

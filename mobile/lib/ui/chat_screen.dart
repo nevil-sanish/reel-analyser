@@ -142,37 +142,46 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           height: MediaQuery.sizeOf(c).height * 0.6,
           child: chats.isEmpty
               ? const Center(child: Text('No saved chats yet'))
-              : StatefulBuilder(
-                  builder: (c, set) => ListView(children: [
+              : StatefulBuilder(builder: (c, set) {
+                  void delete((int, String, int, List<String>) ch) {
+                    Haptics.medium();
+                    s.library.deleteChat(ch.$1);
+                    set(() => chats.remove(ch));
+                    if (ch.$1 == _chatId) _newChat();
+                    showUndo(ScaffoldMessenger.of(context), 'Chat deleted', () => s.library.restoreChat(ch),
+                        // The sheet may be closed by the time Undo is tapped.
+                        () => c.mounted ? set(() => chats..add(ch)..sort((a, b) => b.$3.compareTo(a.$3))) : null);
+                  }
+
+                  return ListView(children: [
                     const Padding(padding: EdgeInsets.fromLTRB(24, 0, 24, 8), child: Text('Saved chats', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
                     for (final ch in chats)
                       Dismissible(
                         key: ValueKey(ch.$1),
-                        direction: DismissDirection.endToStart,
+                        direction: _busy && ch.$1 == _chatId ? DismissDirection.none : DismissDirection.endToStart,
                         background: Container(
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
                           color: Theme.of(c).colorScheme.error,
                           child: const Icon(Icons.delete_rounded, color: Colors.white),
                         ),
-                        onDismissed: (_) {
-                          Haptics.medium();
-                          s.library.deleteChat(ch.$1);
-                          set(() => chats.remove(ch));
-                          showUndo(ScaffoldMessenger.of(context), 'Chat deleted', () => s.library.restoreChat(ch),
-                              // The sheet may be closed by the time Undo is tapped.
-                              () => c.mounted ? set(() => chats..add(ch)..sort((a, b) => b.$3.compareTo(a.$3))) : null);
-                        },
+                        onDismissed: (_) => delete(ch),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                          contentPadding: const EdgeInsets.only(left: 24, right: 8),
                           leading: const Icon(Icons.chat_bubble_outline_rounded),
                           title: Text(ch.$2, maxLines: 1, overflow: TextOverflow.ellipsis),
                           subtitle: Text('${ch.$4.length ~/ 2} questions · ${savedAgo(ch.$3, DateTime.now())}'),
+                          trailing: IconButton(
+                            tooltip: 'Delete chat',
+                            icon: const Icon(Icons.delete_outline_rounded),
+                            // While an answer is coming the open chat is saved again when it lands.
+                            onPressed: _busy && ch.$1 == _chatId ? null : () => delete(ch),
+                          ),
                           onTap: () => Navigator.pop(c, (ch.$1, ch.$4)),
                         ),
                       ),
-                  ]),
-                ),
+                  ]);
+                }),
         ),
       ),
     );
@@ -190,6 +199,39 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() {
       _turns = [];
       _chatId = null;
+    });
+  }
+
+  /// Deletes the open chat after asking; Undo puts it back and reopens it.
+  Future<void> _deleteOpen() async {
+    final id = _chatId;
+    if (id == null || _busy) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete this chat?'),
+        content: const Text('Only the conversation is removed. The notes stay.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted || _chatId != id || _busy) return;
+    final ch = (await s.library.chats()).where((c) => c.$1 == id).firstOrNull;
+    await s.library.deleteChat(id);
+    if (!mounted) return;
+    Haptics.medium();
+    _newChat();
+    if (ch == null) return;
+    showUndo(ScaffoldMessenger.of(context), 'Chat deleted', () => s.library.restoreChat(ch), () {
+      if (mounted && _turns.isEmpty) {
+        setState(() {
+          _chatId = ch.$1;
+          _turns = [...ch.$4];
+        });
+        _toEnd();
+      }
     });
   }
 
@@ -240,6 +282,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         title: const Text('Ask'),
         actions: [
           IconButton(tooltip: 'Saved chats', icon: const Icon(Icons.history_rounded), onPressed: _history),
+          if (chatting && _chatId != null)
+            IconButton(tooltip: 'Delete chat', icon: const Icon(Icons.delete_outline_rounded), onPressed: _busy ? null : _deleteOpen),
           if (chatting) IconButton(tooltip: 'New chat', icon: const Icon(Icons.add_comment_outlined), onPressed: _newChat),
           IconButton(
             tooltip: 'Settings',
