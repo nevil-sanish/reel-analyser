@@ -2,8 +2,10 @@
 
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
-## Latest (2026-11-12): v1.2.1.1 released
+## Latest (2026-11-12): v1.2.1.2 released
 
+- v1.2.1.2: the update check runs on every app open, survives the GitHub API rate limit, retries dropped downloads and offers the release page on failure.
+- F-Droid closed !56876 and !56877 on 2026-11-12: the app is under 3 months old (Inclusion Policy). No code change needed; submit again from about 2027-02-05 (first commit 2026-11-05).
 - v1.2.1.1: delete a chat from the Ask screen (closes #13). Still open as well: **#12** ("linkedin is not working", not looked at yet).
 - v1.2.1.0: LinkedIn multi-part analysis, the Support and Refund Policy and updated legal texts, and F-Droid groundwork. The F-Droid recipes are in `fdroid/`, and [FDROID.md](FDROID.md) explains them. Both apps were submitted on 2026-11-11 as fdroiddata MRs !56876 (Full) and !56877 (Semi); they are waiting for review and for F-Droid to trigger CI.
 

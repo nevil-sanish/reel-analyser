@@ -41,7 +41,7 @@ class AppServices {
   static Future<AppServices> create(AppFeatures features) async =>
       AppServices._(KeyStore(), await LibraryDb.open(), CounterBridge(), http.Client(), Directory(await getDatabasesPath()), features);
 
-  static const version = '1.2.1.1';
+  static const version = '1.2.1.2';
 
   /// Sends a note made without the video back through the queue: its queue row goes back to queued and
   /// the note is removed, so the runner doesn't skip the link as already saved. Returns false if there's no row.

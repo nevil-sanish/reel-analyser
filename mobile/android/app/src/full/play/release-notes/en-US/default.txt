@@ -1,1 +1,1 @@
-Delete a chat from the Ask screen: a Delete button on the open chat and a delete icon on every saved chat, both with Undo.
+Updates: the app checks for a new version every time it opens, works even when GitHub limits its update API, retries a dropped download, and offers the release page if the download still fails.

@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkUpdate();
+    _checkUpdate(start: true);
     widget.services.features.onOpen(widget.services);
     WidgetsBinding.instance.addPostFrameCallback((_) => _askConsent());
   }
@@ -141,15 +141,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// A banner when GitHub has a newer APK. Silent when offline or rate-limited.
-  Future<void> _checkUpdate() async {
+  /// A banner when GitHub has a newer APK: checked every time the app starts, and when it comes back to the front
+  /// at most every 30 minutes. Silent when offline.
+  Future<void> _checkUpdate({bool start = false}) async {
     if (fromFdroid) return;
     final s = widget.services, now = DateTime.now().millisecondsSinceEpoch;
-    if (now - await s.keys.updateCheckedAt < const Duration(days: 1).inMilliseconds) return;
+    if (!start && now - await s.keys.updateCheckedAt < const Duration(minutes: 30).inMilliseconds) return;
     await s.keys.setUpdateCheckedAt(now);
     final rel = await latestUpdate(s.client, AppServices.version, semi: s.features.flavor == 'semi');
     if (rel == null || !mounted) return;
     final m = ScaffoldMessenger.of(context);
+    m.hideCurrentMaterialBanner();
     m.showMaterialBanner(MaterialBanner(
       content: Text('Reel Analyser ${rel.tag} is out'),
       actions: [
@@ -173,7 +175,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) widget.services.features.onOpen(widget.services);
+    if (state == AppLifecycleState.resumed) {
+      widget.services.features.onOpen(widget.services);
+      _checkUpdate();
+    }
   }
 
   @override

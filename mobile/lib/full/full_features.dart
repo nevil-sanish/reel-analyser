@@ -140,6 +140,7 @@ class FullFeatures extends AppFeatures {
       ),
     );
     String? failure;
+    var offerPage = false;
     try {
       final bridge = FullBridge();
       final file = await downloadUpdate(s.client, info, Directory(await bridge.updateDir()), (v) => progress.value = v);
@@ -149,10 +150,26 @@ class FullFeatures extends AppFeatures {
       } else if (r != 'started') {
         failure = 'Android would not open the installer (${r.replaceFirst('failed: ', '')}).';
       }
-    } on Object catch (e) {
+    } on UpdateException catch (e) {
       failure = 'Update failed: $e';
+      offerPage = true;
+    } on Object catch (e) {
+      debugPrint('Update download failed: $e');
+      // Some mobile networks reset connections to GitHub's file host; the browser often still gets through.
+      failure = 'Could not download ${info.tag}. Your network may be blocking GitHub downloads. Open the release page to download it in your browser.';
+      offerPage = true;
     }
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
-    if (failure != null) m.showSnackBar(SnackBar(content: Text(failure)));
+    if (failure != null) {
+      m.showSnackBar(SnackBar(
+        content: Text(failure),
+        duration: Duration(seconds: offerPage ? 12 : 4),
+        action: offerPage
+            ? SnackBarAction(
+                label: 'Open page',
+                onPressed: () => s.bridge.openUrl('https://github.com/nevil-sanish/reel-analyser/releases/tag/${info.tag}'))
+            : null,
+      ));
+    }
   }
 }

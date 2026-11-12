@@ -65,4 +65,17 @@ void main() {
     expect((await latestUpdate(gh, '1.0.0.0', semi: true))!.apkUrl, 'https://github.com/p.apk');
     expect((await latestUpdate(gh, '1.0.0.0', semi: false))!.sumsUrl, 'https://github.com/s');
   });
+
+  test('a dropped connection is tried again; three drops in a row give up', () async {
+    var calls = 0;
+    http.Client flaky(int drops) => MockClient((r) async {
+          if (calls++ < drops) throw http.ClientException('Connection reset by peer', r.url);
+          if (r.url.path.endsWith('SHA256SUMS')) return http.Response('$good  reel-analyser-v9.9.9.9-full.apk', 200);
+          return http.Response.bytes(apkBytes, 200);
+        });
+    final f = await downloadUpdate(flaky(2), info, dir, (_) {}, pause: Duration.zero);
+    expect(await f.readAsBytes(), apkBytes);
+    calls = 0;
+    await expectLater(downloadUpdate(flaky(3), info, dir, (_) {}, pause: Duration.zero), throwsA(isA<http.ClientException>()));
+  });
 }

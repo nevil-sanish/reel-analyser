@@ -19,7 +19,23 @@ class UpdateException implements Exception {
 
 /// Downloads the APK of [info] into [dir] and checks it against the release's SHA256SUMS before returning it.
 /// A file that does not match, or has no checksum to match, is deleted and never handed to the installer.
-Future<File> downloadUpdate(http.Client client, UpdateInfo info, Directory dir, void Function(double) onProgress) async {
+/// A dropped connection is tried again ([tries] in all); a checksum or host problem is not, since trying again can't fix it.
+Future<File> downloadUpdate(http.Client client, UpdateInfo info, Directory dir, void Function(double) onProgress,
+    {int tries = 3, Duration pause = const Duration(seconds: 2)}) async {
+  for (var i = 1;; i++) {
+    try {
+      return await _download(client, info, dir, onProgress);
+    } on UpdateException {
+      rethrow;
+    } on Exception {
+      if (i >= tries) rethrow;
+      onProgress(0);
+      await Future<void>.delayed(pause * i);
+    }
+  }
+}
+
+Future<File> _download(http.Client client, UpdateInfo info, Directory dir, void Function(double) onProgress) async {
   final apkUri = Uri.parse(info.apkUrl);
   final sumsUri = info.sumsUrl == null ? null : Uri.parse(info.sumsUrl!);
   if (!allowedUpdateUrl(apkUri) || sumsUri == null || !allowedUpdateUrl(sumsUri)) {

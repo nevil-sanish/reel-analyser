@@ -31,4 +31,19 @@ void main() {
     expect(await newerRelease(gh(403, 'v1.0.0'), '0.9.3', semi: false), isNull);
     expect(await newerRelease(MockClient((_) async => http.Response('nope', 200)), '0.9.3', semi: false), isNull);
   });
+
+  // The API is rate-limited (403); the website's /releases/latest redirect still names the newest tag.
+  http.Client limited(String? tag) => MockClient((req) async => req.url.host == 'api.github.com'
+      ? http.Response('{"message":"API rate limit exceeded"}', 403)
+      : http.Response('', 302,
+          headers: {if (tag != null) 'location': 'https://github.com/nevil-sanish/reel-analyser/releases/tag/$tag'}));
+
+  test('rate-limited API falls back to the latest-release redirect', () async {
+    final u = await latestUpdate(limited('v1.2.1.1'), '1.2.1.0', semi: true);
+    expect(u?.tag, 'v1.2.1.1');
+    expect(u?.apkUrl, 'https://github.com/nevil-sanish/reel-analyser/releases/download/v1.2.1.1/reel-analyser-v1.2.1.1-semi.apk');
+    expect(u?.sumsUrl, 'https://github.com/nevil-sanish/reel-analyser/releases/download/v1.2.1.1/SHA256SUMS');
+    expect(await latestUpdate(limited('v1.2.1.1'), '1.2.1.1', semi: false), isNull);
+    expect(await latestUpdate(limited(null), '1.2.1.0', semi: false), isNull);
+  });
 }
