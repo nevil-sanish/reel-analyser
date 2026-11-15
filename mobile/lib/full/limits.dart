@@ -67,7 +67,10 @@ class LimitsState {
   final List<LimitItem>? pending;
   final int pendingFrom;
   final Map<String, int> used;
-  const LimitsState(this.active, this.pending, this.pendingFrom, this.used);
+
+  /// Usage access is what times the apps; without it an app limit cannot count or block.
+  final bool usageAccess;
+  const LimitsState(this.active, this.pending, this.pendingFrom, this.used, this.usageAccess);
 }
 
 class InstalledApp {
@@ -88,6 +91,7 @@ class LimitsBridge {
       p == null ? null : LimitItem.parse(p),
       (m['pendingFrom'] as num?)?.toInt() ?? 0,
       {for (final e in (m['used'] as Map? ?? const {}).entries) '${e.key}': (e.value as num).toInt()},
+      m['usageAccess'] == true,
     );
   }
 

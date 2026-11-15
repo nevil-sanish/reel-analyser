@@ -10,7 +10,7 @@ void main() {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('reelbot/counter'), (call) async {
       switch (call.method) {
         case 'limitsState':
-          return {'active': active, 'pending': null, 'pendingFrom': 0, 'used': {'app:com.a': 5 * 60000}};
+          return {'active': active, 'pending': null, 'pendingFrom': 0, 'used': {'app:com.a': 5 * 60000}, 'usageAccess': true};
         case 'limitsSave':
           active = call.arguments['items'] as String;
           return 'ok';

@@ -7,6 +7,7 @@ import '../app_services.dart';
 import '../ui/motion.dart';
 import 'blocker.dart';
 import 'detect_consent.dart';
+import 'full_bridge.dart';
 import 'limit_bar.dart';
 import 'limits.dart';
 import 'paragraph_gate.dart';
@@ -197,6 +198,22 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     _load();
   }
 
+  /// Apps are timed from Android's usage data; without Usage access they are neither counted nor blocked.
+  Widget _usageWarning(LimitsState st) {
+    final hasApp = {...st.active, ..._draft}.any((i) => !i.isSite);
+    if (!hasApp || st.usageAccess) return const SizedBox();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: ListTile(
+        leading: const Icon(Icons.timer_outlined),
+        title: const Text('Usage access is off'),
+        subtitle: const Text('Apps are timed with it. Until you allow it, app limits count nothing and block nothing.'),
+        trailing: FilledButton.tonal(onPressed: () => FullBridge().open('openUsageAccess'), child: const Text('Allow')),
+      ),
+    );
+  }
+
   Widget _card(List<Widget> children) => Card(
         margin: const EdgeInsets.only(bottom: 12),
         child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children)),
@@ -212,6 +229,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
+        _usageWarning(st),
         if (on && !_editing) ...[
           _card([
             Text('On', style: t.textTheme.titleLarge),
@@ -230,8 +248,8 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
             const SizedBox(height: 6),
             Text(
               'Pick an app or a website and the time you allow it each day. Past that time it is blocked until midnight. '
-              'This needs the Accessibility service. It notes which app is open and, in a browser, the address bar, only for what you add here. '
-              'Nothing is recorded or sent.',
+              'Apps are timed with Android\'s Usage access. Websites are timed with the Accessibility service, which reads the browser\'s address bar only for the sites you add. '
+              'Both also need the Accessibility service on, so the block screen can open over the app. Nothing is recorded or sent.',
               style: t.textTheme.bodySmall,
             ),
             if (!_consent) ...[

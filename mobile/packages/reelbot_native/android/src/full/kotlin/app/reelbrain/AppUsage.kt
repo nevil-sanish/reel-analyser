@@ -33,9 +33,9 @@ object AppUsage {
      * every session, and one still open runs to [now]. Checked against `dumpsys usagestats` on a phone: this
      * gives the same minutes as Android's own; the first version, which ended a session at any other resume, lost ~20%.
      */
-    fun sessions(events: List<Event>, now: Long): List<Session> {
+    fun sessions(events: List<Event>, now: Long, apps: Map<String, String> = AppUsage.apps): List<Session> {
         val out = mutableListOf<Session>()
-        val resumed = apps.values.associateWith { mutableSetOf<String>() }
+        val resumed = apps.values.toSet().associateWith { mutableSetOf<String>() }
         val start = HashMap<String, Long>()
         fun close(app: String, t: Long) {
             val s = start.remove(app) ?: return
@@ -78,6 +78,24 @@ object AppUsage {
     fun granted(ctx: Context): Boolean = ctx.getSystemService(AppOpsManager::class.java)
         .unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), ctx.packageName) ==
         AppOpsManager.MODE_ALLOWED
+
+    /** Time in each of [pkgs] today so far, by package, from Android's usage events. Empty without Usage access. */
+    fun todayMs(ctx: Context, pkgs: Set<String>): Map<String, Long> {
+        if (pkgs.isEmpty() || !granted(ctx)) return emptyMap()
+        val zone = ZoneId.systemDefault()
+        val now = System.currentTimeMillis()
+        val from = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+        val raw = ctx.getSystemService(UsageStatsManager::class.java).queryEvents(from, now)
+        val events = mutableListOf<Event>()
+        val e = UsageEvents.Event()
+        while (raw.hasNextEvent()) {
+            raw.getNextEvent(e)
+            if (e.packageName in pkgs || e.eventType == SCREEN_OFF || e.eventType == KEYGUARD_SHOWN || e.eventType == SHUTDOWN) {
+                events += Event(e.packageName ?: "", e.eventType, e.timeStamp, e.className ?: "")
+            }
+        }
+        return sessions(events, now, pkgs.associateWith { it }).groupBy { it.app }.mapValues { (_, l) -> l.sumOf { it.end - it.start } }
+    }
 
     /** Time per (date, app) and per (hour, app) for the last [days] days, today included; null without Usage access. */
     fun load(ctx: Context, days: Int): Pair<Map<Pair<String, String>, Long>, Map<Pair<Int, String>, Long>>? {

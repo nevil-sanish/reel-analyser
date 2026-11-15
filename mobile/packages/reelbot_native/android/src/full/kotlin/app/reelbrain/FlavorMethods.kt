@@ -70,7 +70,7 @@ object FlavorMethods {
                     CounterDb.get(ctx).setPunish(Punish(call.argument<String>("until"), apps, call.argument<Int>("streak") ?: 0))
                     result.success(null)
                 }
-                "limitsState" -> result.success(limitsState())
+                "limitsState" -> CounterPlugin.offMain(result) { limitsState() }
                 "limitsSave" -> result.success(limitsSave(call.argument<String>("items")!!, call.argument<Boolean>("immediate") == true))
                 "limitsRemove" -> {
                     CounterDb.get(ctx).saveLimits(LimitsState())
@@ -143,7 +143,10 @@ object FlavorMethods {
             return mapOf(
                 "active" to s.active.takeIf { it.isNotEmpty() }?.let { AppLimits.toJson(it) },
                 "pending" to s.pending?.let { AppLimits.toJson(it) }, "pendingFrom" to s.pendingFrom,
-                "used" to db.usedToday(localDate(now)),
+                // Sites are counted by the Accessibility service; apps are read from Android's usage data.
+                "used" to db.usedToday(localDate(now)) + AppUsage.todayMs(ctx, s.active.filter { it.kind == "app" }.map { it.id }.toSet())
+                    .mapKeys { "app:${it.key}" },
+                "usageAccess" to AppUsage.granted(ctx),
             )
         }
 

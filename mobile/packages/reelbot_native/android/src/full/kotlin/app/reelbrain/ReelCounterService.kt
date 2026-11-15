@@ -45,6 +45,10 @@ class ReelCounterService : AccessibilityService() {
     private var limitSites: List<LimitItem> = emptyList()
     private var limitUsedAt = 0L
     private var limitUsed: Map<String, Long> = emptyMap()
+    private var appUsedAt = 0L
+    private var appUsed: Map<String, Long> = emptyMap()
+    /** An app with a limit is in front: keeps the one-second check going, since no events come while it plays. */
+    private var limitWatching = false
     private var stateAt = 0L
     private var state = BlockState()
     private var usedAt = 0L
@@ -59,12 +63,12 @@ class ReelCounterService : AccessibilityService() {
     private val tick = object : Runnable {
         override fun run() {
             evaluate()
-            if (tracker.active || meter.active || limitMeter.active) handler.postDelayed(this, 1000) else ticking = false
+            if (tracker.active || meter.active || limitMeter.active || limitWatching) handler.postDelayed(this, 1000) else ticking = false
         }
     }
 
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop() }
+        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop(); limitWatching = false }
     }
 
     /** CounterDb, plus the unknown alert after each unknown item. */
@@ -116,9 +120,9 @@ class ReelCounterService : AccessibilityService() {
         if (pkg in DetectionRules.ignored) return
         val now = System.currentTimeMillis()
         refreshLimits(now)
-        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && pkg !in limitApps && !tracker.active && !meter.active && !limitMeter.active) return
+        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && pkg !in limitApps && !tracker.active && !meter.active && !limitMeter.active && !limitWatching) return
         if (now - lastEval >= 250) evaluate()
-        if ((tracker.active || meter.active || limitMeter.active) && !ticking) {
+        if ((tracker.active || meter.active || limitMeter.active || limitWatching) && !ticking) {
             ticking = true
             handler.postDelayed(tick, 1000)
         }
@@ -128,8 +132,8 @@ class ReelCounterService : AccessibilityService() {
         if (!consented()) return
         val now = System.currentTimeMillis()
         lastEval = now
-        val root = rootInActiveWindow ?: return
-        val pkg = root.packageName?.toString() ?: return
+        val root = rootInActiveWindow ?: run { limitWatching = false; return }
+        val pkg = root.packageName?.toString() ?: run { limitWatching = false; return }
         if (pkg in DetectionRules.ignored) return // neither leaving nor watching
         enforceLimits(now, root, pkg)
         val app = DetectionRules.apps[pkg]
@@ -176,11 +180,20 @@ class ReelCounterService : AccessibilityService() {
     private fun enforceLimits(now: Long, root: AccessibilityNodeInfo, pkg: String) {
         refreshLimits(now)
         val date = localDate(now)
-        val item = limitApps[pkg] ?: if (limitSites.isNotEmpty() && pkg in Browsers.packages) siteOnScreen(root, pkg) else null
-        limitMeter.observe(now, item?.key, date)
-        if (item == null) return
+        val app = limitApps[pkg]
+        limitWatching = app != null
+        if (app != null) {
+            // An app's time comes from Android's usage data (Usage access), not from reading its screen. Without that access it can't be measured.
+            limitMeter.observe(now, null, date)
+            if (now - appUsedAt > 2000) { appUsed = AppUsage.todayMs(this, limitApps.keys); appUsedAt = now }
+            if (AppLimits.isOver(app, appUsed[app.id] ?: 0L) && AppUsage.granted(this)) blockNow(app.key, "applimit", now, app)
+            return
+        }
+        val site = if (limitSites.isNotEmpty() && pkg in Browsers.packages) siteOnScreen(root, pkg) else null
+        limitMeter.observe(now, site?.key, date)
+        if (site == null) return
         if (now - limitUsedAt > 1000) { limitUsed = db.usedToday(date); limitUsedAt = now }
-        if (AppLimits.isOver(item, (limitUsed[item.key] ?: 0L) + limitMeter.pending(item.key))) blockNow(item.key, "applimit", now, item)
+        if (AppLimits.isOver(site, (limitUsed[site.key] ?: 0L) + limitMeter.pending(site.key))) blockNow(site.key, "applimit", now, site)
     }
 
     /** The limited website whose address the browser's address bar shows. Only that one field is read. */
