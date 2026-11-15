@@ -95,7 +95,6 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
         ],
       ),
     );
-    c.dispose();
     return v;
   }
 
@@ -132,7 +131,6 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
         ],
       ),
     );
-    c.dispose();
     if (host == null || !mounted) return;
     if (_draft.any((i) => i.key == 'site:$host')) return _say('$host is already in the list.');
     final m = await _askMinutes('Daily time for $host');
