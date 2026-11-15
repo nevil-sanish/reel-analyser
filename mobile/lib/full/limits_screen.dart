@@ -81,14 +81,14 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(labelText: 'Minutes a day', helperText: '60 = 1 hour. Most is 1440 (24 hours).'),
+          decoration: const InputDecoration(labelText: 'Minutes a day', helperText: '0 = blocked all day. 60 = 1 hour. Most is 1440.'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final n = int.tryParse(c.text.trim());
-              Navigator.pop(d, n == null || n < 1 || n > 1440 ? null : n);
+              Navigator.pop(d, n == null || n > 1440 ? null : n);
             },
             child: const Text('OK'),
           ),

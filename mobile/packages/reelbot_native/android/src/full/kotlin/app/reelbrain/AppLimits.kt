@@ -42,6 +42,7 @@ object AppLimits {
 
     fun message(item: LimitItem): String {
         val m = item.limitMin
+        if (m == 0) return "${item.label} is blocked all day."
         val t = if (m % 60 == 0) "${m / 60} h" else if (m > 60) "${m / 60} h ${m % 60} min" else "$m min"
         return "You have used your $t a day of ${item.label}."
     }
@@ -62,7 +63,7 @@ object AppLimits {
                 "site" -> host(raw)
                 else -> null
             } ?: return@mapNotNull null
-            val limit = o.getInt("limitMin").takeIf { it in 1..1440 } ?: return@mapNotNull null
+            val limit = o.getInt("limitMin").takeIf { it in 0..1440 } ?: return@mapNotNull null
             LimitItem(kind, id, o.optString("label", id).take(60).ifBlank { id }, limit)
         }.distinctBy { it.key }
     } catch (e: Exception) {

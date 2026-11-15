@@ -25,10 +25,16 @@ class AppLimitsTest {
             {"kind":"app","id":"com.chrome","label":"C","limitMin":30},
             {"kind":"site","id":"https://www.Reddit.com/r/x","label":"R","limitMin":45},
             {"kind":"site","id":"nodot","label":"N","limitMin":5},
-            {"kind":"app","id":"com.a","label":"A","limitMin":0}]"""
+            {"kind":"app","id":"com.a","label":"A","limitMin":-1}]"""
         val l = AppLimits.parse(json)!!
         assertEquals(listOf("app:com.chrome", "site:reddit.com"), l.map { it.key })
         assertNull(AppLimits.parse("garbage"))
+    }
+
+    @Test fun `zero minutes blocks at once`() {
+        val i = LimitItem("app", "com.a", "A", 0)
+        assertTrue(AppLimits.isOver(i, 0))
+        assertEquals("A is blocked all day.", AppLimits.message(i))
     }
 
     @Test fun `limit is reached at the minute count`() {
