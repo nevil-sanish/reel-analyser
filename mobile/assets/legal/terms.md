@@ -1,12 +1,14 @@
 # Terms of Use
 
-Reel Analyser · Effective 15 November 2026 · Version 2.0
+Reel Analyser · Effective 15 November 2026 · Version 2.1
 
 These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), the independent developer of Reel Analyser. By installing or using Reel Analyser you agree to these terms, the Privacy Policy, the Disclaimer and, if you support the app, the Support and Refund Policy. If you do not agree, do not use the app.
 
 ## 1. What the app is
 
-Reel Analyser turns the reels, shorts, LinkedIn posts and pictures you share with it into searchable notes, sorts them into folders, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. In the full version it can also, if you set it up, block Instagram Reels, YouTube Shorts and reel pages in a browser once you pass a daily limit or outside the times you allow. It works on your phone with AI services you choose and pay for yourself.
+Reel Analyser turns the reels, shorts, LinkedIn posts and pictures you share with it into searchable notes, sorts them into folders, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. It works on your phone with AI services you choose and pay for yourself.
+
+There are two versions. **Semi** is the notes, chat and folders only. **Full** adds optional self-control tools you set up yourself: Insights, the Reel blocker (Instagram Reels, YouTube Shorts and reel pages in a browser, once you pass a daily limit or outside the times you allow), time limits for apps and websites, Daily goals and an app lock with fingerprint or face. Sections 6 and 7 and the app lock apply to the full version only.
 
 ## 2. Who may use it
 
@@ -31,11 +33,11 @@ The Reel blocker and the daily time limits for apps and websites (full version) 
 - **Your choice and your responsibility.** You decide what to block (only the reels and shorts, or for Instagram and YouTube the whole app), the limits and the times. Use it only on a phone you own or are allowed to manage, and never to monitor, restrict or watch another person without their knowledge and agreement.
 - **Not a guarantee.** It cannot stop everything. It can be bypassed, for example by switching Accessibility, Usage access, "Display over other apps" or the VPN off in Android settings, using another VPN or a browser's own secure DNS for websites, changing the phone's clock, using another browser or app, or uninstalling. Detection depends on how Instagram, YouTube and your browser look on screen, and an app update can break it. Time limits are approximate. It is not a parental-control, safety or medical tool.
 - **Locked rules.** After the first set-up, changing the rules takes a paragraph of at least 50 words typed by hand (no paste), checked on your phone only; an accepted change starts at the next 00:00, never the same day. During the day you can turn the block off for that day, or remove it for good, by typing a paragraph of at least 50 words typed by hand (no paste; typing very fast locks the field until you stop for 2 seconds). Nothing here can be undone by us. That is the design.
-- **Time limits for apps and websites.** You add the apps and websites and the minutes a day. Past the time, the app or site is covered by a block screen until midnight. Making the limits stricter (adding one, or shortening one) takes effect at once; loosening or removing them takes the typed paragraph described below, and a loosening starts at the next 00:00. For websites it reads only the browser's address bar and only for the sites you list; other browsers, in-app browsers and private modes may not be covered.
+- **Time limits for apps and websites.** You add the apps and websites and the minutes a day. Past the time, the app or site is covered by a block screen until midnight. Making the limits stricter (adding one, or shortening one) takes effect at once; loosening or removing them takes the typed paragraph described below, and a loosening starts at the next 00:00. For websites the local VPN answers "no such name" for the sites you list and nothing else; it does not read pages or addresses. A browser or app that uses its own secure DNS, or another VPN, can skip it. While the filter is on, the phone's one VPN slot is used.
 - **The paragraph.** Every paragraph (changing rules, turning the block off for today, removing it, changing or stopping goals) is checked on the phone for length (at least 50 words), pasting, typing speed, time taken and wording typical of AI. Nothing is sent anywhere and it is not stored. These checks are not perfect, and we do not promise they will accept or refuse any particular text.
 - **Your risk.** Being blocked from Reels or Shorts is the result of rules you set. We are not responsible for missed content, a block that came too early or too late, or being locked out by your own rules.
 
-## 7. Daily goals
+## 7. Daily goals and the app lock
 
 Daily goals (full version) are an optional, self-imposed habit tool. You choose a daily number of GitHub commits, Codeforces problems and LeetCode problems. If you miss a day, the whole Instagram app (and YouTube, if you choose it) is blocked for the next day only. If you miss that day too, the day after it is blocked as well, and so on for each missed day.
 
@@ -46,6 +48,7 @@ Daily goals (full version) are an optional, self-imposed habit tool. You choose 
 - **Third-party sites.** The app reads your public activity from GitHub, Codeforces and LeetCode. You must follow their terms. LeetCode has no official API, so the app uses the public profile query its own website uses; it may stop working or be refused at any time, and you should check LeetCode's terms before you turn it on. Only your public username is sent. No password, token or account is used.
 - **Not exact.** Counts can be late or incomplete (for example, GitHub counts only commits in public repositories made with an email linked to your account, and sites can be slow). The app judges a day only after it has ended and never counts a day it could not read as a miss. You accept that a count can still be wrong.
 - **A penalty cannot be cancelled for the day.** It is meant to hold. It ends after its last day. It can still be bypassed, for example by turning Accessibility off in Android settings, changing the phone's clock, using another device, or uninstalling.
+- **App lock (full version).** An optional passcode, and fingerprint or face if you switch it on, that hides the app when it is opened or left. It protects the app screen only, not your phone or other apps. If you forget the passcode, only clearing the app's data gets you back in, which deletes your notes. Make an export first.
 - **Your risk.** Being blocked from apps is the result of goals you set. We are not responsible for being blocked, for a count that was wrong, or for any loss from not being able to use an app.
 
 ## 8. Not affiliated

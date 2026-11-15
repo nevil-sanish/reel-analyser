@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 15 November 2026 · Version 2.0
+Reel Analyser · Effective 15 November 2026 · Version 2.1
 
 ## 1. The short version
 
@@ -10,7 +10,7 @@ Reel Analyser · Effective 15 November 2026 · Version 2.0
 - You can erase everything from Settings at any time.
 - The app never takes screenshots and never records your screen, your voice or any video of you.
 - Supporting the developer is optional. If you do, the payment service (Buy Me a Coffee or your UPI app) shares the usual payee details with him, and nothing else (section 5).
-- The optional features that read the Reels and Shorts screens (the counter and the Reel blocker) work only in the full version, only after you allow them inside the app, and you can withdraw that at any time.
+- There are two versions. **Semi** has the notes, chat and folders only: no Accessibility, no Usage access, no overlay, no VPN, no app lock, no blocker. **Full** adds the optional extras (Insights, Reel blocker, app and website limits, Daily goals, app lock), each off until you turn it on and allow it inside the app. You can withdraw any of them at any time.
 
 ## 2. Who we are
 
@@ -26,8 +26,8 @@ Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "u
 - **Settings**: theme, a few on/off flags.
 - **Insights (optional)**: counts of Reels and Shorts watched, stored as anonymous fingerprints (no author, caption or text), and time spent in Instagram and YouTube, by day and hour.
 - **Reel blocker (optional, full version)**: the rules you set (what to block, daily limits, allowed times), the minutes of reels you watched each day in each blocked app. No history of blocks is kept.
-- **App lock passcode (optional)**: if you set one in Settings, a salted hash of it is kept on your phone, never the passcode itself, and it is never sent anywhere. It only hides the app when it opens. If you also switch on fingerprint or face unlock, Android's own prompt checks it: the app only gets yes or no and never sees or stores your fingerprint or face. Erase all my data, or clearing the app's data in Android settings, removes it.
-- **Time limits for apps and websites (optional, full version)**: the apps and websites you add (an app's name and package name, a site's address), the daily minutes you allow each, and the minutes you spent in each that day.
+- **App lock passcode (optional, full version)**: if you set one in Settings, a salted hash of it is kept on your phone, never the passcode itself, and it is never sent anywhere. It only hides the app when it opens. If you also switch on fingerprint or face unlock, Android's own prompt checks it: the app only gets yes or no and never sees or stores your fingerprint or face. Erase all my data, or clearing the app's data in Android settings, removes it.
+- **Time limits for apps and websites (optional, full version)**: the apps and websites you add (an app's name and package name, a site's address), the daily minutes you allow each, and the minutes you spent in each that day. The names of sites looked up are held in memory only while the filter runs; they are not saved as a history.
 - **Daily goals (optional, full version)**: your public GitHub, Codeforces and LeetCode usernames, your daily targets, and for each finished day the counts, whether you met them, how many misses in a row, and the last day of any block. Only public usernames and numbers. No passwords, tokens or cookies are asked for or kept.
 - **A written reason for changing a username, and the other paragraphs you type (Daily goals and the blocker, full version)**: to change a locked username, or to change, turn off or remove the blocker's rules or the daily goals, you type a paragraph. It is checked on your phone only (length, pasting, typing speed) and is never sent anywhere or saved.
 - **Debug capture**: off by default. If you switch it on in Counter debug, it keeps the names and positions of the parts of the Instagram and YouTube screens, for troubleshooting. It never keeps text or pictures from the screen. Switching it off, or withdrawing your permission to read the reel screens, deletes it.
@@ -60,10 +60,10 @@ We do not collect your name, email, contacts, location, advertising ID or device
 
 ## 6. Permissions and why
 
-There are two versions. The **full** version has every feature. The **semi** version asks Android for nothing beyond the internet: no Accessibility, no Usage access, no notifications, no battery exemption, no Insights, no Reel blocker. It makes no network request except to the services you use.
+There are two versions. The **full** version has every feature. The **semi** version asks for no sensitive permission: no Accessibility, Usage access, "Display over other apps", VPN, notifications, biometrics or battery exemption, and has no Insights, blocker, goals or app lock. It asks only for the internet and the ordinary background-work permissions Android needs to run an analysis you started (a foreground service, wake lock, network state and restart after reboot). It makes no network request except to the services you use.
 
 - **Internet**: to reach the services above.
-- **Notifications** (optional): "note ready", an evening digest, and an alert if reel counting stops working.
+- **Notifications** (optional, full version): "note ready", an evening digest, and an alert if reel counting stops working.
 - **Usage access** (optional, you turn it on in Android settings): reads Android's own app-usage events for Instagram and YouTube, plus screen-off and lock events, to show your time in those two apps. It does not look at any other app and reads nothing from the screen.
 - **Accessibility service** (optional, full version only): it needs two separate OKs from you, switching it on in Android settings and then "Allow reading the reel screens" inside this app, which is off by default. Until you give both, the app reads nothing. You can withdraw the second one in the app at any time (Settings → Set up Insights), and the first one in Android settings.
 - **What the Accessibility service reads, once allowed**: The app tells Android to send it events only from a short list: this app until you allow it, then Instagram and YouTube, and browsers (only when you set a browser reel block). Every other app, such as a payment or bank app, is never seen by the service at all. Leaving one of the listed apps is noticed because its screen stops being available. Inside Instagram and YouTube it reads the layout of the screen, including some on-screen text such as the author and caption, to tell that a Reel or Short is showing and to tell one reel from the next. That text is used in memory for that moment only. What is saved is an anonymous fingerprint (a hash), a count and the time spent. In a browser it reads only the address bar, to see whether the page is a reel or a short. App and website time limits do not use the Accessibility service at all.
@@ -71,7 +71,9 @@ There are two versions. The **full** version has every feature. The **semi** ver
 - **Reel blocker** (optional, full version): uses the same service. When your daily limit is used up or the time is outside the times you allowed, it opens a block screen over the reel. The rest of Instagram, YouTube and your browser is not blocked, unless you choose "Whole app" for Instagram or YouTube: then all your time in that app counts towards the limit, and past the limit or outside your times the app itself is blocked. Only which app is on screen is used for this. To cancel the block for one day, or to remove the blocker for good, you type a paragraph by hand. It is checked on the phone only; it is not sent anywhere and the app does not store it. The same applies to the paragraph for changing or stopping Daily goals. No photo is taken. Face photos kept by versions before 1.2.0.0 are deleted. The app has no camera permission.
 - **App and website time limits** (optional, full version): the time in a listed app is read from Android's Usage access, and a small foreground service (with a notification) notes which app is in front, from the same usage data, and opens a block screen over a listed app that has used up its time, which needs "Display over other apps". Websites are limited by a local VPN that you allow in Android's own box. It carries only DNS questions (the lookups of site names), answers "no such name" for a listed site that has used up its time and passes every other question on to the phone's normal DNS server, so nothing new sees them. No page, address path or screen content is seen, and no traffic other than those questions goes through it. Only one VPN can run at a time on Android. Site time is counted from lookups, so it is approximate. Nothing is sent anywhere, and you can turn each part off in Android settings.
 - **Daily goals** (optional, full version): when you miss a goal, the Accessibility service blocks the whole Instagram (and YouTube, if you chose it) app for the days of the penalty. For that it notes only which app is in front, and opens a block screen over it. It reads nothing inside that app while the penalty is on. It works only if you allowed reading the reel screens, as the Reel blocker does.
-- **Battery optimisation exemption and Autostart** (optional, full version only): so Android does not stop background counting.
+- **Battery optimisation exemption and Autostart** (optional, full version only): so Android does not stop background counting and limits.
+- **Fingerprint or face** (optional, full version only): the Android biometric permission, used only to unlock the app lock through Android's own prompt.
+- **Install updates** (full version only): lets the app hand a downloaded update to Android's installer after you tap to install it. Android asks you first; nothing is installed silently.
 - **Share target**: so Reel Analyser appears in the Share menu.
 
 ## 7. Data retention

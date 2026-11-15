@@ -49,6 +49,11 @@ void main() {
     expect(read('terms'), contains('can be bypassed'));
     expect(read('disclaimer'), contains('Not affiliated'));
     expect(read('disclaimer'), contains('Reel blocker'));
+    expect(read('privacy'), contains('Semi'));
+    expect(read('privacy'), contains('local VPN'));
+    expect(read('terms'), contains('does not read pages or addresses'));
+    expect(read('terms'), isNot(contains('it reads only the browser')));
+    expect(read('disclaimer'), contains('Semi version has none'));
   });
 
   test('support is voluntary, refundable for 7 days by email, and every text points to the same contact', () {
