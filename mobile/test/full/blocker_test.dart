@@ -24,6 +24,22 @@ void main() {
     expect(BlockConfig.parse(null), isNull);
   });
 
+  group('block in effect', () {
+    final shared = BlockConfig('shared', {'instagram', 'youtube'}, {'all': BlockRule(30, [])});
+    final slots = BlockConfig('separate', {'youtube'}, {'youtube': BlockRule(null, [const TimeSlot(18 * 60, 19 * 60)])});
+    test('a shared limit adds the items together; below it nothing blocks', () {
+      expect(blockInEffect(shared, {'instagram': 20 * 60000, 'youtube': 9 * 60000}, 600), isFalse);
+      expect(blockInEffect(shared, {'instagram': 20 * 60000, 'youtube': 10 * 60000}, 600), isTrue);
+    });
+    test('outside the allowed slots blocks, inside does not; over midnight works', () {
+      expect(blockInEffect(slots, {}, 18 * 60 + 30), isFalse);
+      expect(blockInEffect(slots, {}, 20 * 60), isTrue);
+      expect(const TimeSlot(22 * 60, 2 * 60).contains(23 * 60), isTrue);
+      expect(const TimeSlot(22 * 60, 2 * 60).contains(3 * 60), isFalse);
+    });
+    test('no blocker, no block', () => expect(blockInEffect(null, {}, 0), isFalse));
+  });
+
   group('paragraph guard', () {
     final t0 = DateTime(2026, 11, 9, 10);
     final para = List.generate(55, (i) => 'word$i').join(' ');

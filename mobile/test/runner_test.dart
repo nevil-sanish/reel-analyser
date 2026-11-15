@@ -401,6 +401,20 @@ void main() {
     expect(b.statuses.keys, containsAll([1, 5, 6]));
   });
 
+  test('with one Gemini key and one OpenAI key, two shared reels still run at the same time', () async {
+    var live = 0, peak = 0;
+    final b = FakeBridge([yt, const PendingItem(id: 3, url: 'https://www.youtube.com/shorts/zzzzzzz', app: 'youtube', createdAt: 7)]);
+    await runner(b, (r) async {
+      if (!isGenerate(r)) return http.Response('', 404);
+      peak = ++live > peak ? live : peak;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      live--;
+      return http.Response(_gemOk(), 200);
+    }, gemini: ['K1'], openai: 'OK').processQueue();
+    expect(peak, 2);
+    expect(b.statuses.keys, containsAll([1, 3]));
+  });
+
   test('T-PIPE-12 no Gemini key: OpenAI gets frames from the video', () async {
     final f = File('${tmp.path}/v.mp4')..writeAsBytesSync([0]);
     final b = FakeBridge([ig], fetch: (_) => IgFetch(step: 1, videoPath: f.path));

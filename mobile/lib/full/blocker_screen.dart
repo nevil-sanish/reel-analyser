@@ -113,6 +113,11 @@ class _BlockerScreenState extends State<BlockerScreen>
   void _say(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
+  int _nowMinute() {
+    final n = DateTime.now();
+    return n.hour * 60 + n.minute;
+  }
+
   /// What the screen holds now, as [_save] would store it.
   BlockConfig _build() {
     final keys = _mode == 'shared' ? ['all'] : [for (final k in blockSurfaces) if (_items.contains(k)) k];
@@ -449,12 +454,16 @@ class _BlockerScreenState extends State<BlockerScreen>
                       onPressed: _save,
                       child: Text(st.active == null ? 'Turn the blocker on' : 'Save changes'),
                     ),
-                  if (st.active != null && _editing) ...[
+                  // Pausing makes sense only while the block is really stopping you.
+                  if (st.active != null && _editing && !st.suspendedToday && blockInEffect(st.active, st.used, _nowMinute())) ...[
                     const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed: st.suspendedToday ? null : _cancelToday,
-                      child: Text(st.suspendedToday ? 'Already off for today' : 'Turn off for today (50-word paragraph)'),
-                    ),
+                    OutlinedButton(onPressed: _cancelToday, child: const Text('Turn off for today (50-word paragraph)')),
+                  ],
+                  if (st.active != null && _editing && st.suspendedToday) ...[
+                    const SizedBox(height: 8),
+                    const OutlinedButton(onPressed: null, child: Text('Already off for today')),
+                  ],
+                  if (st.active != null && _editing) ...[
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () {

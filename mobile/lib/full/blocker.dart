@@ -8,6 +8,8 @@ class TimeSlot {
   final int end;
   const TimeSlot(this.start, this.end);
 
+  bool contains(int minute) => start <= end ? minute >= start && minute < end : minute >= start || minute < end;
+
   static String hhmm(int m) =>
       '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
   @override
@@ -80,6 +82,21 @@ class BlockConfig {
       return null;
     }
   }
+}
+
+/// Is a block in force right now: a limit used up, or the time outside the allowed slots? The same rule the Android side uses.
+/// Only then does "turn off for today" make sense.
+bool blockInEffect(BlockConfig? c, Map<String, int> usedMs, int minuteOfDay) {
+  if (c == null) return false;
+  for (final k in blockSurfaces) {
+    if (!c.items.contains(k)) continue;
+    final r = c.rules[c.mode == 'shared' ? 'all' : k];
+    if (r == null) continue;
+    final used = c.mode == 'shared' ? c.items.fold<int>(0, (n, i) => n + (usedMs[i] ?? 0)) : usedMs[k] ?? 0;
+    if (r.limitMin != null && used >= r.limitMin! * 60000) return true;
+    if (r.intervals.isNotEmpty && !r.intervals.any((i) => i.contains(minuteOfDay))) return true;
+  }
+  return false;
 }
 
 class BlockerState {
