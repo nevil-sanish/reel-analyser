@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'full_bridge.dart';
 import 'goal_store.dart';
 import 'goals.dart';
 import 'insights_screen.dart';
+import 'limits.dart';
 import 'setup_screen.dart';
 import 'today_strip.dart';
 import 'updater.dart';
@@ -106,6 +108,38 @@ class FullFeatures extends AppFeatures {
 
   @override
   Future<void> notifyNotes(AppServices s, String title, String text) => FullBridge().notifyNotes(title, text);
+
+  @override
+  Future<Map<String, Object?>> exportExtras(AppServices s) async {
+    final st = await BlockerBridge().state();
+    final c = st.pending ?? st.active;
+    final l = await LimitsBridge().state();
+    final li = l.pending ?? l.active;
+    return {
+      if (c != null) 'reelLimits': jsonDecode(c.toJson()),
+      if (li.isNotEmpty) 'timeLimits': [for (final i in li) i.toMap()],
+    };
+  }
+
+  /// Rules come back only on a phone that has none yet. Importing over rules already on would be a way round the typed paragraph
+  /// that loosening them takes. The blocker still needs "Allow reading the screens" on this phone before it blocks anything.
+  @override
+  Future<String?> importExtras(AppServices s, Map<String, Object?> extras) async {
+    final done = <String>[];
+    final rl = extras['reelLimits'];
+    final bridge = BlockerBridge();
+    if (rl is Map && (await bridge.state()).active == null) {
+      final c = BlockConfig.parse(jsonEncode(rl));
+      if (c != null && c.items.isNotEmpty && await bridge.save(c) == 'ok') done.add('the reel limits');
+    }
+    final tl = extras['timeLimits'];
+    final lb = LimitsBridge();
+    if (tl is List && (await lb.state()).active.isEmpty) {
+      final items = LimitItem.parse(jsonEncode(tl));
+      if (items.isNotEmpty && await lb.save(items, immediate: true) == 'ok') done.add('the app and website limits');
+    }
+    return done.isEmpty ? null : done.join(' and ');
+  }
 
   @override
   Future<void> erase(AppServices s) async => (await GoalStore.of(s.library)).eraseAll();

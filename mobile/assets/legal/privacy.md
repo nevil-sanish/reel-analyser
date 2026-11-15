@@ -81,7 +81,7 @@ There are two versions. The **full** version has every feature. The **semi** ver
 - **Daily goals data**: each judged day is deleted after 90 days. Your usernames and targets are kept until you change them or erase your data.
 - **Reel blocker data**: the minutes watched per day (reels, apps and websites) are deleted automatically after 90 days. Your rules are kept until you change or remove them.
 - **API keys**: kept until you remove them, erase your data or uninstall.
-- **Exports you make** (Downloads/ReelBot): kept until you delete those files. They are not encrypted, except API keys, which are included only if you choose that and are protected with your passphrase.
+- **Exports you make** (Downloads/ReelBot): kept until you delete those files. In the full version they also hold your blocker rules (reel limits, and the apps and websites with their daily minutes). They are not encrypted, except API keys, which are included only if you choose that and are protected with your passphrase.
 - **Data held by AI providers and other services**: governed by their own policies. We cannot delete it for you; use your account with that provider.
 
 ## 8. Deleting your data

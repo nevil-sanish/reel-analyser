@@ -42,6 +42,11 @@ abstract class AppFeatures {
   /// "Note ready" after a background run. The semi build posts no notifications.
   Future<void> notifyNotes(AppServices s, String title, String text) async {}
 
+  /// What this build adds to a backup file (under `extras`), and how it takes it back from an imported one. [importExtras]
+  /// returns a short note about what it restored, or null.
+  Future<Map<String, Object?>> exportExtras(AppServices s) async => const {};
+  Future<String?> importExtras(AppServices s, Map<String, Object?> extras) async => null;
+
   /// Settings → Erase all my data, for what only this build keeps.
   Future<void> erase(AppServices s) async {}
 

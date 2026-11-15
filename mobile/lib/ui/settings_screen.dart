@@ -185,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final n = DateTime.now();
     String two(int v) => v.toString().padLeft(2, '0');
     final name = 'library-${n.year}-${two(n.month)}-${two(n.day)}-${two(n.hour)}${two(n.minute)}.json';
-    await s.bridge.saveDownload(name, exportJson(reels, chats, encrypted, await s.library.noteChats()));
+    await s.bridge.saveDownload(name, exportJson(reels, chats, encrypted, await s.library.noteChats(), await s.features.exportExtras(s)));
     if (mounted) _say('Exported ${reels.length} notes and ${chats.length} chats${encrypted == null ? '' : ', with your keys encrypted,'} to one file, Downloads/ReelBot/$name');
   }
 
@@ -210,7 +210,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (mounted) _say('That passphrase does not open this backup. Try again.');
         }
       }
-      if (mounted) _say('Added ${notes == 1 ? '1 new note' : '$notes new notes'} and ${chats == 1 ? '1 new chat' : '$chats new chats'}${restored > 0 ? ', and restored $restored keys' : ''}. Ones you already have are skipped.');
+      final extra = await s.features.importExtras(s, extrasOf(text));
+      if (mounted) _say('Added ${notes == 1 ? '1 new note' : '$notes new notes'} and ${chats == 1 ? '1 new chat' : '$chats new chats'}${restored > 0 ? ', and restored $restored keys' : ''}${extra == null ? '' : ', and restored $extra'}. Ones you already have are skipped.');
     } on FormatException catch (e) {
       if (mounted) _say('Could not import: ${e.message}');
     } on Object catch (e) {

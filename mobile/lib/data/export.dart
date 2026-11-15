@@ -4,10 +4,11 @@ import '../core/models.dart';
 import 'library_db.dart';
 
 /// `library.json` content; Import reads the same shape. Version 2 adds saved chats.
-String exportJson(List<Reel> reels, [List<(int, String, int, List<String>)> chats = const [], Map<String, Object?>? encryptedKeys, Map<String, List<String>> noteChats = const {}]) =>
+String exportJson(List<Reel> reels, [List<(int, String, int, List<String>)> chats = const [], Map<String, Object?>? encryptedKeys, Map<String, List<String>> noteChats = const {}, Map<String, Object?> extras = const {}]) =>
     const JsonEncoder.withIndent('  ').convert({
       'version': 2,
       'encryptedKeys': ?encryptedKeys,
+      if (extras.isNotEmpty) 'extras': extras,
       'reels': reels.map((r) => r.toJson()).toList(),
       'noteChats': noteChats,
       'chats': [for (final (_, title, updatedAt, turns) in chats) {'title': title, 'updatedAt': updatedAt, 'turns': turns}],
@@ -25,6 +26,13 @@ Map<String, Object?>? encryptedKeysOf(String json) {
   final data = jsonDecode(json);
   final k = data is Map ? data['encryptedKeys'] : null;
   return k is Map ? Map<String, Object?>.from(k) : null;
+}
+
+/// What the build that made the backup added (the blocker rules), or empty.
+Map<String, Object?> extrasOf(String json) {
+  final data = jsonDecode(json);
+  final e = data is Map ? data['extras'] : null;
+  return e is Map ? Map<String, Object?>.from(e) : const {};
 }
 
 /// A note's link is later opened or read as a file, so an imported one must be a web link or a photo inside the app's own photos folder.
