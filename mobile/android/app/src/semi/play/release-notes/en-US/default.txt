@@ -1,1 +1,1 @@
-The app lock now locks the moment you leave the app (home, another app, recent apps or screen off), not after 30 seconds.
+Small fixes to the app lock screen.

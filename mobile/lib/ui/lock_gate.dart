@@ -27,6 +27,8 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   var _enabled = false;
   var _locked = false;
   var _hidden = false;
+  var _wasAway = false; // the app really left the front (not only lost focus to a system prompt)
+  var _ask = 0; // bumped each time the lock screen is shown again, so it offers the fingerprint once
 
   @override
   void initState() {
@@ -62,6 +64,7 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState s) {
     if (!_enabled) return;
     if (s == AppLifecycleState.paused) {
+      _wasAway = true;
       setState(() {
         _locked = true;
         _hidden = true;
@@ -69,7 +72,11 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
     } else if (s == AppLifecycleState.inactive) {
       setState(() => _hidden = true);
     } else if (s == AppLifecycleState.resumed) {
-      setState(() => _hidden = false);
+      setState(() {
+        _hidden = false;
+        if (_wasAway && _locked) _ask++;
+        _wasAway = false;
+      });
     }
   }
 
@@ -80,9 +87,16 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
       widget.child,
       if (cover)
         Positioned.fill(
-          child: _locked && _ready && !_hidden
-              ? LockScreen(lock: widget.lock, biometrics: widget.biometrics, onUnlocked: () => setState(() => _locked = false))
-              : ColoredBox(color: Theme.of(context).colorScheme.surface),
+          // The lock screen stays in the tree while the app only loses focus (the fingerprint prompt does that), so it is
+          // still there to take the answer; a plain cover goes on top of it instead.
+          child: Stack(children: [
+            if (_locked && _ready)
+              Positioned.fill(
+                child: LockScreen(
+                    lock: widget.lock, biometrics: widget.biometrics, ask: _ask, onUnlocked: () => setState(() => _locked = false)),
+              ),
+            if (!_ready || _hidden || !_locked) Positioned.fill(child: ColoredBox(color: Theme.of(context).colorScheme.surface)),
+          ]),
         ),
     ]);
   }
@@ -91,8 +105,9 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
 class LockScreen extends StatefulWidget {
   final AppLock lock;
   final Biometrics biometrics;
+  final int ask;
   final VoidCallback onUnlocked;
-  const LockScreen({required this.lock, required this.biometrics, required this.onUnlocked, super.key});
+  const LockScreen({required this.lock, required this.biometrics, required this.ask, required this.onUnlocked, super.key});
 
   @override
   State<LockScreen> createState() => _LockScreenState();
@@ -111,6 +126,12 @@ class _LockScreenState extends State<LockScreen> {
     super.initState();
     _waiting();
     _startBiometric();
+  }
+
+  @override
+  void didUpdateWidget(LockScreen old) {
+    super.didUpdateWidget(old);
+    if (old.ask != widget.ask && _bio) _askBiometric();
   }
 
   /// Offers fingerprint or face when the person turned it on and the phone still has one enrolled; asks once on its own.

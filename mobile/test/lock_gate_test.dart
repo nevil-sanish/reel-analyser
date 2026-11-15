@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelbrain/data/app_lock.dart';
@@ -23,6 +25,14 @@ class _Bio implements Biometrics {
     asked++;
     return pass;
   }
+}
+
+class _SlowBio implements Biometrics {
+  final done = Completer<bool>();
+  @override
+  Future<bool> available() async => true;
+  @override
+  Future<bool> check(String reason) => done.future;
 }
 
 Future<void> _settle(WidgetTester tester) async {
@@ -56,6 +66,25 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await _settle(tester);
     expect(good.asked, 2);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('the system prompt takes focus while it is shown; its answer still unlocks the app', (tester) async {
+    final lock = AppLock(_Mem());
+    await tester.runAsync(() async {
+      await lock.set('4821');
+      await lock.setBiometric(true);
+    });
+    final bio = _SlowBio();
+    await tester.pumpWidget(MaterialApp(home: LockGate(lock: lock, biometrics: bio, child: const Text('the app'))));
+    await _settle(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    bio.done.complete(true);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _settle(tester);
+    expect(find.text('Enter your passcode'), findsNothing);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 2));
   });

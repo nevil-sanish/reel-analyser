@@ -1,1 +1,1 @@
-The app lock now locks the moment you leave the app (home, another app, recent apps or screen off), not after 30 seconds. New: unlock with your fingerprint or face, switched on in Settings → App lock; the passcode always still works. The app is now called Reel Analyser + Blocker.
+Fix: unlocking the app lock with your fingerprint or face did nothing, because the lock screen was removed while Android's prompt was open. It now stays and takes the answer.
