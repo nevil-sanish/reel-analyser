@@ -39,7 +39,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     _load();
     // The bars follow the time as it is used.
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!_editing) _load(keepDraft: true);
+      _load(keepDraft: true);
     });
   }
 
@@ -62,7 +62,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     setState(() {
       _st = st;
       _consent = consent;
-      if (keepDraft && _editing) return;
+      if (keepDraft && (_editing || _dirty)) return; // the timer must not wipe what is being typed
       _draft = [...(st.pending ?? st.active)];
       _baseline = limitsSignature(_draft);
     });
@@ -246,7 +246,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(i.isSite ? Icons.language_rounded : Icons.apps_rounded),
                 title: Text(i.label),
-                subtitle: Text('${i.isSite ? 'Website' : 'App'} · ${minutesText(i.limitMin)} a day'),
+                subtitle: Text('${i.isSite ? 'Website' : 'App'} · ${minutesText(i.limitMin)} a day${st.active.any((a) => a.key == i.key) ? ' · ${minutesText((st.used[i.key] ?? 0) ~/ 60000)} used today' : ''}'),
                 onTap: () => _change(i),
                 trailing: IconButton(
                   tooltip: 'Remove from the list',

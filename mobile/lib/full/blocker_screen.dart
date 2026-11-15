@@ -66,7 +66,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     _load();
     // The bars follow the time as it is used.
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!_editing) _load(keepEdits: true);
+      _load(keepEdits: true);
     });
   }
 
@@ -91,7 +91,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     setState(() {
       _st = st;
       _consent = consent;
-      if (keepEdits && _editing) return;
+      if (keepEdits && (_editing || _dirty)) return; // the timer must not wipe what is being typed
       // Show what is waiting for midnight if there is a change, else what is in force.
       final c = st.pending ?? st.active;
       _mode = c?.mode ?? 'shared';
