@@ -21,7 +21,10 @@ object FlavorMethods {
     }
 
     /** Erase all my data: the blocker photos too. */
-    fun onErase(ctx: Context) = BlockPhotos.wipe(ctx)
+    fun onErase(ctx: Context) {
+        BlockPhotos.wipe(ctx)
+        AppUsage.eraseBefore(ctx, System.currentTimeMillis())
+    }
 
     /** True when the call was handled here. */
     fun handle(ctx: Context, call: MethodCall, result: MethodChannel.Result): Boolean = Full(ctx).handle(call, result)

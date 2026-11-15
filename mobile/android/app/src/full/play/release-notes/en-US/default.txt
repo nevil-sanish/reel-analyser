@@ -1,1 +1,1 @@
-Privacy fix: the Accessibility service now only sees this app until you opt in, then only Instagram, YouTube, browsers (when a browser block or website limit is set) and apps you gave a daily limit, so payment and bank apps are never touched. Faster passcode check, no stall with the fingerprint prompt, smoother scrolling and animations. The app lock is now only in the full build.
+Fix: Erase all my data left the Insights time showing, because that time comes from Android's own usage history, which the app cannot delete. Insights now shows nothing from before you erased.

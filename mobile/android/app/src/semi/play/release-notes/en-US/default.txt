@@ -1,1 +1,1 @@
-Smoother scrolling and animations. The app lock is only in the full build now.
+Version bump to match the full build; no change in this build.

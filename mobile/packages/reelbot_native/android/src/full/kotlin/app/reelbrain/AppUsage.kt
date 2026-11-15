@@ -97,12 +97,24 @@ object AppUsage {
         return sessions(events, now, pkgs.associateWith { it }).groupBy { it.app }.mapValues { (_, l) -> l.sumOf { it.end - it.start } }
     }
 
+    private const val FLOOR_FILE = "usage_floor" // its own file: Erase all my data clears the main settings after it writes this
+
+    /**
+     * Android keeps the usage history itself and the app cannot delete it, so "Erase all my data" remembers the moment instead:
+     * Insights never shows time from before it.
+     */
+    fun eraseBefore(ctx: Context, at: Long) {
+        ctx.getSharedPreferences(FLOOR_FILE, Context.MODE_PRIVATE).edit().putLong("at", at).apply()
+    }
+
+    private fun floor(ctx: Context) = ctx.getSharedPreferences(FLOOR_FILE, Context.MODE_PRIVATE).getLong("at", 0L)
+
     /** Time per (date, app) and per (hour, app) for the last [days] days, today included; null without Usage access. */
     fun load(ctx: Context, days: Int): Pair<Map<Pair<String, String>, Long>, Map<Pair<Int, String>, Long>>? {
         if (!granted(ctx)) return null
         val zone = ZoneId.systemDefault()
         val now = System.currentTimeMillis()
-        val from = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant().toEpochMilli()
+        val from = maxOf(floor(ctx), LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant().toEpochMilli())
         val raw = ctx.getSystemService(UsageStatsManager::class.java).queryEvents(from, now)
         val events = mutableListOf<Event>()
         val e = UsageEvents.Event()
