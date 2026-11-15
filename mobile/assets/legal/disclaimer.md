@@ -1,6 +1,6 @@
 # Disclaimer
 
-Reel Analyser · Effective 15 November 2026 · Version 1.4
+Reel Analyser · Effective 15 November 2026 · Version 1.5
 
 Please read this with the Terms of Use, the Privacy Policy and the Support and Refund Policy.
 
@@ -22,7 +22,7 @@ The AI services use your own keys. Their charges, quotas, rate limits and data p
 
 ## 5. The Reel blocker, app and website limits (full version only)
 
-The Semi version has none of these. In the full version the Reel blocker and the time limits for apps and websites are personal self-control aids. It is not guaranteed to block everything or to work on every phone, app version or browser, and it can be bypassed. Do not rely on it for the safety, wellbeing or supervision of anyone. Do not use it on someone else's phone without their knowledge and agreement. The typed-paragraph checks are best-effort and can be wrong. App and website limits depend on Android's Usage access, "Display over other apps" and a local VPN you allow; time is approximate, a browser's own secure DNS or another VPN can skip the website filter, and Android may stop background work on some phones. The app lock hides only this app's screen; it is not device security, and a forgotten passcode can only be cleared by deleting the app's data.
+The Semi version has none of these. Warning: while Accessibility is on, payment and banking apps such as Google Pay may refuse to open or work. Reel Analyser never sees those apps, but they check whether any Accessibility service is on. Turn it off in Android settings before you use them. In the full version the Reel blocker and the time limits for apps and websites are personal self-control aids. It is not guaranteed to block everything or to work on every phone, app version or browser, and it can be bypassed. Do not rely on it for the safety, wellbeing or supervision of anyone. Do not use it on someone else's phone without their knowledge and agreement. The typed-paragraph checks are best-effort and can be wrong. App and website limits depend on Android's Usage access, "Display over other apps" and a local VPN you allow; time is approximate, a browser's own secure DNS or another VPN can skip the website filter, and Android may stop background work on some phones. The app lock hides only this app's screen; it is not device security, and a forgotten passcode can only be cleared by deleting the app's data.
 
 ## 6. Daily goals
 

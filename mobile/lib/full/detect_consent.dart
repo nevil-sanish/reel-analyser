@@ -11,11 +11,20 @@ Future<bool> askDetectionConsent(BuildContext context) async {
         'To count reels and to block them past your limit, Reel Analyser must notice when a Reel or Short is on screen. '
         'It never takes screenshots and never records your screen. It reads only which parts of the Instagram and YouTube '
         'screens are showing, and only while this is on. Nothing is sent anywhere. '
-        'You can turn it off here at any time.',
+        'You can turn it off here at any time.\n\n'
+        'Warning: while Accessibility is on, payment and banking apps such as Google Pay may refuse to open or work. '
+        'Reel Analyser never sees those apps, but they check whether any Accessibility service is on. '
+        'Turn it off before you use them.',
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Not now')),
-        FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Allow')),
+        TextButton(
+          onPressed: () => Navigator.pop(c, false),
+          child: const Text('Not now'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(c, true),
+          child: const Text('Allow'),
+        ),
       ],
     ),
   );

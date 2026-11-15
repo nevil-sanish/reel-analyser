@@ -12,7 +12,7 @@ Android app that turns the Instagram Reels, YouTube Shorts, LinkedIn posts and p
 
 **Can it block Instagram Reels and YouTube Shorts?** Yes, in the Full build: set a daily limit and allowed time slots, and the app shows a block screen over the reel once the limit is used up. Only reels are blocked, not the whole app, unless you choose that.
 
-**Can it limit any app or website per day?** Yes, in the Full build (*Blocker → Apps & sites*): pick an app or type a website, give it minutes per day (0 = blocked all day). Apps are timed with Android's Usage access, websites by reading the browser's address bar with the Accessibility service, only after you allow it.
+**Can it limit any app or website per day?** Yes, in the Full build (*Blocker → Apps & sites*): pick an app or type a website, give it minutes per day (0 = blocked all day). Apps are timed with Android's Usage access, websites by a local DNS-only VPN you allow in Android's own box (no screen reading).
 
 **Can it lock the app with a passcode?** Yes: *Settings → App lock* (4 to 8 digits). It only hides the app; sharing and background analysis keep working.
 
@@ -120,7 +120,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 ### The screen is never captured
 
-Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and Android only lets them see Instagram, YouTube and (for the address bar only, and only if you set a browser reel block) a browser. Every other app, such as a payment or bank app, is never visible to them (app and website limits do not use Accessibility at all). They work only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
+Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and Android only lets them see Instagram, YouTube and (for the address bar only, and only if you set a browser reel block) a browser. Every other app, such as a payment or bank app, is never visible to them (app and website limits do not use Accessibility at all). **Warning: while Accessibility is on, payment and banking apps such as Google Pay may refuse to open or work, because they check whether any Accessibility service is on. Turn it off before using them.** They work only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
 
 ### What leaves your phone
 

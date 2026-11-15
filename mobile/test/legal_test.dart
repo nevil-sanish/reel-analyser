@@ -50,6 +50,8 @@ void main() {
     expect(read('disclaimer'), contains('Not affiliated'));
     expect(read('disclaimer'), contains('Reel blocker'));
     expect(read('privacy'), contains('Semi'));
+    expect(read('privacy'), contains('Google Pay'));
+    expect(read('terms'), contains('Payment apps may stop working'));
     expect(read('privacy'), contains('local VPN'));
     expect(read('terms'), contains('does not read pages or addresses'));
     expect(read('terms'), isNot(contains('it reads only the browser')));
