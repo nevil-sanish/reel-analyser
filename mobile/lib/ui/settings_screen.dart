@@ -12,6 +12,7 @@ import '../data/export.dart';
 import '../data/key_backup.dart';
 import '../data/key_store.dart';
 import 'motion.dart';
+import 'app_lock_section.dart';
 import 'liquid.dart';
 import 'section_card.dart';
 import 'theme.dart';
@@ -352,6 +353,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _VibrationSwitch(s),
           ]),
           ...s.features.settingsSections(context, s, _section),
+          _section('App lock', [AppLockSection(s)]),
           _section('Backup', [
             const Text('Uninstalling deletes your notes. Export now and then: every export is a complete copy in its own file.'),
             SwitchListTile(

@@ -1,1 +1,1 @@
-Reels shared together are analysed at the same time on different keys. Gemini keys rotate per analysis; LinkedIn failures have Read in app. (The Blocker is in the full build only.)
+New: an app lock. Set a passcode (4 to 8 digits) in Settings → App lock and the app asks for it when it opens and when you return after 30 seconds away. It only hides the app: sharing a reel to it and the background analysis keep working.

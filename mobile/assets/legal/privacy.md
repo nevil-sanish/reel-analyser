@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 15 November 2026 · Version 1.6
+Reel Analyser · Effective 15 November 2026 · Version 1.7
 
 ## 1. The short version
 
@@ -26,6 +26,7 @@ Reel Analyser is made by an independent developer, Nevil Mathew Sanish ("we", "u
 - **Settings**: theme, a few on/off flags.
 - **Insights (optional)**: counts of Reels and Shorts watched, stored as anonymous fingerprints (no author, caption or text), and time spent in Instagram and YouTube, by day and hour.
 - **Reel blocker (optional, full version)**: the rules you set (what to block, daily limits, allowed times), the minutes of reels you watched each day in each blocked app. No history of blocks is kept.
+- **App lock passcode (optional)**: if you set one in Settings, a salted hash of it is kept on your phone, never the passcode itself, and it is never sent anywhere. It only hides the app when it opens. Erase all my data, or clearing the app's data in Android settings, removes it.
 - **Time limits for apps and websites (optional, full version)**: the apps and websites you add (an app's name and package name, a site's address), the daily minutes you allow each, and the minutes you spent in each that day.
 - **Daily goals (optional, full version)**: your public GitHub, Codeforces and LeetCode usernames, your daily targets, and for each finished day the counts, whether you met them, how many misses in a row, and the last day of any block. Only public usernames and numbers. No passwords, tokens or cookies are asked for or kept.
 - **A written reason for changing a username, and the other paragraphs you type (Daily goals and the blocker, full version)**: to change a locked username, or to change, turn off or remove the blocker's rules or the daily goals, you type a paragraph. It is checked on your phone only (length, pasting, typing speed) and is never sent anywhere or saved.
