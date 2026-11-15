@@ -151,7 +151,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     final immediate = before.isEmpty || isStricter(before, _draft);
     // Asked at the first set-up even if reel reading is already allowed: these limits read more (the app in front, the address bar).
     if (!_consent || before.isEmpty) {
-      if (!await askDetectionConsent(context)) return _say('Time limits need your OK to see which app or site is open.');
+      if (!await askDetectionConsent(context, limits: true)) return _say('Nothing was saved: the time limits need your OK to see which app or site is open.');
       await _blocker.setConsent(true);
       _consent = true;
     }
