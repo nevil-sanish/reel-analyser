@@ -100,7 +100,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **Remove for good:** same typed paragraph. The paragraph is checked on the phone only (length, no paste, not too fast, typing time, typical AI wording). No AI check, nothing stored.
 - **No history** of blocks is kept.
 
-**Apps & sites** give any installed app or website a time per day (0 = blocked all day). Apps are timed with Usage access; websites by reading the browser address bar through Accessibility, after your separate OK. When the time is up, a block screen opens.
+**Apps & sites** give any installed app or website a time per day (0 = blocked all day). Nothing here reads the screen, as in the open-source blockers it follows (TimeLimit, Reef for apps; DNS66 and BlockAds for sites): apps are timed with Usage access and covered by a block screen (needs *Display over other apps*); websites are blocked by a local filter, a VPN that only carries DNS questions (only one VPN can run at a time; site time is counted from lookups, so it is approximate, while 0 minutes is exact). Apps that use their own secure DNS can get around the website filter.
 
 - **It can be bypassed** (turn Accessibility off, change the clock, use another browser or app). It is a nudge for you, not a lock, and not for use on anyone else's phone.
 - **Backup:** the blocker rules are saved in the export and restored on import (only when none are set).
@@ -120,7 +120,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 ### The screen is never captured
 
-Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and Android only lets them see Instagram, YouTube, the apps you gave a daily limit and (for the address bar only, and only if you set a browser block or website limit) a browser. Every other app, such as a payment or bank app, is never visible to them. They work only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
+Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and Android only lets them see Instagram, YouTube and (for the address bar only, and only if you set a browser reel block) a browser. Every other app, such as a payment or bank app, is never visible to them (app and website limits do not use Accessibility at all). They work only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
 
 ### What leaves your phone
 

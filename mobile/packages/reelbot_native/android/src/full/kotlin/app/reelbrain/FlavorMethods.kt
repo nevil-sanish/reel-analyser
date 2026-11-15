@@ -17,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 object FlavorMethods {
     fun onAttach(ctx: Context) {
         DigestWorker.schedule(ctx)
+        LimitsService.sync(ctx)
         CounterPlugin.io.execute { runCatching { CounterDb.get(ctx).dropHistory() } }
     }
 
@@ -78,11 +79,14 @@ object FlavorMethods {
                     result.success(null)
                 }
                 "limitsState" -> CounterPlugin.offMain(result) { limitsState() }
-                "limitsSave" -> result.success(limitsSave(call.argument<String>("items")!!, call.argument<Boolean>("immediate") == true))
+                "limitsSave" -> result.success(limitsSave(call.argument<String>("items")!!, call.argument<Boolean>("immediate") == true).also { LimitsService.sync(ctx) })
                 "limitsRemove" -> {
                     CounterDb.get(ctx).saveLimits(LimitsState())
+                    LimitsService.sync(ctx)
                     result.success(null)
                 }
+                "openOverlaySettings" -> result.success(launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}"))))
+                "enableSiteFilter" -> result.success(launch(Intent(ctx, VpnConsentActivity::class.java)))
                 "installedApps" -> CounterPlugin.offMain(result) { installedApps() }
                 "detectionConsent" -> result.success(prefs().getBoolean(ReelCounterService.CONSENT, false))
                 "setDetectionConsent" -> {
@@ -156,10 +160,12 @@ object FlavorMethods {
             return mapOf(
                 "active" to s.active.takeIf { it.isNotEmpty() }?.let { AppLimits.toJson(it) },
                 "pending" to s.pending?.let { AppLimits.toJson(it) }, "pendingFrom" to s.pendingFrom,
-                // Sites are counted by the Accessibility service; apps are read from Android's usage data.
+                // Sites are counted from the DNS filter's look-ups; apps are read from Android's usage data. Neither reads the screen.
                 "used" to db.usedToday(localDate(now)) + AppUsage.todayMs(ctx, s.active.filter { it.kind == "app" }.map { it.id }.toSet())
                     .mapKeys { "app:${it.key}" },
                 "usageAccess" to AppUsage.granted(ctx),
+                "overlay" to LimitsService.overlayGranted(ctx),
+                "siteFilter" to (android.net.VpnService.prepare(ctx) == null),
             )
         }
 

@@ -1,6 +1,6 @@
 # Terms of Use
 
-Reel Analyser · Effective 15 November 2026 · Version 1.9
+Reel Analyser · Effective 15 November 2026 · Version 2.0
 
 These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), the independent developer of Reel Analyser. By installing or using Reel Analyser you agree to these terms, the Privacy Policy, the Disclaimer and, if you support the app, the Support and Refund Policy. If you do not agree, do not use the app.
 
@@ -26,10 +26,10 @@ Summaries, transcripts, key points and answers are produced by AI. They can be i
 
 ## 6. The Reel blocker
 
-The Reel blocker and the daily time limits for apps and websites (full version) are self-control tools for you, on your own phone. It is optional, and it works only after you switch on Android's Accessibility service and allow reading the reel screens inside the app. You can withdraw either at any time.
+The Reel blocker and the daily time limits for apps and websites (full version) are self-control tools for you, on your own phone. It is optional. The reel limits work only after you switch on Android's Accessibility service and allow reading the reel screens inside the app. The app and website limits do not use Accessibility: they need Android's Usage access, "Display over other apps" and, for websites, a local VPN that you allow in Android's own box. You can withdraw any of these at any time.
 
 - **Your choice and your responsibility.** You decide what to block (only the reels and shorts, or for Instagram and YouTube the whole app), the limits and the times. Use it only on a phone you own or are allowed to manage, and never to monitor, restrict or watch another person without their knowledge and agreement.
-- **Not a guarantee.** It cannot stop everything. It can be bypassed, for example by switching Accessibility off in Android settings, changing the phone's clock, using another browser or app, or uninstalling. Detection depends on how Instagram, YouTube and your browser look on screen, and an app update can break it. Time limits are approximate. It is not a parental-control, safety or medical tool.
+- **Not a guarantee.** It cannot stop everything. It can be bypassed, for example by switching Accessibility, Usage access, "Display over other apps" or the VPN off in Android settings, using another VPN or a browser's own secure DNS for websites, changing the phone's clock, using another browser or app, or uninstalling. Detection depends on how Instagram, YouTube and your browser look on screen, and an app update can break it. Time limits are approximate. It is not a parental-control, safety or medical tool.
 - **Locked rules.** After the first set-up, changing the rules takes a paragraph of at least 50 words typed by hand (no paste), checked on your phone only; an accepted change starts at the next 00:00, never the same day. During the day you can turn the block off for that day, or remove it for good, by typing a paragraph of at least 50 words typed by hand (no paste; typing very fast locks the field until you stop for 2 seconds). Nothing here can be undone by us. That is the design.
 - **Time limits for apps and websites.** You add the apps and websites and the minutes a day. Past the time, the app or site is covered by a block screen until midnight. Making the limits stricter (adding one, or shortening one) takes effect at once; loosening or removing them takes the typed paragraph described below, and a loosening starts at the next 00:00. For websites it reads only the browser's address bar and only for the sites you list; other browsers, in-app browsers and private modes may not be covered.
 - **The paragraph.** Every paragraph (changing rules, turning the block off for today, removing it, changing or stopping goals) is checked on the phone for length (at least 50 words), pasting, typing speed, time taken and wording typical of AI. Nothing is sent anywhere and it is not stored. These checks are not perfect, and we do not promise they will accept or refuse any particular text.

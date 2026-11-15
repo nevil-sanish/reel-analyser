@@ -66,7 +66,11 @@ class LimitsState {
 
   /// Usage access is what times the apps; without it an app limit cannot count or block.
   final bool usageAccess;
-  const LimitsState(this.active, this.pending, this.pendingFrom, this.used, this.usageAccess);
+
+  /// "Display over other apps": lets the block screen open over an app. And the website filter (a local VPN that only carries DNS questions).
+  final bool overlay;
+  final bool siteFilter;
+  const LimitsState(this.active, this.pending, this.pendingFrom, this.used, this.usageAccess, {this.overlay = false, this.siteFilter = false});
 }
 
 class InstalledApp {
@@ -88,6 +92,8 @@ class LimitsBridge {
       (m['pendingFrom'] as num?)?.toInt() ?? 0,
       {for (final e in (m['used'] as Map? ?? const {}).entries) '${e.key}': (e.value as num).toInt()},
       m['usageAccess'] == true,
+      overlay: m['overlay'] == true,
+      siteFilter: m['siteFilter'] == true,
     );
   }
 

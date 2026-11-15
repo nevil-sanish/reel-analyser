@@ -2,6 +2,11 @@
     xmlns:tools="http://schemas.android.com/tools">
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+  <!-- Time limits without reading the screen: a small foreground service, "Display over other apps" so the block screen can open over
+       an app, and a local VPN that carries only DNS questions (the website filter). -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <!-- Fingerprint or face unlock for the app lock (full build only). -->
   <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
   <!-- Usage access (granted by the user in Settings): time in Instagram and YouTube without Accessibility. -->
@@ -23,6 +28,16 @@
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleTop"
         android:label="${appLabel}"/>
+    <service android:name="app.reelbrain.LimitsService" android:exported="false" android:foregroundServiceType="specialUse">
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Counts the daily time in apps and sites the user limited and shows a block screen when it is used up"/>
+    </service>
+    <service android:name="app.reelbrain.DnsVpnService" android:exported="false" android:permission="android.permission.BIND_VPN_SERVICE">
+      <intent-filter><action android:name="android.net.VpnService"/></intent-filter>
+    </service>
+    <activity android:name="app.reelbrain.VpnConsentActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true"/>
+    <receiver android:name="app.reelbrain.LimitsBootReceiver" android:exported="false">
+      <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter>
+    </receiver>
     <service android:name="app.reelbrain.ReelCounterService" android:exported="false"
         android:label="${appLabel}"
         android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

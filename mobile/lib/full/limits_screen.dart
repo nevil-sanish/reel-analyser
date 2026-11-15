@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import '../ui/motion.dart';
 import 'blocker.dart';
-import 'detect_consent.dart';
 import 'full_bridge.dart';
 import 'limit_bar.dart';
 import 'limits.dart';
@@ -23,12 +22,10 @@ class LimitsScreen extends StatefulWidget {
 
 class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver {
   final _bridge = LimitsBridge();
-  final _blocker = BlockerBridge();
   LimitsState? _st;
   var _draft = <LimitItem>[];
   var _baseline = '';
   var _editing = false;
-  var _consent = false;
   Timer? _timer;
 
   bool get _dirty => limitsSignature(_draft) != _baseline;
@@ -58,11 +55,9 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
 
   Future<void> _load({bool keepDraft = false}) async {
     final st = await _bridge.state();
-    final consent = await _blocker.consent();
     if (!mounted) return;
     setState(() {
       _st = st;
-      _consent = consent;
       if (keepDraft && (_editing || _dirty)) return; // the timer must not wipe what is being typed
       _draft = [...(st.pending ?? st.active)];
       _baseline = limitsSignature(_draft);
@@ -149,12 +144,6 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     if (_draft.isEmpty) return _say('Add at least one app or website.');
     final before = _st?.active ?? const <LimitItem>[];
     final immediate = before.isEmpty || isStricter(before, _draft);
-    // Asked at the first set-up even if reel reading is already allowed: these limits read more (the app in front, the address bar).
-    if (!_consent || before.isEmpty) {
-      if (!await askDetectionConsent(context, limits: true)) return _say('Nothing was saved: the time limits need your OK to see which app or site is open.');
-      await _blocker.setConsent(true);
-      _consent = true;
-    }
     if (!immediate) {
       if (!mounted) return;
       final ok = await askParagraph(
@@ -190,20 +179,23 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     _load();
   }
 
-  /// Apps are timed from Android's usage data; without Usage access they are neither counted nor blocked.
-  Widget _usageWarning(LimitsState st) {
-    final hasApp = {...st.active, ..._draft}.any((i) => !i.isSite);
-    if (!hasApp || st.usageAccess) return const SizedBox();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: ListTile(
-        leading: const Icon(Icons.timer_outlined),
-        title: const Text('Usage access is off'),
-        subtitle: const Text('Apps are timed with it. Until you allow it, app limits count nothing and block nothing.'),
-        trailing: FilledButton.tonal(onPressed: () => FullBridge().open('openUsageAccess'), child: const Text('Allow')),
-      ),
-    );
+  /// What the limits need from Android, each one with its own system screen. None of them reads the screen.
+  Widget _permissions(LimitsState st) {
+    final all = {...st.active, ..._draft};
+    final hasApp = all.any((i) => !i.isSite), hasSite = all.any((i) => i.isSite);
+    Widget row(IconData icon, String title, String why, String action, VoidCallback go) => Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          child: ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(why), trailing: FilledButton.tonal(onPressed: go, child: Text(action))),
+        );
+    return Column(children: [
+      if (hasApp && !st.usageAccess)
+        row(Icons.timer_outlined, 'Usage access is off', 'Apps are timed with it. Until you allow it, app limits count nothing and block nothing.', 'Allow', () => FullBridge().open('openUsageAccess')),
+      if (hasApp && st.usageAccess && !st.overlay)
+        row(Icons.layers_outlined, 'Display over other apps is off', 'The block screen needs it to open over an app that has used up its time.', 'Allow', () => FullBridge().open('openOverlaySettings')),
+      if (hasSite && !st.siteFilter)
+        row(Icons.vpn_lock_rounded, 'Website filter is off', 'Websites are blocked by a local filter that only sees which site names are looked up, no pages and no screen. Android shows its own VPN box. Only one VPN can run at a time.', 'Turn on', () => FullBridge().open('enableSiteFilter')),
+    ]);
   }
 
   Widget _card(List<Widget> children) => Card(
@@ -221,13 +213,13 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
-        _usageWarning(st),
+        _permissions(st),
         if (on && !_editing) ...[
           _card([
             Text('On', style: t.textTheme.titleLarge),
             for (final i in st.active) LimitBar(label: '${i.label}${i.isSite ? ' (website)' : ''}', usedMs: st.used[i.key] ?? 0, limitMin: i.limitMin),
             const SizedBox(height: 10),
-            Text('When the time is used up, the app or website is blocked until midnight.', style: t.textTheme.bodySmall),
+            Text('When the time is used up, the app or website is blocked until midnight. Website time is counted from the sites your phone looks up, so it is approximate; 0 minutes (blocked all day) is exact.', style: t.textTheme.bodySmall),
           ]),
           if (startsAt != null)
             _card([Text('A change is waiting. It starts at 00:00 (${startsAt.day}/${startsAt.month}). Until then the old limits are in force.')]),
@@ -240,14 +232,10 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
             const SizedBox(height: 6),
             Text(
               'Pick an app or a website and the time you allow it each day. Past that time it is blocked until midnight. '
-              'Apps are timed with Android\'s Usage access. Websites are timed with the Accessibility service, which reads the browser\'s address bar only for the sites you add. '
-              'Both also need the Accessibility service on, so the block screen can open over the app. Nothing is recorded or sent.',
+              'Apps are timed with Android\'s Usage access and blocked with a screen shown over them. Websites are blocked by a local filter that only sees which site names the phone looks up. '
+              'Nothing reads your screen, and nothing is recorded or sent.',
               style: t.textTheme.bodySmall,
             ),
-            if (!_consent) ...[
-              const SizedBox(height: 8),
-              Text('Reading the screens is off. You are asked to allow it when you save.', style: t.textTheme.bodySmall),
-            ],
             const SizedBox(height: 8),
             for (final i in _draft)
               ListTile(

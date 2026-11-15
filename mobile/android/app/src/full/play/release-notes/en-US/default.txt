@@ -1,1 +1,1 @@
-Fix: Erase all my data left the Insights time showing, because that time comes from Android's own usage history, which the app cannot delete. Insights now shows nothing from before you erased.
+App and website limits no longer read the screen. Apps are timed with Usage access and blocked with a screen over them (needs Display over other apps). Websites are blocked by a local filter, a VPN that only carries DNS questions. Accessibility is now only for Instagram and YouTube reels and browser reel pages.

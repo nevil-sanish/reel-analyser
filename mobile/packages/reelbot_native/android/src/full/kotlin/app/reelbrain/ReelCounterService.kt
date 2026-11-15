@@ -41,18 +41,7 @@ class ReelCounterService : AccessibilityService() {
     private lateinit var sink: CounterSink
     private lateinit var tracker: ReelTracker
     private lateinit var meter: BlockMeter
-    /** Time in the apps and websites that have a daily limit, counted apart from the reel meter. */
-    private lateinit var limitMeter: BlockMeter
-    private var limitsAt = 0L
     private var scopeAt = 0L
-    private var limitApps: Map<String, LimitItem> = emptyMap()
-    private var limitSites: List<LimitItem> = emptyList()
-    private var limitUsedAt = 0L
-    private var limitUsed: Map<String, Long> = emptyMap()
-    private var appUsedAt = 0L
-    private var appUsed: Map<String, Long> = emptyMap()
-    /** An app with a limit is in front: keeps the one-second check going, since no events come while it plays. */
-    private var limitWatching = false
     private var stateAt = 0L
     private var state = BlockState()
     private var usedAt = 0L
@@ -68,12 +57,12 @@ class ReelCounterService : AccessibilityService() {
     private val tick = object : Runnable {
         override fun run() {
             evaluate()
-            if (tracker.active || meter.active || limitMeter.active || limitWatching) handler.postDelayed(this, 1000) else ticking = false
+            if (tracker.active || meter.active) handler.postDelayed(this, 1000) else ticking = false
         }
     }
 
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop(); limitWatching = false }
+        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop() }
     }
 
     /** CounterDb, plus the unknown alert after each unknown item. */
@@ -94,7 +83,6 @@ class ReelCounterService : AccessibilityService() {
         sink = CounterSink(db)
         tracker = ReelTracker(AlertingSink())
         meter = BlockMeter(sink)
-        limitMeter = BlockMeter(sink)
         BlockPhotos.wipe(this)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
         instance = this
@@ -106,7 +94,6 @@ class ReelCounterService : AccessibilityService() {
         if (running) {
             tracker.end(System.currentTimeMillis())
             meter.stop()
-            limitMeter.stop()
             handler.removeCallbacks(tick)
             unregisterReceiver(screenOff)
             running = false
@@ -120,7 +107,7 @@ class ReelCounterService : AccessibilityService() {
     /**
      * Tells Android which apps this service gets events and screen content from, so every other app (a payment app, a bank,
      * the keyboard) is never seen at all. Before the user's opt-in that is only this app. After it: Instagram and YouTube,
-     * the browsers only when a browser block or a website limit is set, and only the apps that have a daily limit.
+     * the browsers only when a browser reel block is set. App and website limits do not use this service at all (see LimitsService).
      */
     private fun applyScope() {
         val info = serviceInfo ?: return
@@ -128,10 +115,7 @@ class ReelCounterService : AccessibilityService() {
         if (consented()) {
             val now = System.currentTimeMillis()
             pk += DetectionRules.apps.keys
-            val ls = db.currentLimits(now)
-            val limits = ls.active + (ls.pending ?: emptyList())
-            if (limits.any { it.kind == "site" } || db.currentBlockState(now).active?.items?.contains("browser") == true) pk += Browsers.packages
-            limits.filter { it.kind == "app" }.forEach { pk += it.id }
+            if (db.currentBlockState(now).active?.items?.contains("browser") == true) pk += Browsers.packages
         }
         if (pk.isEmpty()) pk += packageName
         val arr = pk.toTypedArray()
@@ -145,16 +129,15 @@ class ReelCounterService : AccessibilityService() {
 
     override fun onAccessibilityEvent(e: AccessibilityEvent) {
         if (!consented()) {
-            if (tracker.active || meter.active || limitMeter.active) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop() }
+            if (tracker.active || meter.active) { tracker.end(System.currentTimeMillis()); meter.stop() }
             return
         }
         val pkg = e.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return
         val now = System.currentTimeMillis()
-        refreshLimits(now)
-        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && pkg !in limitApps && !tracker.active && !meter.active && !limitMeter.active && !limitWatching) return
+        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && !tracker.active && !meter.active) return
         if (now - lastEval >= 250) evaluate()
-        if ((tracker.active || meter.active || limitMeter.active || limitWatching) && !ticking) {
+        if ((tracker.active || meter.active) && !ticking) {
             ticking = true
             handler.postDelayed(tick, 1000)
         }
@@ -166,20 +149,17 @@ class ReelCounterService : AccessibilityService() {
         lastEval = now
         // Apps the service may not see give no window at all: after a moment that means the watched app was left.
         val root = rootInActiveWindow ?: run {
-            limitWatching = false
             if (nullSince == 0L) nullSince = now
             if (now - nullSince >= 1500) {
                 tracker.observe(now, null, false, null)
                 val date = localDate(now)
                 meter.observe(now, null, date)
-                limitMeter.observe(now, null, date)
             }
             return
         }
         nullSince = 0L
-        val pkg = root.packageName?.toString() ?: run { limitWatching = false; return }
+        val pkg = root.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return // neither leaving nor watching
-        enforceLimits(now, root, pkg)
         val app = DetectionRules.apps[pkg]
         if (app == null) {
             tracker.observe(now, null, false, null)
@@ -212,45 +192,7 @@ class ReelCounterService : AccessibilityService() {
         return null
     }
 
-    private fun refreshLimits(now: Long) {
-        if (now - limitsAt <= 1000) return
-        limitsAt = now
-        if (now - scopeAt > 60_000) { scopeAt = now; applyScope() }
-        val l = db.currentLimits(now).active
-        limitApps = l.filter { it.kind == "app" }.associateBy { it.id }
-        limitSites = l.filter { it.kind == "site" }
-    }
-
-    /** Counts the time in an app or website that has a daily limit and, once it is used up, opens the block screen over it. */
-    private fun enforceLimits(now: Long, root: AccessibilityNodeInfo, pkg: String) {
-        refreshLimits(now)
-        val date = localDate(now)
-        val app = limitApps[pkg]
-        limitWatching = app != null
-        if (app != null) {
-            // An app's time comes from Android's usage data (Usage access), not from reading its screen. Without that access it can't be measured.
-            limitMeter.observe(now, null, date)
-            if (now - appUsedAt > 2000) { appUsed = AppUsage.todayMs(this, limitApps.keys); appUsedAt = now }
-            if (AppLimits.isOver(app, appUsed[app.id] ?: 0L) && AppUsage.granted(this)) blockNow(app.key, "applimit", now, app)
-            return
-        }
-        val site = if (limitSites.isNotEmpty() && pkg in Browsers.packages) siteOnScreen(root, pkg) else null
-        limitMeter.observe(now, site?.key, date)
-        if (site == null) return
-        if (now - limitUsedAt > 1000) { limitUsed = db.usedToday(date); limitUsedAt = now }
-        if (AppLimits.isOver(site, (limitUsed[site.key] ?: 0L) + limitMeter.pending(site.key))) blockNow(site.key, "applimit", now, site)
-    }
-
-    /** The limited website whose address the browser's address bar shows. Only that one field is read. */
-    private fun siteOnScreen(root: AccessibilityNodeInfo, pkg: String): LimitItem? {
-        for (id in Browsers.addressIds) {
-            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() } ?: continue
-            return limitSites.firstOrNull { AppLimits.siteMatches(it.id, t) }
-        }
-        return null
-    }
-
-    private var punishAt = 0L
+                private var punishAt = 0L
     private var punish: Punish? = null
 
     private fun punished(app: String, now: Long): Boolean {
@@ -282,7 +224,6 @@ class ReelCounterService : AccessibilityService() {
         if (now - lastBlock <= 4000) return
         lastBlock = now
         meter.stop()
-        limitMeter.stop()
         startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, reason)
             .putExtra(BlockActivity.TEXT, item?.let { AppLimits.message(it) } ?: ""))
