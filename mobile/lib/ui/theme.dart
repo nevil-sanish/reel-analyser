@@ -231,7 +231,8 @@ class _BrandMarkState extends State<BrandMark> with SingleTickerProviderStateMix
         child: SizedBox(
           width: widget.size,
           height: widget.size,
-          child: AnimatedBuilder(animation: _c, builder: (_, _) => CustomPaint(painter: _EmblemPainter(_c.value))),
+          // One turn takes 90 s, so a step of a degree (every quarter second) looks the same and repaints 4 times a second, not 60.
+          child: AnimatedBuilder(animation: _c, builder: (_, _) => CustomPaint(painter: _EmblemPainter((_c.value * 360).floor() / 360))),
         ),
       );
 }

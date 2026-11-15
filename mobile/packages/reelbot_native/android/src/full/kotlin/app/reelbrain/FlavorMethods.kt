@@ -28,6 +28,10 @@ object FlavorMethods {
 
     private class Full(val ctx: Context) {
         fun handle(call: MethodCall, result: MethodChannel.Result): Boolean {
+            // What the Accessibility service may see depends on these settings, so it is told to look again after they change.
+            if (call.method in setOf("blockSave", "blockRemove", "blockCancel", "punishSet", "limitsSave", "limitsRemove", "setDetectionConsent")) {
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ ReelCounterService.rescope() }, 500)
+            }
             when (call.method) {
                 "daily" -> result.success(CounterDb.get(ctx).daily(call.argument<Int>("days") ?: 14, localDate(System.currentTimeMillis())))
                 "hourly" -> result.success(CounterDb.get(ctx).hourly(call.argument<Int>("days") ?: 7, localDate(System.currentTimeMillis())))
@@ -86,6 +90,10 @@ object FlavorMethods {
                         CounterDb.get(ctx).clearCapture()
                     }
                     result.success(null)
+                }
+                "pbkdf2" -> CounterPlugin.offMain(result) {
+                    val spec = javax.crypto.spec.PBEKeySpec(call.argument<String>("pin")!!.toCharArray(), call.argument<ByteArray>("salt")!!, call.argument<Int>("iterations")!!, 256)
+                    javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
                 }
                 "biometricAvailable" -> result.success(Biometric.available(ctx))
                 "biometricCheck" -> Biometric.check(ctx, call.argument<String>("reason") ?: "") { result.success(it) }

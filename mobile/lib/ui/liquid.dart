@@ -55,15 +55,15 @@ class Glass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    return Container(
+    return RepaintBoundary(child: Container(
       decoration: BoxDecoration(
         color: solid ? Brand.surface(b) : Brand.glass(b),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: Brand.glassEdge(b)),
-        boxShadow: [BoxShadow(color: (b == Brightness.dark ? Colors.black : Brand.goldDeep).withValues(alpha: b == Brightness.dark ? 0.35 : 0.1), blurRadius: 18, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: (b == Brightness.dark ? Colors.black : Brand.goldDeep).withValues(alpha: b == Brightness.dark ? 0.35 : 0.1), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: ClipRRect(borderRadius: BorderRadius.circular(radius - 1), child: Padding(padding: padding, child: child)),
-    );
+    ));
   }
 }
 

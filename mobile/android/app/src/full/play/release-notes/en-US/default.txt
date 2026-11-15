@@ -1,1 +1,1 @@
-Fix: unlocking the app lock with your fingerprint or face did nothing, because the lock screen was removed while Android's prompt was open. It now stays and takes the answer.
+Privacy fix: the Accessibility service now only sees this app until you opt in, then only Instagram, YouTube, browsers (when a browser block or website limit is set) and apps you gave a daily limit, so payment and bank apps are never touched. Faster passcode check, no stall with the fingerprint prompt, smoother scrolling and animations. The app lock is now only in the full build.

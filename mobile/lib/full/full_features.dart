@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../app_services.dart';
-import '../data/biometrics.dart';
+import 'app_lock.dart';
+import 'app_lock_section.dart';
+import 'biometrics.dart';
+import 'lock_gate.dart';
 import '../data/update_check.dart';
 import '../features.dart';
 import 'blocker.dart';
@@ -36,7 +39,7 @@ class FullFeatures extends AppFeatures {
   String get flavor => 'full';
 
   @override
-  Biometrics get biometrics => BridgeBiometrics();
+  Widget wrap(AppServices s, Widget child) => LockGate(lock: AppLock(KeyLockStorage(s.keys), hasher: AppLock.nativeHash), biometrics: BridgeBiometrics(), child: child);
 
   @override
   List<AppTab> get afterAsk => const [AppTab(Icons.insights_outlined, Icons.insights, 'Insights', _insights)];
@@ -52,6 +55,7 @@ class FullFeatures extends AppFeatures {
 
   @override
   List<Widget> settingsSections(BuildContext context, AppServices s, Widget Function(String, List<Widget>) section) => [
+        section('App lock', [AppLockSection(s)]),
         section('Insights', [
           ListTile(
             contentPadding: EdgeInsets.zero,

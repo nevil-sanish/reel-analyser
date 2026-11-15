@@ -17,8 +17,6 @@ import 'ui/liquid.dart';
 import 'ui/motion.dart';
 import 'ui/theme.dart';
 import 'ui/about_screen.dart';
-import 'ui/lock_gate.dart';
-import 'data/app_lock.dart';
 
 /// Starts the app with what this build adds. `main_full.dart` and `main_semi.dart` call this: nothing else imports a build's own code.
 Future<void> runReelBot(AppFeatures features, void Function() backgroundDispatcher) async {
@@ -67,8 +65,8 @@ class _ReelBotAppState extends State<ReelBotApp> {
         title: 'Reel Analyser + Blocker',
         themeMode: mode,
         debugShowCheckedModeBanner: false,
-        // Above the navigator, so the passcode screen also covers dialogs and every page.
-        builder: (context, child) => LockGate(lock: AppLock(widget.services.keys), biometrics: widget.services.features.biometrics, child: child ?? const SizedBox()),
+        // Above the navigator, so a build's cover (the full build's passcode screen) also covers dialogs and every page.
+        builder: (context, child) => widget.services.features.wrap(widget.services, child ?? const SizedBox()),
         theme: Brand.theme(Brightness.light),
         darkTheme: Brand.theme(Brightness.dark),
         home: AnimatedSwitcher(

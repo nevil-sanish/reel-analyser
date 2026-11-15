@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
-import '../data/app_lock.dart';
+import 'app_lock.dart';
+import 'biometrics.dart';
 
 import 'lock_gate.dart';
 
@@ -16,7 +17,8 @@ class AppLockSection extends StatefulWidget {
 }
 
 class _AppLockSectionState extends State<AppLockSection> {
-  late final _lock = AppLock(widget.services.keys);
+  final _bridge = BridgeBiometrics();
+  late final _lock = AppLock(KeyLockStorage(widget.services.keys), hasher: AppLock.nativeHash);
   bool? _on;
   var _bio = false;
   var _bioAvailable = false;
@@ -30,7 +32,7 @@ class _AppLockSectionState extends State<AppLockSection> {
   Future<void> _load() async {
     final on = await _lock.enabled;
     final bio = await _lock.biometric;
-    final avail = on && await widget.services.features.biometrics.available();
+    final avail = on && await _bridge.available();
     if (mounted) {
       setState(() {
         _on = on;
@@ -103,7 +105,7 @@ class _AppLockSectionState extends State<AppLockSection> {
   }
 
   Future<void> _toggleBio(bool want) async {
-    if (want && !await widget.services.features.biometrics.check('Turn on fingerprint or face unlock')) return _say('Not turned on: the check did not pass.');
+    if (want && !await _bridge.check('Turn on fingerprint or face unlock')) return _say('Not turned on: the check did not pass.');
     await _lock.setBiometric(want);
     await _load();
   }

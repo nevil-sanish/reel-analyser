@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reelbrain/data/app_lock.dart';
+import 'package:reelbrain/full/app_lock.dart';
 
 class _Mem implements LockStorage {
   final m = <String, String>{};

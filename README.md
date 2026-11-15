@@ -120,7 +120,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 ### The screen is never captured
 
-Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and they do that only in Instagram, YouTube and (for the address bar only) a browser, only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
+Reel Analyser never takes screenshots and never records the screen. The optional counter and blocker use Android's Accessibility service, which can read the layout of a screen, and Android only lets them see Instagram, YouTube, the apps you gave a daily limit and (for the address bar only, and only if you set a browser block or website limit) a browser. Every other app, such as a payment or bank app, is never visible to them. They work only after you allow it in the app, and they store only an anonymous fingerprint, counts and times. Read the details in the Privacy Policy.
 
 ### What leaves your phone
 

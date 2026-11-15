@@ -63,11 +63,16 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     // While the background task works through the queue, the list refreshes every few seconds so its progress shows.
     _poll = Timer.periodic(const Duration(seconds: 2), (_) async {
       if (!mounted || _busy) return;
+      // Nothing queued and nothing running: look every 10 seconds, not every 2, so an idle Library is not rebuilt for nothing.
+      final idle = _waiting == 0 && !s.runner.lockBusy && s.runner.jobs.value.isEmpty;
+      if (idle && ++_idleTicks % 5 != 0) return;
       await _reload();
       final due = DateTime.now().difference(_lastRun) > const Duration(seconds: 30);
       if (mounted && _waiting > 0 && (due || s.runner.lockBusy)) _process();
     });
   }
+
+  var _idleTicks = 0;
 
   @override
   void dispose() {

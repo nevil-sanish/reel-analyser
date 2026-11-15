@@ -6,10 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' show getDatabasesPath;
 
-import 'app_lock.dart';
-
 /// The user's own API keys and the app's one-time flags. Never in the APK.
-class KeyStore implements LockStorage {
+class KeyStore {
   // resetOnError: false. The plugin's default wipes every stored value whenever one read fails to decrypt (a
   // Keystore hiccup, two engines opening it at once), which is how a saved key could vanish. A failed read now
   // just reads as "not set" and nothing is deleted.
@@ -81,9 +79,7 @@ class KeyStore implements LockStorage {
   Future<int> get updateCheckedAt async => int.tryParse(await _readPlain('update_checked') ?? '') ?? 0;
   Future<void> setUpdateCheckedAt(int v) => _writePlain('update_checked', '$v');
 
-  @override
   Future<String?> readLock(String key) => _readPlain(key);
-  @override
   Future<void> writeLock(String key, String? value) => _writePlain(key, value ?? '');
 
   Future<bool> get introSeen => flag('intro_seen');

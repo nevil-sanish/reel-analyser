@@ -3,6 +3,9 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/services.dart';
+
+import '../data/key_store.dart';
 
 /// Where the lock keeps its two small records. The real one is [KeyStore]'s private file; tests use a map.
 abstract class LockStorage {
@@ -24,7 +27,25 @@ class AppLock {
 
   final LockStorage store;
   final DateTime Function() now;
-  AppLock(this.store, {DateTime Function()? now}) : now = now ?? DateTime.now;
+
+  /// PBKDF2-HMAC-SHA256 of the passcode. The phone does it natively (about a twentieth of a second); tests use the Dart one.
+  final Future<List<int>> Function(String pin, List<int> salt) hasher;
+  AppLock(this.store, {DateTime Function()? now, Future<List<int>> Function(String, List<int>)? hasher})
+      : now = now ?? DateTime.now,
+        hasher = hasher ?? dartHash;
+
+  static Future<List<int>> dartHash(String pin, List<int> salt) => Isolate.run(() => _hash(pin, salt));
+
+  /// The same hash from Android's own PBKDF2; falls back to Dart if the call fails.
+  static Future<List<int>> nativeHash(String pin, List<int> salt) async {
+    try {
+      final r = await const MethodChannel('reelbot/counter').invokeMethod<List<int>>('pbkdf2', {'pin': pin, 'salt': Uint8List.fromList(salt), 'iterations': iterations});
+      if (r != null && r.length == 32) return r;
+    } on Object {
+      // fall through
+    }
+    return dartHash(pin, salt);
+  }
 
   /// A message for a passcode that is not allowed, or null.
   static String? check(String pin) => _pin.hasMatch(pin) ? null : 'Use 4 to 8 digits.';
@@ -40,7 +61,7 @@ class AppLock {
     if (bad != null) throw FormatException(bad);
     final r = Random.secure();
     final salt = List<int>.generate(16, (_) => r.nextInt(256));
-    final hash = await Isolate.run(() => _hash(pin, salt));
+    final hash = await hasher(pin, salt);
     await store.writeLock(_rec, '1:${base64Encode(salt)}:${base64Encode(hash)}');
     await store.writeLock(_st, null);
   }
@@ -71,12 +92,16 @@ class AppLock {
     final rec = ((await store.readLock(_rec)) ?? '').split(':');
     if (rec.length != 3 || rec[0] != '1') return false;
     final salt = base64Decode(rec[1]), want = base64Decode(rec[2]);
-    final got = await Isolate.run(() => _hash(pin, salt));
-    var diff = got.length ^ want.length;
-    for (var i = 0; i < got.length && i < want.length; i++) {
-      diff |= got[i] ^ want[i];
+    bool same(List<int> got) {
+      var diff = got.length ^ want.length;
+      for (var i = 0; i < got.length && i < want.length; i++) {
+        diff |= got[i] ^ want[i];
+      }
+      return diff == 0;
     }
-    if (diff == 0) {
+
+    // A wrong passcode also gets the Dart hash, so a record made by one hasher is never refused because another produced a different answer.
+    if (same(await hasher(pin, salt)) || (hasher != dartHash && same(await dartHash(pin, salt)))) {
       await store.writeLock(_st, null);
       return true;
     }
@@ -85,4 +110,14 @@ class AppLock {
     await store.writeLock(_st, '$fails,${now().add(Duration(seconds: wait)).millisecondsSinceEpoch}');
     return false;
   }
+}
+
+/// The app's [KeyStore] as the lock's storage.
+class KeyLockStorage implements LockStorage {
+  final KeyStore keys;
+  KeyLockStorage(this.keys);
+  @override
+  Future<String?> readLock(String key) => keys.readLock(key);
+  @override
+  Future<void> writeLock(String key, String? value) => keys.writeLock(key, value);
 }

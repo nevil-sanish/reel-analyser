@@ -152,7 +152,7 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final base = Brand.gold.withValues(alpha: dark ? 0.12 : 0.14);
-    return AnimatedBuilder(
+    return RepaintBoundary(child: AnimatedBuilder(
       animation: _c,
       builder: (_, _) => Container(
         width: widget.width,
@@ -166,6 +166,6 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
           ),
         ),
       ),
-    );
+    ));
   }
 }

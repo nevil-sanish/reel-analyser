@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reelbrain/data/app_lock.dart';
-import 'package:reelbrain/data/biometrics.dart';
-import 'package:reelbrain/ui/lock_gate.dart';
+import 'package:reelbrain/full/app_lock.dart';
+import 'package:reelbrain/full/biometrics.dart';
+import 'package:reelbrain/full/lock_gate.dart';
 
 class _Mem implements LockStorage {
   final m = <String, String>{};

@@ -27,6 +27,9 @@ import org.json.JSONObject
 class ReelCounterService : AccessibilityService() {
     companion object {
         @Volatile var running = false
+        @Volatile private var instance: ReelCounterService? = null
+        /** Settings changed: narrow or widen the apps the service may see. */
+        fun rescope() { instance?.let { s -> s.handler.post { s.applyScope() } } }
         const val PREFS = CounterPlugin.PREFS
         const val CAPTURE = "debug_capture"
         /** The user's opt-in to reading the reel screens. Until it is on, the service reads nothing, even if Accessibility is on. */
@@ -41,6 +44,7 @@ class ReelCounterService : AccessibilityService() {
     /** Time in the apps and websites that have a daily limit, counted apart from the reel meter. */
     private lateinit var limitMeter: BlockMeter
     private var limitsAt = 0L
+    private var scopeAt = 0L
     private var limitApps: Map<String, LimitItem> = emptyMap()
     private var limitSites: List<LimitItem> = emptyList()
     private var limitUsedAt = 0L
@@ -56,6 +60,7 @@ class ReelCounterService : AccessibilityService() {
     private var lastBlock = 0L
     private val handler = Handler(Looper.getMainLooper())
     private var lastEval = 0L
+    private var nullSince = 0L
     private var lastTree = 0L
     private var ticking = false
 
@@ -92,6 +97,8 @@ class ReelCounterService : AccessibilityService() {
         limitMeter = BlockMeter(sink)
         BlockPhotos.wipe(this)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        instance = this
+        applyScope()
         running = true
     }
 
@@ -103,11 +110,36 @@ class ReelCounterService : AccessibilityService() {
             handler.removeCallbacks(tick)
             unregisterReceiver(screenOff)
             running = false
+            instance = null
         }
         return super.onUnbind(intent)
     }
 
     override fun onInterrupt() = Unit
+
+    /**
+     * Tells Android which apps this service gets events and screen content from, so every other app (a payment app, a bank,
+     * the keyboard) is never seen at all. Before the user's opt-in that is only this app. After it: Instagram and YouTube,
+     * the browsers only when a browser block or a website limit is set, and only the apps that have a daily limit.
+     */
+    private fun applyScope() {
+        val info = serviceInfo ?: return
+        val pk = LinkedHashSet<String>()
+        if (consented()) {
+            val now = System.currentTimeMillis()
+            pk += DetectionRules.apps.keys
+            val ls = db.currentLimits(now)
+            val limits = ls.active + (ls.pending ?: emptyList())
+            if (limits.any { it.kind == "site" } || db.currentBlockState(now).active?.items?.contains("browser") == true) pk += Browsers.packages
+            limits.filter { it.kind == "app" }.forEach { pk += it.id }
+        }
+        if (pk.isEmpty()) pk += packageName
+        val arr = pk.toTypedArray()
+        if (!arr.contentEquals(info.packageNames)) {
+            info.packageNames = arr
+            serviceInfo = info
+        }
+    }
 
     private fun consented() = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CONSENT, false)
 
@@ -132,7 +164,19 @@ class ReelCounterService : AccessibilityService() {
         if (!consented()) return
         val now = System.currentTimeMillis()
         lastEval = now
-        val root = rootInActiveWindow ?: run { limitWatching = false; return }
+        // Apps the service may not see give no window at all: after a moment that means the watched app was left.
+        val root = rootInActiveWindow ?: run {
+            limitWatching = false
+            if (nullSince == 0L) nullSince = now
+            if (now - nullSince >= 1500) {
+                tracker.observe(now, null, false, null)
+                val date = localDate(now)
+                meter.observe(now, null, date)
+                limitMeter.observe(now, null, date)
+            }
+            return
+        }
+        nullSince = 0L
         val pkg = root.packageName?.toString() ?: run { limitWatching = false; return }
         if (pkg in DetectionRules.ignored) return // neither leaving nor watching
         enforceLimits(now, root, pkg)
@@ -171,6 +215,7 @@ class ReelCounterService : AccessibilityService() {
     private fun refreshLimits(now: Long) {
         if (now - limitsAt <= 1000) return
         limitsAt = now
+        if (now - scopeAt > 60_000) { scopeAt = now; applyScope() }
         val l = db.currentLimits(now).active
         limitApps = l.filter { it.kind == "app" }.associateBy { it.id }
         limitSites = l.filter { it.kind == "site" }

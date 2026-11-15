@@ -1,7 +1,5 @@
 import 'package:flutter/services.dart';
 
-import '../data/biometrics.dart';
-
 // The part of the native channel that only the full build has: the reel counter, Usage access, notifications, the in-app
 // update installer and the system-screen shortcuts. The semi build has no native code behind any of it, and does not compile this file.
 
@@ -178,26 +176,4 @@ List<DayTotal> mergeAppTime(List<DayTotal> days, List<Map> appRows) {
     byDate[date] = (byDate[date] ?? DayTotal(date, const {}, 0, 0)).withAppMs(app[date]!);
   }
   return byDate.values.toList()..sort((a, b) => b.date.compareTo(a.date));
-}
-
-/// Android's fingerprint / face prompt for the app lock.
-class BridgeBiometrics implements Biometrics {
-  static const _ch = MethodChannel('reelbot/counter');
-  @override
-  Future<bool> available() async {
-    try {
-      return await _ch.invokeMethod<bool>('biometricAvailable') ?? false;
-    } on Object {
-      return false;
-    }
-  }
-
-  @override
-  Future<bool> check(String reason) async {
-    try {
-      return await _ch.invokeMethod<bool>('biometricCheck', {'reason': reason}) ?? false;
-    } on Object {
-      return false;
-    }
-  }
 }

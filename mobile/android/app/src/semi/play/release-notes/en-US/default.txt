@@ -1,1 +1,1 @@
-Small fixes to the app lock screen.
+Smoother scrolling and animations. The app lock is only in the full build now.

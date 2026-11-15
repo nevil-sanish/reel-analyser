@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../data/app_lock.dart';
-import '../data/biometrics.dart';
-import 'motion.dart';
+import '../ui/motion.dart';
+import 'app_lock.dart';
+import 'biometrics.dart';
 
 /// Covers the app with the passcode screen when a passcode is set: at start, and at once whenever the app has been left
 /// (home, another app, recent apps, screen off). The cover also hides the screen the moment the app leaves the front,
@@ -93,7 +93,10 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
             if (_locked && _ready)
               Positioned.fill(
                 child: LockScreen(
-                    lock: widget.lock, biometrics: widget.biometrics, ask: _ask, onUnlocked: () => setState(() => _locked = false)),
+                    lock: widget.lock, biometrics: widget.biometrics, ask: _ask, onUnlocked: () => setState(() {
+                      _locked = false;
+                      _hidden = false; // never left covered if the 'back in front' event is late
+                    })),
               ),
             if (!_ready || _hidden || !_locked) Positioned.fill(child: ColoredBox(color: Theme.of(context).colorScheme.surface)),
           ]),
@@ -120,6 +123,7 @@ class _LockScreenState extends State<LockScreen> {
   Timer? _tick;
   var _bio = false;
   var _asking = false;
+  final _focus = FocusNode();
 
   @override
   void initState() {
@@ -139,7 +143,11 @@ class _LockScreenState extends State<LockScreen> {
     final on = await widget.lock.biometric && await widget.biometrics.available();
     if (!mounted) return;
     setState(() => _bio = on);
-    if (on) await _askBiometric();
+    if (on) {
+      await _askBiometric();
+    } else {
+      _focus.requestFocus(); // the keyboard only opens at once when there is no fingerprint prompt to compete with
+    }
   }
 
   Future<void> _askBiometric() async {
@@ -156,6 +164,7 @@ class _LockScreenState extends State<LockScreen> {
   void dispose() {
     _tick?.cancel();
     _c.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -210,7 +219,7 @@ class _LockScreenState extends State<LockScreen> {
                 const SizedBox(height: 24),
                 TextField(
                   controller: _c,
-                  autofocus: true,
+                  focusNode: _focus,
                   obscureText: true,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
@@ -224,7 +233,7 @@ class _LockScreenState extends State<LockScreen> {
                   Text(_msg!, style: TextStyle(color: t.colorScheme.error, fontWeight: FontWeight.w600)),
                 ],
                 const SizedBox(height: 20),
-                SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _go, child: const Text('Unlock'))),
+                SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _go, child: _busy ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Unlock'))),
                 if (_bio) ...[
                   const SizedBox(height: 8),
                   TextButton.icon(onPressed: _askBiometric, icon: const Icon(Icons.fingerprint_rounded), label: const Text('Use fingerprint or face')),
