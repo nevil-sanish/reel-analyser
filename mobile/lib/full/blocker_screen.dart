@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import 'blocker.dart';
+import 'limit_bar.dart';
 import 'detect_consent.dart';
 import 'paragraph_gate.dart';
 import '../ui/liquid.dart';
@@ -52,16 +55,24 @@ class _BlockerScreenState extends State<BlockerScreen>
   final _items = <String>{};
   final _whole = <String>{};
   final _edits = <String, _RuleEdit>{};
+  var _editing = false;
+  var _baseline = '';
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
+    // The bars follow the time as it is used.
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!_editing) _load(keepEdits: true);
+    });
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -80,7 +91,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     setState(() {
       _st = st;
       _consent = consent;
-      if (keepEdits && _edits.isNotEmpty) return;
+      if (keepEdits && _editing) return;
       // Show what is waiting for midnight if there is a change, else what is in force.
       final c = st.pending ?? st.active;
       _mode = c?.mode ?? 'shared';
@@ -95,11 +106,20 @@ class _BlockerScreenState extends State<BlockerScreen>
         ..addAll({
           for (final k in ['all', ...blockSurfaces]) k: _RuleEdit(c?.rules[k]),
         });
+      _baseline = _build().toJson();
     });
   }
 
   void _say(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  /// What the screen holds now, as [_save] would store it.
+  BlockConfig _build() {
+    final keys = _mode == 'shared' ? ['all'] : [for (final k in blockSurfaces) if (_items.contains(k)) k];
+    return BlockConfig(_mode, {..._items}, {for (final k in keys) k: _edits[k]!.rule}, wholeApp: _whole.intersection(_items));
+  }
+
+  bool get _dirty => _edits.isNotEmpty && _build().toJson() != _baseline;
 
   Future<void> _save() async {
     if (_items.isEmpty) return _say('Pick at least one thing to block.');
@@ -108,13 +128,7 @@ class _BlockerScreenState extends State<BlockerScreen>
       await _bridge.setConsent(true);
       _consent = true;
     }
-    final keys = _mode == 'shared' ? ['all'] : _items.toList();
-    final c = BlockConfig(
-      _mode,
-      {..._items},
-      {for (final k in keys) k: _edits[k]!.rule},
-      wholeApp: _whole.intersection(_items),
-    );
+    final c = _build();
     if (c.rules.values.every(
       (r) => r.limitMin == null && r.intervals.isEmpty,
     )) {
@@ -142,6 +156,7 @@ class _BlockerScreenState extends State<BlockerScreen>
       'ok' => before == null ? 'The blocker is on.' : 'Saved. The new rules start at 00:00 tonight.',
       _ => 'Those rules are not valid.',
     });
+    _editing = false;
     _edits.clear();
     _load();
   }
@@ -151,15 +166,17 @@ class _BlockerScreenState extends State<BlockerScreen>
     if (!mounted) return;
     final ok = await askParagraph(
       context,
-      title: 'Remove for good',
-      intro: 'To remove the blocker and all its rules, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
+      title: 'Turn off for good',
+      intro: 'To turn off the blocker and remove all its rules, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
           'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. Your paragraph is checked with your own AI key and is not stored.',
-      action: 'Remove the blocker',
+      action: 'Turn off the blocker',
       verify: (text) => judgeParagraph(ask, action: 'remove the reel blocker and all its rules for good', reason: text),
     );
     if (!ok || !mounted) return;
     await _bridge.removeForGood();
     _say('The blocker is removed.');
+    _editing = false;
+    _edits.clear();
     _load();
   }
 
@@ -212,6 +229,7 @@ class _BlockerScreenState extends State<BlockerScreen>
               child: TextField(
                 controller: e.limit,
                 keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Daily limit',
@@ -254,13 +272,28 @@ class _BlockerScreenState extends State<BlockerScreen>
     );
   }
 
-  String _used(BlockerState st, BlockConfig c) {
-    String m(int ms) => '${ms ~/ 60000} min';
-    return [
-      for (final k in blockSurfaces)
-        if (c.items.contains(k))
-          '${surfaceNames[k]!.split(' (').first}: ${m(st.used[k] ?? 0)}',
-    ].join('  ·  ');
+  /// A bar for each timer in force: the one shared limit, or one per item. Rules with only time slots have no timer.
+  List<Widget> _bars(BlockerState st, BlockConfig c) {
+    final out = <Widget>[];
+    void slots(String name, BlockRule? r) {
+      if (r != null && r.intervals.isNotEmpty) out.add(Padding(padding: const EdgeInsets.only(top: 8), child: Text('$name: allowed only at ${r.intervals.join(', ')}')));
+    }
+
+    if (c.mode == 'shared') {
+      final r = c.rules['all'];
+      final used = c.items.fold<int>(0, (n, k) => n + (st.used[k] ?? 0));
+      if (r?.limitMin != null) out.add(LimitBar(label: 'All chosen together', usedMs: used, limitMin: r!.limitMin!));
+      slots('All chosen together', r);
+    } else {
+      for (final k in blockSurfaces) {
+        if (!c.items.contains(k)) continue;
+        final r = c.rules[k];
+        final name = surfaceNames[k]!.split(' (').first;
+        if (r?.limitMin != null) out.add(LimitBar(label: name, usedMs: st.used[k] ?? 0, limitMin: r!.limitMin!));
+        slots(name, r);
+      }
+    }
+    return out;
   }
 
   Widget _shell({PreferredSizeWidget? appBar, required Widget body}) => widget.embedded ? body : LiquidScaffold(appBar: appBar, body: body);
@@ -282,16 +315,6 @@ class _BlockerScreenState extends State<BlockerScreen>
     return _shell(
       appBar: AppBar(
         title: const Text('Reel blocker'),
-        actions: [
-          IconButton(
-            tooltip: 'History',
-            icon: const Icon(Icons.history_rounded),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => BlockHistoryScreen(_bridge)),
-            ),
-          ),
-        ],
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(16, 8, 16, widget.embedded ? 120 : 32),
@@ -319,8 +342,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                     style: t.textTheme.bodySmall,
                   ),
                   if (st.active != null) ...[
-                    const SizedBox(height: 10),
-                    Text('Today: ${_used(st, st.active!)}'),
+                    ..._bars(st, st.active!),
                   ],
                   if (st.suspendedToday) ...[
                     const SizedBox(height: 12),
@@ -359,6 +381,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                 ),
               ),
             ),
+          if (st.active == null || _editing)
           Card(
           margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
@@ -386,8 +409,8 @@ class _BlockerScreenState extends State<BlockerScreen>
                             Text('${surfaceNames[k]!.split(' ').first}: what to count and block', style: t.textTheme.bodySmall),
                             const SizedBox(height: 4),
                             SegmentedButton<bool>(
-                              segments: const [
-                                ButtonSegment(value: false, label: Text('Reels only')),
+                              segments: [
+                                ButtonSegment(value: false, label: Text(k == 'youtube' ? 'Shorts only' : 'Reels only')),
                                 ButtonSegment(value: true, label: Text('Whole app')),
                               ],
                               selected: {_whole.contains(k)},
@@ -425,37 +448,40 @@ class _BlockerScreenState extends State<BlockerScreen>
                       ],
                   const SizedBox(height: 8),
                   Text(
-                    'A reel can be watched only when both the limit and the time slots allow it. With Whole app, all your time in Instagram or YouTube counts, and past the limit or outside the time slots the app itself does not open.',
+                    'A reel or short can be watched only when both the limit and the time slots allow it. With Whole app, all your time in Instagram or YouTube counts, and past the limit or outside the time slots the app itself does not open.',
                     style: t.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: _save,
-                    child: Text(
-                      st.active == null
-                          ? 'Turn the blocker on'
-                          : 'Save changes',
+                  if (_dirty)
+                    FilledButton(
+                      onPressed: _save,
+                      child: Text(st.active == null ? 'Turn the blocker on' : 'Save changes'),
                     ),
-                  ),
+                  if (st.active != null && _editing) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: st.suspendedToday ? null : _cancelToday,
+                      child: Text(st.suspendedToday ? 'Already off for today' : 'Turn off for today (50-word paragraph)'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        _editing = false;
+                        _load();
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
-          if (st.active != null) ...[
-            const SizedBox(height: 4),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.timer_off_outlined),
-              label: Text(
-                st.suspendedToday
-                    ? 'Already off for today'
-                    : 'Turn off for today (50-word paragraph)',
-              ),
-              onPressed: st.suspendedToday ? null : _cancelToday,
-            ),
+          if (st.active != null && !_editing) ...[
+            FilledButton.tonal(onPressed: () => setState(() => _editing = true), child: const Text('Edit')),
             const SizedBox(height: 8),
             TextButton.icon(
               icon: const Icon(Icons.delete_forever_outlined),
-              label: const Text('Remove the blocker for good'),
+              label: const Text('Turn off permanently'),
               onPressed: _removeForGood,
             ),
           ],
@@ -465,45 +491,3 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 }
 
-
-class BlockHistoryScreen extends StatelessWidget {
-  final BlockerBridge bridge;
-  const BlockHistoryScreen(this.bridge, {super.key});
-
-  @override
-  Widget build(BuildContext context) => LiquidScaffold(
-    appBar: AppBar(title: const Text('Blocker history')),
-    body: FutureBuilder<List<BlockEvent>>(
-      future: bridge.history(),
-      builder: (c, snap) {
-        final list = snap.data;
-        if (list == null) return const SizedBox();
-        if (list.isEmpty) {
-          return const Center(
-            child: Text(
-              'Nothing yet. Days you pass the limit or try to cancel show here.',
-            ),
-          );
-        }
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            for (final e in list)
-              ListTile(
-                leading: Icon(switch (e.kind) {
-                  'cancelled' || 'removed' => Icons.lock_open_rounded,
-                  'kept' => Icons.favorite_rounded,
-                  'limit' || 'schedule' => Icons.block_rounded,
-                  _ => Icons.history_rounded,
-                }),
-                title: Text(e.label),
-                subtitle: Text(
-                  '${e.at.day}/${e.at.month}/${e.at.year}  ${TimeSlot.hhmm(e.at.hour * 60 + e.at.minute)}',
-                ),
-              ),
-          ],
-        );
-      },
-    ),
-  );
-}

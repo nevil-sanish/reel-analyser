@@ -108,18 +108,25 @@ fun CounterDb.setPunish(p: Punish) = setKv("punish", p.toJson())
 fun CounterDb.usedToday(date: String): Map<String, Long> =
     query("SELECT app, ms FROM block_use WHERE date = ?", arrayOf(date)) { it.getString(0) to it.getLong(1) }.toMap()
 
-fun CounterDb.addEvent(ts: Long, kind: String, surface: String = "") {
-    writableDatabase.insert("block_events", null, ContentValues().apply { put("ts", ts); put("kind", kind); put("surface", surface) })
+/** Daily time limits for apps and websites (1.2.2.0), stored beside the reel limits. */
+fun CounterDb.limitsState() = LimitsState(
+    AppLimits.parse(kv("lim_active")).orEmpty(), AppLimits.parse(kv("lim_pending")), kv("lim_from")?.toLongOrNull() ?: 0)
+
+fun CounterDb.currentLimits(now: Long): LimitsState {
+    val s = limitsState()
+    val e = AppLimits.effective(s, now)
+    if (e != s) saveLimits(e)
+    return e
 }
 
-fun CounterDb.hasEvent(kind: String, surface: String, since: Long): Boolean =
-    query("SELECT 1 FROM block_events WHERE kind = ? AND surface = ? AND ts >= ? LIMIT 1", arrayOf(kind, surface, since.toString())) { 1 }.isNotEmpty()
+fun CounterDb.saveLimits(s: LimitsState) {
+    setKv("lim_active", if (s.active.isEmpty()) null else AppLimits.toJson(s.active))
+    setKv("lim_pending", s.pending?.let { AppLimits.toJson(it) })
+    setKv("lim_from", if (s.pending != null) s.pendingFrom.toString() else null)
+}
 
-fun CounterDb.events(limit: Int): List<Map<String, Any?>> =
-    query("SELECT ts, kind, surface FROM block_events ORDER BY ts DESC LIMIT ?", arrayOf(limit.toString())) {
-        mapOf("ts" to it.getLong(0), "kind" to it.getString(1), "surface" to it.getString(2))
-    }
-
+/** The block history was removed in 1.2.2.0; anything an older version stored is deleted. */
+fun CounterDb.dropHistory() { writableDatabase.delete("block_events", null, null) }
 
 fun CounterDb.daily(days: Int, today: String): List<Map<String, Any?>> = query(
     "SELECT date, app, reels, ms, unknown FROM daily_counts WHERE date > date(?, ?) ORDER BY date DESC, app",
@@ -167,6 +174,5 @@ fun CounterDb.prune(today: String, now: Long) {
         db.execSQL("DELETE FROM $t WHERE date < date(?, '-90 days')", arrayOf(today))
     }
     db.execSQL("DELETE FROM block_use WHERE date < date(?, '-90 days')", arrayOf(today))
-    db.delete("block_events", "ts < ?", arrayOf((now - 90L * 24 * 3600 * 1000).toString()))
     pruneQueue(now)
 }

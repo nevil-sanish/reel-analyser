@@ -252,9 +252,10 @@ class Runner {
     return finished;
   }
 
-  /// How many reels to analyse at once: one per Gemini key (at most 4), else one per other provider key.
+  /// How many reels to analyse at once: one per key of any provider (Gemini keys plus OpenAI and Claude), at most 4. Each reel
+  /// starts on the next key in turn, so reels shared together run side by side on different keys.
   int get _workerCount {
-    final n = _keys.gemini.isNotEmpty ? _keys.gemini.length : _others.length;
+    final n = _keys.gemini.length + _others.length;
     return n.clamp(1, 4);
   }
 

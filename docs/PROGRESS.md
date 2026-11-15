@@ -2,6 +2,11 @@
 
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
+## Latest (2026-11-15): 1.2.2.0 built and committed, NOT released, NOT checked on the phone
+
+- Issues #16 to #22 (all open until the phone check). Apps & sites: `lib/full/limits*.dart`, Kotlin `AppLimits.kt`, `ReelCounterService.enforceLimits` (second `BlockMeter`, keys `app:<pkg>` and `site:<host>` in `block_use`). Blocker history removed (Dart and Kotlin; old rows dropped on start). Parallel analysis: `_workerCount` in `runner.dart` now counts Gemini plus OpenAI and Claude keys (it was Gemini keys only, so one Gemini key meant one reel at a time).
+- To check on the phone: add an app and a site with 1 minute, use them, see the block screen; bars move; Edit/Cancel; Save hidden until an edit; two reels shared together run at once.
+
 ## Latest (2026-11-12): v1.2.1.3 released; 1.2.1.4 ready, NOT released or committed (user said stop)
 
 - **LinkedIn (#12): full details and what to check next are in [LINKEDIN.md](LINKEDIN.md).**

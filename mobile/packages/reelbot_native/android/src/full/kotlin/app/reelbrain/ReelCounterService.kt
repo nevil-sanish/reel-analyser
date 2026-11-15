@@ -38,6 +38,13 @@ class ReelCounterService : AccessibilityService() {
     private lateinit var sink: CounterSink
     private lateinit var tracker: ReelTracker
     private lateinit var meter: BlockMeter
+    /** Time in the apps and websites that have a daily limit, counted apart from the reel meter. */
+    private lateinit var limitMeter: BlockMeter
+    private var limitsAt = 0L
+    private var limitApps: Map<String, LimitItem> = emptyMap()
+    private var limitSites: List<LimitItem> = emptyList()
+    private var limitUsedAt = 0L
+    private var limitUsed: Map<String, Long> = emptyMap()
     private var stateAt = 0L
     private var state = BlockState()
     private var usedAt = 0L
@@ -52,12 +59,12 @@ class ReelCounterService : AccessibilityService() {
     private val tick = object : Runnable {
         override fun run() {
             evaluate()
-            if (tracker.active || meter.active) handler.postDelayed(this, 1000) else ticking = false
+            if (tracker.active || meter.active || limitMeter.active) handler.postDelayed(this, 1000) else ticking = false
         }
     }
 
     private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop() }
+        override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop() }
     }
 
     /** CounterDb, plus the unknown alert after each unknown item. */
@@ -78,6 +85,7 @@ class ReelCounterService : AccessibilityService() {
         sink = CounterSink(db)
         tracker = ReelTracker(AlertingSink())
         meter = BlockMeter(sink)
+        limitMeter = BlockMeter(sink)
         BlockPhotos.wipe(this)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
         running = true
@@ -87,6 +95,7 @@ class ReelCounterService : AccessibilityService() {
         if (running) {
             tracker.end(System.currentTimeMillis())
             meter.stop()
+            limitMeter.stop()
             handler.removeCallbacks(tick)
             unregisterReceiver(screenOff)
             running = false
@@ -100,15 +109,16 @@ class ReelCounterService : AccessibilityService() {
 
     override fun onAccessibilityEvent(e: AccessibilityEvent) {
         if (!consented()) {
-            if (tracker.active || meter.active) { tracker.end(System.currentTimeMillis()); meter.stop() }
+            if (tracker.active || meter.active || limitMeter.active) { tracker.end(System.currentTimeMillis()); meter.stop(); limitMeter.stop() }
             return
         }
         val pkg = e.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return
-        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && !tracker.active && !meter.active) return
         val now = System.currentTimeMillis()
+        refreshLimits(now)
+        if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && pkg !in limitApps && !tracker.active && !meter.active && !limitMeter.active) return
         if (now - lastEval >= 250) evaluate()
-        if ((tracker.active || meter.active) && !ticking) {
+        if ((tracker.active || meter.active || limitMeter.active) && !ticking) {
             ticking = true
             handler.postDelayed(tick, 1000)
         }
@@ -121,6 +131,7 @@ class ReelCounterService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
         val pkg = root.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return // neither leaving nor watching
+        enforceLimits(now, root, pkg)
         val app = DetectionRules.apps[pkg]
         if (app == null) {
             tracker.observe(now, null, false, null)
@@ -153,6 +164,34 @@ class ReelCounterService : AccessibilityService() {
         return null
     }
 
+    private fun refreshLimits(now: Long) {
+        if (now - limitsAt <= 1000) return
+        limitsAt = now
+        val l = db.currentLimits(now).active
+        limitApps = l.filter { it.kind == "app" }.associateBy { it.id }
+        limitSites = l.filter { it.kind == "site" }
+    }
+
+    /** Counts the time in an app or website that has a daily limit and, once it is used up, opens the block screen over it. */
+    private fun enforceLimits(now: Long, root: AccessibilityNodeInfo, pkg: String) {
+        refreshLimits(now)
+        val date = localDate(now)
+        val item = limitApps[pkg] ?: if (limitSites.isNotEmpty() && pkg in Browsers.packages) siteOnScreen(root, pkg) else null
+        limitMeter.observe(now, item?.key, date)
+        if (item == null) return
+        if (now - limitUsedAt > 1000) { limitUsed = db.usedToday(date); limitUsedAt = now }
+        if (AppLimits.isOver(item, (limitUsed[item.key] ?: 0L) + limitMeter.pending(item.key))) blockNow(item.key, "applimit", now, item)
+    }
+
+    /** The limited website whose address the browser's address bar shows. Only that one field is read. */
+    private fun siteOnScreen(root: AccessibilityNodeInfo, pkg: String): LimitItem? {
+        for (id in Browsers.addressIds) {
+            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() } ?: continue
+            return limitSites.firstOrNull { AppLimits.siteMatches(it.id, t) }
+        }
+        return null
+    }
+
     private var punishAt = 0L
     private var punish: Punish? = null
 
@@ -181,15 +220,14 @@ class ReelCounterService : AccessibilityService() {
     }
 
     /** Opens the block screen over what is on screen, at most every 4 seconds, and notes it once a day in the history. */
-    private fun blockNow(surface: String, reason: String, now: Long) {
+    private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null) {
         if (now - lastBlock <= 4000) return
         lastBlock = now
         meter.stop()
-        val midnight = Calendar.getInstance().apply { timeInMillis = now; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
-        val kind = if (reason == "commit") "punished" else reason
-        if (!db.hasEvent(kind, surface, midnight)) db.addEvent(now, kind, surface)
+        limitMeter.stop()
         startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, reason))
+            .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, reason)
+            .putExtra(BlockActivity.TEXT, item?.let { AppLimits.message(it) } ?: ""))
     }
 
     /** At most 1,500 nodes and depth 40, so a huge tree can't stall the service. */

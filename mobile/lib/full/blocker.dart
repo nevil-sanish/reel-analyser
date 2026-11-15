@@ -114,31 +114,6 @@ class BlockerState {
   );
 }
 
-class BlockEvent {
-  final DateTime at;
-  final String kind;
-  final String surface;
-  const BlockEvent(this.at, this.kind, this.surface);
-
-  /// One line for the history list.
-  String get label {
-    final what = surface.isEmpty
-        ? ''
-        : ' (${surfaceNames[surface]?.split(' (').first ?? surface})';
-    return switch (kind) {
-      'limit' => 'Reached the daily limit$what',
-      'schedule' => 'Tried to watch outside the schedule$what',
-      'cancel_try' => 'Tried to cancel the block$what',
-      'cancelled' => 'Cancelled the block for the day$what',
-      'kept' => 'Kept the block$what',
-      'set' => 'Set up the blocker',
-      'changed' => 'Changed the rules',
-      'removed' => 'Removed the blocker for good',
-      _ => kind,
-    };
-  }
-}
-
 /// The reel blocker's side of the `reelbot/counter` channel. Full build only: the semi build answers "not implemented".
 class BlockerBridge {
   static const _ch = MethodChannel('reelbot/counter');
@@ -164,16 +139,6 @@ class BlockerBridge {
 
   /// Turns the block off until midnight. The caller has already taken the typed paragraph.
   Future<void> cancelToday() => _ch.invokeMethod('blockCancel');
-
-  Future<List<BlockEvent>> history() async => [
-    for (final e
-        in await _ch.invokeListMethod<Map>('blockHistory') ?? const <Map>[])
-      BlockEvent(
-        DateTime.fromMillisecondsSinceEpoch((e['ts'] as num).toInt()),
-        '${e['kind']}',
-        '${e['surface']}',
-      ),
-  ];
 }
 
 /// The "why do you want to remove it?" paragraph must be typed. Nothing can tell for sure that a text was not written by an AI,

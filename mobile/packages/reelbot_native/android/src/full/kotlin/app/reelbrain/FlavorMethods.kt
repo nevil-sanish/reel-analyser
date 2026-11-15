@@ -15,7 +15,10 @@ import io.flutter.plugin.common.MethodChannel
 
 /** The full build's side of the channel: the counter, the blocker and goals penalty, Usage access, notifications and the installer. */
 object FlavorMethods {
-    fun onAttach(ctx: Context) = DigestWorker.schedule(ctx)
+    fun onAttach(ctx: Context) {
+        DigestWorker.schedule(ctx)
+        CounterPlugin.io.execute { runCatching { CounterDb.get(ctx).dropHistory() } }
+    }
 
     /** Erase all my data: the blocker photos too. */
     fun onErase(ctx: Context) = BlockPhotos.wipe(ctx)
@@ -53,7 +56,6 @@ object FlavorMethods {
                 "blockRemove" -> {
                     val db = CounterDb.get(ctx)
                     db.saveBlockState(BlockState())
-                    db.addEvent(System.currentTimeMillis(), "removed")
                     BlockPhotos.wipe(ctx)
                     result.success(null)
                 }
@@ -61,7 +63,6 @@ object FlavorMethods {
                     val db = CounterDb.get(ctx)
                     val now = System.currentTimeMillis()
                     db.saveBlockState(db.currentBlockState(now).copy(suspendedDate = localDate(now)))
-                    db.addEvent(now, "cancelled")
                     result.success(null)
                 }
                 "punishSet" -> {
@@ -69,7 +70,13 @@ object FlavorMethods {
                     CounterDb.get(ctx).setPunish(Punish(call.argument<String>("until"), apps, call.argument<Int>("streak") ?: 0))
                     result.success(null)
                 }
-                "blockHistory" -> result.success(CounterDb.get(ctx).events(200))
+                "limitsState" -> result.success(limitsState())
+                "limitsSave" -> result.success(limitsSave(call.argument<String>("items")!!, call.argument<Boolean>("immediate") == true))
+                "limitsRemove" -> {
+                    CounterDb.get(ctx).saveLimits(LimitsState())
+                    result.success(null)
+                }
+                "installedApps" -> CounterPlugin.offMain(result) { installedApps() }
                 "detectionConsent" -> result.success(prefs().getBoolean(ReelCounterService.CONSENT, false))
                 "setDetectionConsent" -> {
                     val on = call.argument<Boolean>("on") == true
@@ -126,9 +133,39 @@ object FlavorMethods {
             val before = db.currentBlockState(now)
             val after = BlockPolicy.save(before, cfg, now)
             db.saveBlockState(after)
-            db.addEvent(now, if (before.active == null) "set" else "changed")
             return "ok"
         }
+
+        private fun limitsState(): Map<String, Any?> {
+            val now = System.currentTimeMillis()
+            val db = CounterDb.get(ctx)
+            val s = db.currentLimits(now)
+            return mapOf(
+                "active" to s.active.takeIf { it.isNotEmpty() }?.let { AppLimits.toJson(it) },
+                "pending" to s.pending?.let { AppLimits.toJson(it) }, "pendingFrom" to s.pendingFrom,
+                "used" to db.usedToday(localDate(now)),
+            )
+        }
+
+        /** "ok" or "invalid". [immediate]: the app says this change is no looser than what is in force. */
+        private fun limitsSave(json: String, immediate: Boolean): String {
+            val list = AppLimits.parse(json)?.takeIf { it.isNotEmpty() } ?: return "invalid"
+            val db = CounterDb.get(ctx)
+            db.saveLimits(AppLimits.save(db.currentLimits(System.currentTimeMillis()), list, immediate, System.currentTimeMillis()))
+            return "ok"
+        }
+
+        /** Apps with a launcher icon, for the picker. Leaves out this app, the home screen, Settings and calls. */
+        private fun installedApps(): List<Map<String, String>> {
+            val pm = ctx.packageManager
+            val home = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0).map { it.activityInfo.packageName }.toSet()
+            return pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
+                .map { it.activityInfo.packageName to it.loadLabel(pm).toString() }
+                .filter { (p, _) -> !AppLimits.isProtected(p) && p !in home }
+                .distinctBy { it.first }.sortedBy { it.second.lowercase() }
+                .map { mapOf("pkg" to it.first, "label" to it.second) }
+        }
+
         private fun status(): Map<String, Any?> {
             val ours = ComponentName(ctx, ReelCounterService::class.java)
             // The AccessibilityManager list, not the raw ENABLED_ACCESSIBILITY_SERVICES setting: on a Nothing phone with

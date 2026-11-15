@@ -1,1 +1,1 @@
-Gemini keys: every analysis starts on the next saved key, and the place is remembered, so one key is not used every time. LinkedIn: a failed post has a Read in app button that opens it inside the app and analyses what loads.
+Reels shared together are analysed at the same time on different keys. Gemini keys rotate per analysis; LinkedIn failures have Read in app. (The Blocker is in the full build only.)

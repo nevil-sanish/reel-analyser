@@ -6,11 +6,12 @@ Future<bool> askDetectionConsent(BuildContext context) async {
   final ok = await showDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('Allow reading the reel screens?'),
+      title: const Text('Allow reading the screens?'),
       content: const Text(
         'To count reels and to block them past your limit, Reel Analyser must notice when a Reel or Short is on screen. '
+        'For the time limits you set on apps and websites it also notes which app is in front, and in a browser reads the address bar, only for what you added. '
         'It never takes screenshots and never records your screen. It reads only which parts of the Instagram and YouTube '
-        'screens are showing (and, in a browser, the address bar), and only while this is on. Nothing is sent anywhere. '
+        'screens are showing, and only while this is on. Nothing is sent anywhere. '
         'You can turn it off here at any time.',
       ),
       actions: [

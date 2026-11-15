@@ -25,21 +25,6 @@ void main() {
     expect(BlockConfig.parse(null), isNull);
   });
 
-  test('history lines say what happened', () {
-    expect(
-      BlockEvent(DateTime(2026), 'limit', 'instagram').label,
-      contains('daily limit'),
-    );
-    expect(
-      BlockEvent(DateTime(2026), 'cancelled', 'youtube').label,
-      contains('Cancelled the block'),
-    );
-    expect(
-      BlockEvent(DateTime(2026), 'removed', '').label,
-      contains('for good'),
-    );
-  });
-
   group('paragraph guard', () {
     final t0 = DateTime(2026, 11, 9, 10);
     final para = List.generate(55, (i) => 'word$i').join(' ');

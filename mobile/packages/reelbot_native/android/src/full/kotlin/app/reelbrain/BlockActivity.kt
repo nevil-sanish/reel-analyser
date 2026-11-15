@@ -28,6 +28,7 @@ class BlockActivity : Activity() {
     companion object {
         const val SURFACE = "surface"
         const val REASON = "reason"
+        const val TEXT = "text"
         private const val HOLD_MS = 3000L
         val quotes = listOf(
             "Small choices today become the person you are tomorrow.",
@@ -42,6 +43,7 @@ class BlockActivity : Activity() {
 
     private var surface = ""
     private var reason = ""
+    private var message = ""
     private var unlocked = false
     private val quote get() = quotes[Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % quotes.size]
 
@@ -49,6 +51,7 @@ class BlockActivity : Activity() {
         super.onCreate(b)
         surface = intent.getStringExtra(SURFACE) ?: ""
         reason = intent.getStringExtra(REASON) ?: ""
+        message = intent.getStringExtra(TEXT) ?: ""
         showBlock()
         window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
     }
@@ -103,6 +106,7 @@ class BlockActivity : Activity() {
         val close = button("Close (3)", true) { goHome() }.apply { isEnabled = false; alpha = 0.5f }
         screen(
             text("Blocked for now", 28f, true),
+            *(if (message.isEmpty()) emptyArray() else arrayOf(text(message, 17f))),
             text(quote, 20f, color = Color.parseColor("#CFC6AE")),
             close,
         )
