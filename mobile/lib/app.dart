@@ -64,7 +64,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
   Widget build(BuildContext context) => ValueListenableBuilder(
       valueListenable: Brand.mode,
       builder: (_, mode, _) => MaterialApp(
-        title: 'Reel Analyser',
+        title: 'Reel Analyser + Blocker',
         themeMode: mode,
         debugShowCheckedModeBanner: false,
         // Above the navigator, so the passcode screen also covers dialogs and every page.

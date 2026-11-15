@@ -43,7 +43,7 @@ android {
     productFlavors {
         create("full") {
             dimension = "dist"
-            manifestPlaceholders["appLabel"] = "Reel Analyser"
+            manifestPlaceholders["appLabel"] = "Reel Analyser + Blocker"
         }
         create("semi") {
             dimension = "dist"

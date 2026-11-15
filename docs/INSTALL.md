@@ -28,7 +28,7 @@ In Instagram or YouTube, tap **Share → Reel Analyser** (in Instagram it's unde
 
 For **Insights** (optional; notes and chat work without it), open **⚙ → Set up Insights**:
 
-- **Usage access:** tap **Open** next to *Allow usage access* and turn on Reel Analyser. This shows your time in Instagram and YouTube. It's Android's own usage data; nothing is read from the screen.
+- **Usage access:** tap **Open** next to *Allow usage access* and turn on Reel Analyser + Blocker. This shows your time in Instagram and YouTube. It's Android's own usage data; nothing is read from the screen.
 - **Notifications:** tap **Open** next to *Allow notifications*.
 
 The steps below are **optional**: only if you also want Reel Analyser to **count** the reels and Shorts you watch.
@@ -39,7 +39,7 @@ Android greys out Accessibility for apps installed from a file. In the checklist
 
 ## 6. Accessibility
 
-Tap **Open** next to *Turn on Reel Analyser in Accessibility*, then **Installed apps → Reel Analyser → On**. Reel Analyser only reads the Reels and Shorts screens. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
+Tap **Open** next to *Turn on Reel Analyser in Accessibility*, then **Installed apps → Reel Analyser + Blocker → On**. Reel Analyser only reads the Reels and Shorts screens. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
 
 ## 7. Battery
 
@@ -47,7 +47,7 @@ Tap **Allow** next to *Battery: unrestricted*, so Android doesn't stop the count
 
 ## 8. Autostart (Xiaomi, Realme, Oppo, Vivo)
 
-These phones stop background apps unless Autostart is on. Tap **Open** next to *Allow Autostart* and turn on Reel Analyser. The step only appears on those phones.
+These phones stop background apps unless Autostart is on. Tap **Open** next to *Allow Autostart* and turn on Reel Analyser + Blocker. The step only appears on those phones.
 
 ## Afterwards
 

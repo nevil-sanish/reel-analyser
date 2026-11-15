@@ -1,5 +1,5 @@
 name: reelbrain
-description: "Reel Analyser: turns the reels you share into searchable notes, and counts the Reels and Shorts you watch."
+description: "Reel Analyser + Blocker: turns the reels you share into searchable notes, counts the Reels and Shorts you watch, and blocks them and other apps and sites after your daily limit."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

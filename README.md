@@ -1,8 +1,28 @@
-# Reel Analyser
+# Reel Analyser + Blocker
 
-Android app that turns the Instagram Reels, YouTube Shorts, Instagram posts and photos you share to it into short AI notes you can search and chat with, counts how many reels and shorts you watch, and (full build, optional) can block Reels and Shorts once you pass a limit you set. It uses your own AI keys. There is no account and no server: everything lives on your phone.
+Android app that turns the Instagram Reels, YouTube Shorts, LinkedIn posts and photos you share to it into short AI notes you can search and chat with. The full build also counts the reels you watch and blocks Reels, Shorts, apps and websites once your daily limit is used up. It uses your own AI keys. There is no account and no server: everything stays on your phone.
 
-**Download:** [latest APK](https://github.com/nevil-sanish/reel-analyser/releases) (Android 10+).
+**Download:** [latest APK](https://github.com/nevil-sanish/reel-analyser/releases/latest) (Android 10+, free, open source, MIT).
+
+## In short (questions and answers)
+
+**What is Reel Analyser + Blocker?** A free, open-source Android app with two jobs: (1) save what you watch as searchable AI notes, and (2) limit how much time you waste on Reels, Shorts, apps and websites.
+
+**How do I save a reel or Short as a note?** In Instagram, YouTube or LinkedIn tap Share, then pick the app. A few minutes later the note (summary, key points, tags) is in the Library. You can then ask questions that are answered only from your notes.
+
+**Can it block Instagram Reels and YouTube Shorts?** Yes, in the Full build: set a daily limit and allowed time slots, and the app shows a block screen over the reel once the limit is used up. Only reels are blocked, not the whole app, unless you choose that.
+
+**Can it limit any app or website per day?** Yes, in the Full build (*Blocker → Apps & sites*): pick an app or type a website, give it minutes per day (0 = blocked all day). Apps are timed with Android's Usage access, websites by reading the browser's address bar with the Accessibility service, only after you allow it.
+
+**Can it lock the app with a passcode?** Yes: *Settings → App lock* (4 to 8 digits). It only hides the app; sharing and background analysis keep working.
+
+**Which AI does it use?** Your own key: Gemini (free tier, watches the video), OpenAI, Claude, and Groq for chat. Several Gemini keys let several reels be analysed at the same time.
+
+**Is my data private?** Yes. No account, no analytics, no server. Notes stay on your phone; a reel goes only to the AI provider you chose. The screen is never recorded.
+
+**Full or Semi?** *Reel Analyser + Blocker* (Full) has everything, including the blocker, limits, daily goals and counting. *Reel Analyser Semi* has the notes features only and asks Android for nothing but the internet. Both can be installed side by side.
+
+**Keywords:** Instagram Reels summarizer, YouTube Shorts summarizer, reel blocker, Shorts blocker, app time limit, website blocker, screen time, digital wellbeing, AI notes, Gemini, offline-first, no account, open source Android.
 
 ## Look and feel
 
@@ -65,20 +85,25 @@ Both are optional; notes and chat work without them.
 
 After 9 pm, on days you didn't open the app, you get one digest notification.
 
-### 5. Reel blocker (Full build only, optional)
+### 5. Blocker (Full build only, optional)
 
-*Settings → Reel blocker.* A self-control tool for your own phone: it blocks only Reels, Shorts and reel pages, never the rest of the app.
+*Blocker tab*, three parts: **Reel limits**, **Apps & sites**, **Daily goals**. A self-control tool for your own phone.
 
-- **What to block:** Instagram Reels, YouTube Shorts and reel or shorts pages in a browser (`instagram.com/reels`, `youtube.com/shorts`). Pick any of them.
-- **Limits:** one shared daily limit for everything you picked, or one for each, in minutes or hours. It counts time on reels only.
-- **Schedule:** any number of time slots when reels are allowed (for example 18:00 to 19:00). Outside them they are blocked. A reel is watched only when both the limit and the slots allow it.
+**Reel limits** block only Reels, Shorts and reel pages, never the rest of the app.
+- **What to block:** Instagram Reels, YouTube Shorts and reel or shorts pages in a browser. Pick any of them.
+- **Limits:** one shared daily limit or one for each, with a progress bar for every timer. It counts time on reels only, unless you choose the whole app.
+- **Schedule:** any number of time slots when reels are allowed. Outside them they are blocked.
 - **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
-- **Reels only or whole app:** for Instagram and YouTube you choose whether only reel time counts (and only reels are blocked) or all time in the app counts (and the whole app is blocked past the rule).
-- **Locked rules:** after the first set-up, changing the rules takes a 50-word paragraph typed by hand (no paste), checked with your own AI key; an accepted change starts at the next 00:00.
-- **Turn off for today:** needs a paragraph of at least 50 words typed by hand (no paste; typing very fast locks the field until you stop for 2 seconds). It is checked on the phone and then with your own AI key that it is a valid reason; it is not stored.
-- **Remove for good:** needs a paragraph of at least 50 words typed by hand: no paste, not too fast, no typical AI wording, and a valid reason checked with your own AI key. These checks are best-effort.
-- **History:** dates and kinds of limit hits and cancel attempts. No photos, no text.
+- **Once set:** the screen shows only *On*, the progress bars, **Edit** and **Turn off permanently**. Save appears only when something changed.
+- **Locked rules:** after the first set-up, a looser change takes a 50-word paragraph typed by hand (no paste); an accepted change starts at the next 00:00. Stricter changes apply at once.
+- **Turn off for today:** offered only while a block is in force; same typed paragraph.
+- **Remove for good:** same typed paragraph. The paragraph is checked on the phone only (length, no paste, not too fast, typing time, typical AI wording). No AI check, nothing stored.
+- **No history** of blocks is kept.
+
+**Apps & sites** give any installed app or website a time per day (0 = blocked all day). Apps are timed with Usage access; websites by reading the browser address bar through Accessibility, after your separate OK. When the time is up, a block screen opens.
+
 - **It can be bypassed** (turn Accessibility off, change the clock, use another browser or app). It is a nudge for you, not a lock, and not for use on anyone else's phone.
+- **Backup:** the blocker rules are saved in the export and restored on import (only when none are set).
 
 ### 6. Daily goals (Full build only, optional)
 
@@ -88,8 +113,8 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 *Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day only; miss that day too and the day after is blocked as well. A day you could not be read is never counted as a miss.
 
-- **Changing or stopping:** allowed any time, but after the first set-up it takes a typed paragraph of at least 50 words (no paste), checked with your own AI key that it is a valid reason. A running penalty still ends on its last day.
-- **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why; your own AI provider (your key, not stored) checks it is a real reason.
+- **Changing or stopping:** allowed any time, but after the first set-up it takes a typed paragraph of at least 50 words (no paste), checked on the phone. A running penalty still ends on its last day.
+- **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why.
 - **Limits:** GitHub counts public repositories only; LeetCode has no official API, so it may stop working; a changed phone clock or Accessibility turned off can bypass it.
 - **Semi is a different build, not a hidden one:** it contains none of this code.
 
