@@ -3,15 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/app_lock.dart';
+import '../data/biometrics.dart';
 import 'motion.dart';
 
-/// Covers the app with the passcode screen when a passcode is set: at start, and when the app is opened again after
-/// [grace] away. The cover also hides the screen the moment the app leaves the front, so the recent-apps picture shows nothing.
+/// Covers the app with the passcode screen when a passcode is set: at start, and at once whenever the app has been left
+/// (home, another app, recent apps, screen off). The cover also hides the screen the moment the app leaves the front,
+/// so the recent-apps picture shows nothing.
 class LockGate extends StatefulWidget {
   final AppLock lock;
   final Widget child;
-  final Duration grace;
-  const LockGate({required this.lock, required this.child, this.grace = const Duration(seconds: 30), super.key});
+  final Biometrics biometrics;
+  const LockGate({required this.lock, required this.child, this.biometrics = const NoBiometrics(), super.key});
 
   /// Told by Settings after the passcode is set, changed or removed.
   static final changed = ValueNotifier<int>(0);
@@ -25,7 +27,6 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   var _enabled = false;
   var _locked = false;
   var _hidden = false;
-  DateTime? _leftAt;
 
   @override
   void initState() {
@@ -60,16 +61,15 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState s) {
     if (!_enabled) return;
-    if (s == AppLifecycleState.inactive || s == AppLifecycleState.paused) {
-      _leftAt ??= DateTime.now();
+    if (s == AppLifecycleState.paused) {
+      setState(() {
+        _locked = true;
+        _hidden = true;
+      });
+    } else if (s == AppLifecycleState.inactive) {
       setState(() => _hidden = true);
     } else if (s == AppLifecycleState.resumed) {
-      final left = _leftAt;
-      _leftAt = null;
-      setState(() {
-        if (left != null && DateTime.now().difference(left) >= widget.grace) _locked = true;
-        _hidden = false;
-      });
+      setState(() => _hidden = false);
     }
   }
 
@@ -81,7 +81,7 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
       if (cover)
         Positioned.fill(
           child: _locked && _ready && !_hidden
-              ? LockScreen(lock: widget.lock, onUnlocked: () => setState(() => _locked = false))
+              ? LockScreen(lock: widget.lock, biometrics: widget.biometrics, onUnlocked: () => setState(() => _locked = false))
               : ColoredBox(color: Theme.of(context).colorScheme.surface),
         ),
     ]);
@@ -90,8 +90,9 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
 
 class LockScreen extends StatefulWidget {
   final AppLock lock;
+  final Biometrics biometrics;
   final VoidCallback onUnlocked;
-  const LockScreen({required this.lock, required this.onUnlocked, super.key});
+  const LockScreen({required this.lock, required this.biometrics, required this.onUnlocked, super.key});
 
   @override
   State<LockScreen> createState() => _LockScreenState();
@@ -102,11 +103,32 @@ class _LockScreenState extends State<LockScreen> {
   String? _msg;
   var _busy = false;
   Timer? _tick;
+  var _bio = false;
+  var _asking = false;
 
   @override
   void initState() {
     super.initState();
     _waiting();
+    _startBiometric();
+  }
+
+  /// Offers fingerprint or face when the person turned it on and the phone still has one enrolled; asks once on its own.
+  Future<void> _startBiometric() async {
+    final on = await widget.lock.biometric && await widget.biometrics.available();
+    if (!mounted) return;
+    setState(() => _bio = on);
+    if (on) await _askBiometric();
+  }
+
+  Future<void> _askBiometric() async {
+    if (_asking) return;
+    _asking = true;
+    final ok = await widget.biometrics.check('Unlock Reel Analyser');
+    _asking = false;
+    if (!mounted || !ok) return;
+    Haptics.success();
+    widget.onUnlocked();
   }
 
   @override
@@ -182,6 +204,10 @@ class _LockScreenState extends State<LockScreen> {
                 ],
                 const SizedBox(height: 20),
                 SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _go, child: const Text('Unlock'))),
+                if (_bio) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(onPressed: _askBiometric, icon: const Icon(Icons.fingerprint_rounded), label: const Text('Use fingerprint or face')),
+                ],
               ]),
             ),
           ),

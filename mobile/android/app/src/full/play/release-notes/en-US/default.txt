@@ -1,1 +1,1 @@
-New: an app lock. Set a passcode (4 to 8 digits) in Settings → App lock and the app asks for it when it opens and when you return after 30 seconds away. It only hides the app: sharing a reel to it and the background analysis keep working.
+The app lock now locks the moment you leave the app (home, another app, recent apps or screen off), not after 30 seconds. New: unlock with your fingerprint or face, switched on in Settings → App lock; the passcode always still works. The app is now called Reel Analyser + Blocker.

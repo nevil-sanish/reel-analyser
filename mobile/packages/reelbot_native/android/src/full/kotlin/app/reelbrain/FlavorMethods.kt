@@ -87,6 +87,8 @@ object FlavorMethods {
                     }
                     result.success(null)
                 }
+                "biometricAvailable" -> result.success(Biometric.available(ctx))
+                "biometricCheck" -> Biometric.check(ctx, call.argument<String>("reason") ?: "") { result.success(it) }
                 "status" -> result.success(status())
                 "updateDir" -> result.success(java.io.File(ctx.cacheDir, "update").apply { mkdirs() }.path)
                 "installApk" -> result.success(installApk(call.argument<String>("path")!!))

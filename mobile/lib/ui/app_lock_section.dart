@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../app_services.dart';
 import '../data/app_lock.dart';
+
 import 'lock_gate.dart';
 
 /// Settings → App lock: set, change or remove the passcode that opens the app.
@@ -17,6 +18,8 @@ class AppLockSection extends StatefulWidget {
 class _AppLockSectionState extends State<AppLockSection> {
   late final _lock = AppLock(widget.services.keys);
   bool? _on;
+  var _bio = false;
+  var _bioAvailable = false;
 
   @override
   void initState() {
@@ -26,7 +29,15 @@ class _AppLockSectionState extends State<AppLockSection> {
 
   Future<void> _load() async {
     final on = await _lock.enabled;
-    if (mounted) setState(() => _on = on);
+    final bio = await _lock.biometric;
+    final avail = on && await widget.services.features.biometrics.available();
+    if (mounted) {
+      setState(() {
+        _on = on;
+        _bio = bio && avail;
+        _bioAvailable = avail;
+      });
+    }
   }
 
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
@@ -91,6 +102,12 @@ class _AppLockSectionState extends State<AppLockSection> {
     await _setNew('New passcode');
   }
 
+  Future<void> _toggleBio(bool want) async {
+    if (want && !await widget.services.features.biometrics.check('Turn on fingerprint or face unlock')) return _say('Not turned on: the check did not pass.');
+    await _lock.setBiometric(want);
+    await _load();
+  }
+
   Future<void> _remove() async {
     final r = await _ask('Remove the passcode', const ['Current passcode']);
     if (r == null || !mounted || !await _right(r[0])) return;
@@ -107,7 +124,7 @@ class _AppLockSectionState extends State<AppLockSection> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         on
-            ? 'The passcode is on. The app asks for it when you open it, and again when you come back after 30 seconds away. Sharing a reel to the app still works without it.'
+            ? 'The passcode is on. The app asks for it when you open it, and every time you come back after leaving it. Sharing a reel to the app still works without it.'
             : 'Ask for a passcode before the app opens. It only hides what is in the app: sharing a reel to it and the background analysis keep working.',
       ),
       const SizedBox(height: 8),
@@ -116,6 +133,14 @@ class _AppLockSectionState extends State<AppLockSection> {
         if (on) OutlinedButton(onPressed: _change, child: const Text('Change')),
         if (on) OutlinedButton(onPressed: _remove, child: const Text('Remove')),
       ]),
+      if (on && _bioAvailable)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Unlock with fingerprint or face'),
+          subtitle: const Text('The passcode still works, and is the way in if the fingerprint fails.'),
+          value: _bio,
+          onChanged: _toggleBio,
+        ),
     ]);
   }
 }

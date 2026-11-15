@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_services.dart';
+import 'data/biometrics.dart';
 import 'data/update_check.dart';
 
 /// One tab of the bottom bar.
@@ -32,6 +33,9 @@ abstract class AppFeatures {
 
   /// Extra Settings sections, in the same card style as the rest.
   List<Widget> settingsSections(BuildContext context, AppServices s, Widget Function(String title, List<Widget> children) section) => const [];
+
+  /// Fingerprint or face unlock for the app lock; none in the semi build.
+  Biometrics get biometrics => const NoBiometrics();
 
   /// The app was opened or came back to the front.
   Future<void> onOpen(AppServices s) async {}

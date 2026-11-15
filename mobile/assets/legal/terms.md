@@ -1,6 +1,6 @@
 # Terms of Use
 
-Reel Analyser · Effective 15 November 2026 · Version 1.7
+Reel Analyser · Effective 15 November 2026 · Version 1.8
 
 These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), the independent developer of Reel Analyser. By installing or using Reel Analyser you agree to these terms, the Privacy Policy, the Disclaimer and, if you support the app, the Support and Refund Policy. If you do not agree, do not use the app.
 

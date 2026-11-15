@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../app_services.dart';
+import '../data/biometrics.dart';
 import '../data/update_check.dart';
 import '../features.dart';
 import 'blocker.dart';
@@ -33,6 +34,9 @@ class FullFeatures extends AppFeatures {
 
   @override
   String get flavor => 'full';
+
+  @override
+  Biometrics get biometrics => BridgeBiometrics();
 
   @override
   List<AppTab> get afterAsk => const [AppTab(Icons.insights_outlined, Icons.insights, 'Insights', _insights)];

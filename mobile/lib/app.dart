@@ -68,7 +68,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
         themeMode: mode,
         debugShowCheckedModeBanner: false,
         // Above the navigator, so the passcode screen also covers dialogs and every page.
-        builder: (context, child) => LockGate(lock: AppLock(widget.services.keys), child: child ?? const SizedBox()),
+        builder: (context, child) => LockGate(lock: AppLock(widget.services.keys), biometrics: widget.services.features.biometrics, child: child ?? const SizedBox()),
         theme: Brand.theme(Brightness.light),
         darkTheme: Brand.theme(Brightness.dark),
         home: AnimatedSwitcher(

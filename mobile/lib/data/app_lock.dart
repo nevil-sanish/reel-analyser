@@ -20,6 +20,7 @@ class AppLock {
   static final _pin = RegExp(r'^\d{4,8}$');
   static const _rec = 'app_lock';
   static const _st = 'app_lock_state';
+  static const _bio = 'app_lock_bio';
 
   final LockStorage store;
   final DateTime Function() now;
@@ -44,7 +45,13 @@ class AppLock {
     await store.writeLock(_st, null);
   }
 
+  /// Whether the lock screen also offers fingerprint or face.
+  Future<bool> get biometric async => ((await store.readLock(_bio)) ?? '') == '1';
+
+  Future<void> setBiometric(bool on) => store.writeLock(_bio, on ? '1' : null);
+
   Future<void> remove() async {
+    await store.writeLock(_bio, null);
     await store.writeLock(_rec, null);
     await store.writeLock(_st, null);
   }
