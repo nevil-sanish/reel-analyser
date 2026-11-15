@@ -1,1 +1,1 @@
-App and website limits no longer read the screen. Apps are timed with Usage access and blocked with a screen over them (needs Display over other apps). Websites are blocked by a local filter, a VPN that only carries DNS questions. Accessibility is now only for Instagram and YouTube reels and browser reel pages.
+Updated Privacy Policy, Terms and Disclaimer for the full and semi builds. New warning: while Accessibility is on, payment and banking apps such as Google Pay may refuse to work. No other change.

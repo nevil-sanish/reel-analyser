@@ -1,1 +1,1 @@
-Version bump to match the full build; no change in this build.
+Updated Privacy Policy, Terms and Disclaimer for the full and semi builds. No other change in this build.
