@@ -55,10 +55,6 @@ bool isStricter(List<LimitItem> before, List<LimitItem> after) {
   return before.every((b) => m[b.key] != null && m[b.key]! <= b.limitMin);
 }
 
-/// The limits in words, for the AI check of a change.
-String describeLimits(List<LimitItem> l) =>
-    l.isEmpty ? 'no limits' : l.map((i) => '${i.label} (${i.isSite ? 'website' : 'app'}) ${i.limitMin} min a day').join('; ');
-
 /// A stable text for comparing two lists (the order the user added them in does not matter).
 String limitsSignature(List<LimitItem> l) => LimitItem.encode([...l]..sort((a, b) => a.key.compareTo(b.key)));
 

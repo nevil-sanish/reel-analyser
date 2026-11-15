@@ -145,8 +145,6 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     setState(() => _draft = [for (final x in _draft) x.key == i.key ? x.withLimit(m) : x]);
   }
 
-  Future<Future<String> Function(String, String)?> _ask() async => (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
-
   Future<void> _save() async {
     if (_draft.isEmpty) return _say('Add at least one app or website.');
     final before = _st?.active ?? const <LimitItem>[];
@@ -158,17 +156,14 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
       _consent = true;
     }
     if (!immediate) {
-      final ask = await _ask();
       if (!mounted) return;
       final ok = await askParagraph(
         context,
         title: 'Change the time limits',
         intro: 'To loosen limits that are already on, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-            'Pasting is not accepted. Your paragraph is checked with your own AI key and is not stored. '
+            'Pasting is not accepted. It is checked on your phone only and is not stored. '
             'If it is accepted, the new limits start at 00:00 tonight; until then today\'s limits stay.',
         action: 'Check and save',
-        verify: (text) => judgeParagraph(ask,
-            action: 'loosen the daily time limits for apps and websites from "${describeLimits(before)}" to "${describeLimits(_draft)}"', reason: text),
       );
       if (!ok || !mounted) return;
     }
@@ -181,15 +176,12 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
   }
 
   Future<void> _removeForGood() async {
-    final ask = await _ask();
-    if (!mounted) return;
     final ok = await askParagraph(
       context,
       title: 'Turn off for good',
       intro: 'To remove all the app and website time limits, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted. Your paragraph is checked with your own AI key and is not stored.',
+          'Pasting is not accepted. It is checked on your phone only and is not stored.',
       action: 'Remove the limits',
-      verify: (text) => judgeParagraph(ask, action: 'remove all daily time limits for apps and websites for good', reason: text),
     );
     if (!ok || !mounted) return;
     await _bridge.remove();

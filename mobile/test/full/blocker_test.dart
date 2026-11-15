@@ -20,7 +20,6 @@ void main() {
     expect(back.rules['browser']!.limitMin, isNull);
     expect(back.wholeApp, {'instagram'});
     expect(BlockConfig.parse('{"mode":"shared","items":[],"rules":{}}')!.wholeApp, isEmpty, reason: 'rules saved before 1.2.0.0');
-    expect(describeRules(back), contains('the whole Instagram app'));
     expect(BlockConfig.parse('nonsense'), isNull);
     expect(BlockConfig.parse(null), isNull);
   });

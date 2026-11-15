@@ -97,10 +97,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Future<bool> _gate(String title, String intro, String action, String what) async {
-    final ask = (await s.chatProviders()).isEmpty ? null : s.askOnce;
     if (!mounted) return false;
-    return askParagraph(context, title: title, intro: '$intro Your paragraph is checked with your own AI key and is not stored.', action: action,
-        verify: (text) => judgeParagraph(ask, action: what, reason: text));
+    return askParagraph(context, title: title, intro: '$intro It is checked on your phone only and is not stored.', action: action);
   }
 
   /// Stops the goals for good. Written reasons are never stored. A penalty already running still runs to its last day.

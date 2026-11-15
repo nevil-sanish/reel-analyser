@@ -4,21 +4,19 @@ import '../ui/liquid.dart';
 import 'blocker.dart';
 
 /// Asks for a paragraph typed by hand: at least 50 words, no paste, not typed too fast, not written too quickly, no typical AI
-/// wording. When those pass, [verify] (in practice [judgeParagraph] with the person's own AI key) decides whether it is a valid
-/// reason and returns a message when it is not. Resolves true when it is accepted, false when the person backs out. Nothing is stored.
+/// wording. The checks all run on the phone: the paragraph is not sent anywhere and not stored. Resolves true when it is accepted,
+/// false when the person backs out.
 Future<bool> askParagraph(
   BuildContext context, {
   required String title,
   required String intro,
   required String action,
-  required Future<String?> Function(String text) verify,
 }) async =>
-    await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => _ParagraphScreen(title, intro, action, verify))) ?? false;
+    await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => _ParagraphScreen(title, intro, action))) ?? false;
 
 class _ParagraphScreen extends StatefulWidget {
   final String title, intro, action;
-  final Future<String?> Function(String text) verify;
-  const _ParagraphScreen(this.title, this.intro, this.action, this.verify);
+  const _ParagraphScreen(this.title, this.intro, this.action);
 
   @override
   State<_ParagraphScreen> createState() => _ParagraphScreenState();
@@ -28,7 +26,6 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
   final _guard = ParagraphGuard();
   final _c = TextEditingController();
   String? _msg;
-  bool _checking = false;
 
   @override
   void dispose() {
@@ -48,15 +45,10 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
 
   int get _words => _c.text.trim().isEmpty ? 0 : _c.text.trim().split(RegExp(r'\s+')).length;
 
-  Future<void> _go() async {
+  void _go() {
     final bad = _guard.check();
     if (bad != null) return setState(() => _msg = bad);
-    setState(() => _checking = true);
-    final refused = await widget.verify(_guard.text);
-    if (!mounted) return;
-    setState(() => _checking = false);
-    if (refused != null) return setState(() => _msg = refused);
-    if (mounted) Navigator.pop(context, true);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -127,11 +119,9 @@ class _ParagraphScreenState extends State<_ParagraphScreen> {
         ),
         const SizedBox(height: 16),
         FilledButton.icon(
-          onPressed: _checking ? null : _go,
-          icon: _checking
-              ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.verified_outlined),
-          label: Text(_checking ? 'Checking with your AI…' : widget.action),
+          onPressed: _go,
+          icon: const Icon(Icons.verified_outlined),
+          label: Text(widget.action),
         ),
       ]),
     );

@@ -26,7 +26,7 @@ The Reel blocker is a personal self-control aid. It is not guaranteed to block e
 
 ## 6. Daily goals
 
-Daily goals read your public activity on GitHub, Codeforces and LeetCode, which are independent of this app and may change or refuse requests at any time. LeetCode has no official API. Counts can be late or incomplete, and a day that could not be read is never counted as missed. A penalty blocks Instagram or YouTube because of goals you set yourself; it is not guaranteed to work on every phone and can be bypassed. Do not use it on someone else's phone. The check of a written reason for changing a username is done by an AI service and is not guaranteed to be right.
+Daily goals read your public activity on GitHub, Codeforces and LeetCode, which are independent of this app and may change or refuse requests at any time. LeetCode has no official API. Counts can be late or incomplete, and a day that could not be read is never counted as missed. A penalty blocks Instagram or YouTube because of goals you set yourself; it is not guaranteed to work on every phone and can be bypassed. Do not use it on someone else's phone. The check of a written reason for changing a username happens on your phone (length, pasting and typing speed) and is not guaranteed to be right.
 
 ## 7. Support payments
 

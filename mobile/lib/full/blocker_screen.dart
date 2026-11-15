@@ -136,16 +136,14 @@ class _BlockerScreenState extends State<BlockerScreen>
     }
     final before = _st?.active;
     if (before != null) {
-      final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
       if (!mounted) return;
       final ok = await askParagraph(
         context,
         title: 'Change the reel limits',
         intro: 'To change rules that are already on, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-            'Pasting is not accepted. Your paragraph is checked with your own AI key and is not stored. '
+            'Pasting is not accepted. It is checked on your phone only and is not stored. '
             'If it is accepted, the new rules start at 00:00 tonight; until then today\'s rules stay.',
         action: 'Check and save',
-        verify: (text) => judgeRuleChange(ask, before: before, after: c, reason: text),
       );
       if (!ok || !mounted) return;
     }
@@ -162,15 +160,12 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 
   Future<void> _removeForGood() async {
-    final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
-    if (!mounted) return;
     final ok = await askParagraph(
       context,
       title: 'Turn off for good',
       intro: 'To turn off the blocker and remove all its rules, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. Your paragraph is checked with your own AI key and is not stored.',
+          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. It is checked on your phone only and is not stored.',
       action: 'Turn off the blocker',
-      verify: (text) => judgeParagraph(ask, action: 'remove the reel blocker and all its rules for good', reason: text),
     );
     if (!ok || !mounted) return;
     await _bridge.removeForGood();
@@ -181,15 +176,12 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 
   Future<void> _cancelToday() async {
-    final ask = (await widget.services.chatProviders()).isEmpty ? null : widget.services.askOnce;
-    if (!mounted) return;
     final ok = await askParagraph(
       context,
       title: 'Turn off for today',
       intro: 'To turn the block off until midnight, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. Your paragraph is checked with your own AI key and is not stored.',
+          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. It is checked on your phone only and is not stored.',
       action: 'Turn off for today',
-      verify: (text) => judgeParagraph(ask, action: 'turn the reel blocker off for the rest of today', reason: text),
     );
     if (!ok || !mounted) return;
     await _bridge.cancelToday();

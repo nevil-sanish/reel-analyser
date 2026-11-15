@@ -10,7 +10,7 @@ import 'goal_store.dart';
 import 'goals.dart';
 
 /// Changing a username for a goal. A username is locked once it is used. To change it: ask today, come back on a later day,
-/// write at least 50 words by hand about why, and the reason is checked by your own AI provider. Pops `true` when changed.
+/// write at least 50 words by hand about why, and the reason is checked on the phone only. Pops `true` when changed.
 class HandleChangeScreen extends StatefulWidget {
   final AppServices services;
   final String source;
@@ -74,9 +74,7 @@ class _HandleChangeScreenState extends State<HandleChangeScreen> {
       _busy = true;
       _msg = null;
     });
-    final ask = (await s.chatProviders()).isEmpty ? null : s.askOnce;
-    final r = await HandleChangeJudge(goalEngine(s).fetcher, ask)
-        .judge(source: widget.source, oldHandle: widget.oldHandle, newHandle: handle, reason: _guard.text);
+    final r = await HandleChangeJudge(goalEngine(s).fetcher).judge(source: widget.source, oldHandle: widget.oldHandle, newHandle: handle);
     final store = await GoalStore.of(s.library);
     if (r.outcome == ChangeOutcome.allowed) {
       final cfg = GoalConfig.parse(await store.latestGoalConfigJson());
@@ -136,7 +134,7 @@ class _HandleChangeScreenState extends State<HandleChangeScreen> {
         const SizedBox(height: 8),
         Text(
           'Write at least ${ParagraphGuard.minWords} words in your own words, by hand: what happened to ${widget.oldHandle}. Pasting is not accepted. '
-          'Your reason is sent to your own AI provider (with your key) to check it is a real reason, and is not saved by this app.',
+          'It is checked on your phone only and is not saved by this app.',
           style: t.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),

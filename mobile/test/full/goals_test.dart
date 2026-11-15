@@ -276,42 +276,19 @@ void main() {
       expect(changeStep('2026-11-10', '2026-11-10'), ChangeStep.wait); // refused today
     });
 
-    test('verdict parser accepts only a clear boolean', () {
-      expect(parseVerdict('{"valid": true, "reason": "ok"}')!.valid, isTrue);
-      expect(parseVerdict('```json\n{"valid": false, "reason": "vague"}\n```')!.reason, 'vague');
-      expect(parseVerdict('{"valid": "true"}'), isNull);
-      expect(parseVerdict('sure, valid'), isNull);
-      expect(parseVerdict('{broken'), isNull);
-    });
-
     GoalFetcher fetcher(int status, Object body) => GoalFetcher(MockClient((r) async => http.Response(jsonEncode(body), status)));
     final ok = fetcher(200, {'total_count': 0, 'incomplete_results': false});
-    Future<ChangeResult> judge(GoalFetcher f, Future<String> Function(String, String)? ask, {String to = 'newname'}) =>
-        HandleChangeJudge(f, ask).judge(source: 'github', oldHandle: 'old', newHandle: to, reason: 'I renamed my account.');
+    Future<ChangeResult> judge(GoalFetcher f, {String to = 'newname'}) =>
+        HandleChangeJudge(f).judge(source: 'github', oldHandle: 'old', newHandle: to);
 
-    test('allowed only on valid:true; denied carries the reason', () async {
-      expect((await judge(ok, (s, u) async => '{"valid": true, "reason": "renamed"}')).outcome, ChangeOutcome.allowed);
-      final d = await judge(ok, (s, u) async => '{"valid": false, "reason": "Wanting more commits."}');
-      expect(d.outcome, ChangeOutcome.denied);
-      expect(d.message, 'Wanting more commits.');
+    test('a valid, different name the site knows is allowed', () async {
+      expect((await judge(ok)).outcome, ChangeOutcome.allowed);
     });
 
-    test('fails closed: no key, garbage, errors, unknown or same name never allow', () async {
-      expect((await judge(ok, null)).outcome, ChangeOutcome.unavailable);
-      expect((await judge(ok, (s, u) async => 'yes')).outcome, ChangeOutcome.unavailable);
-      expect((await judge(ok, (s, u) async => throw Exception('offline'))).outcome, ChangeOutcome.unavailable);
-      expect((await judge(fetcher(422, {}), (s, u) async => '{"valid": true}')).outcome, ChangeOutcome.unavailable);
-      expect((await judge(ok, (s, u) async => '{"valid": true}', to: 'old')).outcome, ChangeOutcome.unavailable);
-      expect((await judge(ok, (s, u) async => '{"valid": true}', to: 'bad name')).outcome, ChangeOutcome.unavailable);
-    });
-
-    test('the prompt carries both names and the reason inside tags', () async {
-      String? seen;
-      await judge(ok, (s, u) async {
-        seen = u;
-        return '{"valid": false}';
-      });
-      expect(seen, allOf(contains('old'), contains('newname'), contains('<reason>')));
+    test('an unknown, same or invalid name is never allowed', () async {
+      expect((await judge(fetcher(422, {}))).outcome, ChangeOutcome.unavailable);
+      expect((await judge(ok, to: 'old')).outcome, ChangeOutcome.unavailable);
+      expect((await judge(ok, to: 'bad name')).outcome, ChangeOutcome.unavailable);
     });
 
     test('store: handles stay locked, the request is kept and cleared', () async {
