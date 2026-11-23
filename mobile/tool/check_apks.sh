@@ -8,7 +8,7 @@ AAPT=$(ls -d "$SDK"/build-tools/*/aapt | sort -V | tail -1)
 
 # Strings that only the Full build may contain.
 TERMS=(search/commits recentAcSubmissionList codeforces "Daily goals" "Reel blocker" "Set up Insights"
-  blockSave punishSet detectionConsent setCapture appUsage seenItems ReelCounterService BlockActivity
+  blockSave punishSet detectionConsent setCapture appUsage seenItems ReelCounterService
   limitsSave installedApps biometricCheck enableSiteFilter PACKAGE_USAGE_STATS REQUEST_INSTALL_PACKAGES POST_NOTIFICATIONS BIND_ACCESSIBILITY_SERVICE)
 
 dump() { # apk -> one text blob of everything searchable

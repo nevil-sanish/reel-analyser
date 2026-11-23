@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-23, ~15:00 IST): 1.2.4.0 release-ready, NOT published, NOT phone-checked
+
+Both APKs rebuilt (`mobile/build/app/outputs/flutter-apk/`), analyze clean, 177 Dart tests pass, `tool/check_apks.sh` OK (stale `BlockActivity` expectation removed). Both release-notes files and the RELEASES row rewritten. Not done: phone checks (the screen was on, so nothing was tapped) and the publish, which waits for the user's yes. Every open issue still needs the phone, the user's accounts, an Apify key, or F-Droid time.
+
 ## Latest (2026-11-23, ~14:30 IST): #47 frame drops DONE and closed; everything pushed to `main` (15b8c0d); 1.2.4.0 NOT released
 
 **#47 (closed).** Measured with a temporary frame logger (removed): the app was raster-bound (build 2-8 ms, raster 20-200 ms). Fixes: marble background drawn once into an image (`liquid.dart`), tabs switch at once with `Offstage`, page opening is a slide only, `Reveal` rises without a fade, `Skeleton` is static, `InkRipple` instead of `InkSparkle`, no blurred shadow on `Glass`. Worst frame in a tab tour went from about 266 ms to about 52 ms. Not at a steady 90 Hz: the Blocker tab and its Goals/Apps sub-tabs still show a few 20-50 ms frames on first open (mostly first-time text drawing). To measure again, add `SchedulerBinding.instance.addTimingsCallback` in `runReelBot` and log frames over 20 ms; remove it afterwards.
