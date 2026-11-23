@@ -1,6 +1,6 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
-## Latest (2026-11-23, ~21:25 IST): v1.2.5.0 is the published release; fixes after it are committed but NOT released (would be 1.2.5.1)
+## Latest (2026-11-23, ~21:40 IST): v1.2.5.1 RELEASED on GitHub (LinkedIn short-link and sign-up-page fixes); earlier: v1.2.5.0 (Reddit archive)
 
 **Fixed after 1.2.5.0 (#49, #12).** (1) `ShareUrls.kt`: `lnkd.in/p/<id>` was cut to `lnkd.in/p` (404). (2) `_resolveShort` in `runner.dart` resolves a lnkd.in link once (301 Location, no cookies). (3) `parseLinkedIn` now rejects LinkedIn's sign-up page (`Sign Up | LinkedIn`, '500 million+ members'), which had been saved as a wrong note. (4) Apify gets `feed/update/urn:li:activity:<id>` (`linkedInApifyUrl`). (5) `apifyActorRun` throws with the HTTP status; a run that returns nothing says so. 180 Dart tests, Kotlin tests pass; Full APK with these fixes is on the phone.
 
