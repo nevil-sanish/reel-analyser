@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'motion.dart';
 import 'theme.dart';
 
-/// First run: a spinning gradient ring around the mark, three short pages, then "slide to unlock" bursts the
+/// First run: a spinning gradient ring around the mark, four short pages, then "slide to unlock" bursts the
 /// gradient across the screen and opens the app.
 class IntroScreen extends StatefulWidget {
   final VoidCallback onDone;
@@ -24,6 +24,12 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
 
   static const _slides = [
     (Icons.ios_share_rounded, 'Share a reel.\nGet the point.', 'Tap Share → Reel Analyser on any reel or short. You get a short summary and the key takeaways.'),
+    (
+      Icons.apps_rounded,
+      'What you can save',
+      'Instagram reels and posts, YouTube Shorts, X posts, LinkedIn posts and photos you share from your gallery. '
+          'No key needed for X; LinkedIn posts that need a login, and Reddit posts, are read only if you add your own Apify key in Settings.',
+    ),
     (Icons.insights_rounded, 'Know your scroll', 'See how many reels you watch each day and for how long. Counted, never recorded.'),
     (Icons.lock_rounded, 'Only on your phone', 'No account, no server. Your notes stay here; a reel you share goes only to the AI you choose.'),
   ];

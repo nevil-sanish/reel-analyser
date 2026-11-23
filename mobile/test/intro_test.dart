@@ -12,7 +12,7 @@ Future<void> frames(WidgetTester t, [int n = 20]) async {
 }
 
 void main() {
-  testWidgets('intro: Next twice, a short slide springs back, a full slide unlocks', (tester) async {
+  testWidgets('intro: Next three times, a short slide springs back, a full slide unlocks', (tester) async {
     var done = 0;
     final haptics = <Object?>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (c) async {
@@ -24,7 +24,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(theme: Brand.theme(Brightness.dark), home: IntroScreen(onDone: () => done++)));
     await frames(tester, 40);
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < 3; i++) {
       await tester.tap(find.text('Next'));
       await frames(tester);
     }
