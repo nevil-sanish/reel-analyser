@@ -54,6 +54,7 @@ class ShareUrlsTest {
         assertEquals("1893456789012345678", a.code)
         assertEquals(a.url, ShareUrls.extract("https://twitter.com/someone/status/1893456789012345678")!!.url)
         assertEquals(a.url, ShareUrls.extract("https://mobile.twitter.com/i/web/status/1893456789012345678")!!.url)
+        assertEquals("https://x.com/i/status/20", ShareUrls.extract("https://x.com/jack/status/20")!!.url)
         assertNull(ShareUrls.extract("https://x.com/someone"))
         assertNull(ShareUrls.extract("https://x.com/home"))
     }

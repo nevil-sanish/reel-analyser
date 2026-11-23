@@ -37,7 +37,7 @@ bool isXMedia(String url) {
 }
 
 /// The post's number, from `.../status/<id>` or `.../i/web/status/<id>`.
-String? xPostId(Uri u) => RegExp(r'/status(?:es)?/(\d{5,25})').firstMatch(u.path)?.group(1);
+String? xPostId(Uri u) => RegExp(r'/status(?:es)?/(\d{1,25})').firstMatch(u.path)?.group(1);
 
 /// The embed endpoint's answer for [id]. The token is not checked by X, any short value is accepted.
 Uri xSyndicationUrl(String id) => Uri.parse('https://cdn.syndication.twimg.com/tweet-result?id=$id&lang=en&token=a');

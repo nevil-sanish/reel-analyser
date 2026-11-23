@@ -11,7 +11,7 @@ object ShareUrls {
     private val li = Regex("""https?://(?:[a-z]{2,3}\.)?(?:www\.)?linkedin\.com/(?:posts|feed/update|pulse)/[^\s?#"'<>]+""")
     private val liShort = Regex("""https?://lnkd\.in/[A-Za-z0-9_-]+""")
     // X posts: x.com or twitter.com `/<user>/status/<id>`, `/i/status/<id>`, `/i/web/status/<id>`.
-    private val x = Regex("""https?://(?:www\.|mobile\.|m\.)?(?:x|twitter)\.com/(?:[A-Za-z0-9_]{1,15}|i|i/web)/status(?:es)?/(\d{5,25})""")
+    private val x = Regex("""https?://(?:www\.|mobile\.|m\.)?(?:x|twitter)\.com/(?:[A-Za-z0-9_]{1,15}|i|i/web)/status(?:es)?/(\d{1,25})""")
     // Reddit posts: /r/<sub>/comments/<id>, /r/<sub>/s/<code> (a share link, passed on as it is), redd.it/<id>.
     private val redditPost = Regex("""https?://(?:www\.|old\.|new\.|np\.|m\.)?reddit\.com/r/([A-Za-z0-9_]{2,25})/comments/([a-z0-9]{4,10})""")
     private val redditShare = Regex("""https?://(?:www\.|m\.)?reddit\.com/r/([A-Za-z0-9_]{2,25})/s/([A-Za-z0-9]{6,14})""")
