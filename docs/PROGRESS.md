@@ -1,26 +1,32 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
-## PAUSED (2026-11-23, ~13:40 IST): #47 frame drops, pushed to main, issue still open, NOT released
+## Latest (2026-11-23, ~14:30 IST): #47 frame drops DONE and closed; everything pushed to `main` (15b8c0d); 1.2.4.0 NOT released
 
-Resume here. Everything below is committed and pushed to `main` (analyze clean, all 177 Dart tests pass).
+**#47 (closed).** Measured with a temporary frame logger (removed): the app was raster-bound (build 2-8 ms, raster 20-200 ms). Fixes: marble background drawn once into an image (`liquid.dart`), tabs switch at once with `Offstage`, page opening is a slide only, `Reveal` rises without a fade, `Skeleton` is static, `InkRipple` instead of `InkSparkle`, no blurred shadow on `Glass`. Worst frame in a tab tour went from about 266 ms to about 52 ms. Not at a steady 90 Hz: the Blocker tab and its Goals/Apps sub-tabs still show a few 20-50 ms frames on first open (mostly first-time text drawing). To measure again, add `SchedulerBinding.instance.addTimingsCallback` in `runReelBot` and log frames over 20 ms; remove it afterwards.
 
-**What was measured** (temporary frame logger, since removed): the app is raster-bound (build 2-8 ms; raster 20-200 ms on opening tabs and scrolling). Scrolling plain Settings cards with the marble background switched off gave zero slow frames, so the live-painted marble was the main cost. Cross-fades and fades (full-screen offscreen layers) were the second cost.
+**Other work today.** "Your pattern" (habits) card removed from Blocker > Reels (`habits.dart` now holds only `ScrollRule`, `ScrollState`, `ScrollBridge`; the file name is misleading). Unused `ReelTracker.currentApp` removed. `mobile/CLAUDE.md` added. Checks: `flutter analyze` clean, 177 Dart tests pass, Kotlin Full and Semi unit tests pass.
 
-**What was changed (all on the phone-built full APK, installed on the phone):**
-- `lib/ui/liquid.dart`: `LiquidBackground` draws the marble once into a `ui.Image` (half-resolution, redrawn on theme or size change) and shows it with `RawImage`; `Glass` no longer has a blurred shadow; `FadingTabs` switches tabs at once with `Offstage` + `TickerMode` (no cross-fade); the page transition is a short slide only (no fade, no scale, no dimming of the old page).
-- `lib/ui/motion.dart`: `Reveal` rises into place with no fade; `Skeleton` is a static pale bar (no per-bar ticker or shimmer).
-- `lib/ui/theme.dart`: splash factory `InkSparkle` (runtime shader) replaced by `InkRipple`.
-- `test/tabs_test.dart` rewritten for the new `FadingTabs` (hidden tab is offstage).
-- Result on the phone (Pixel-class 90 Hz): worst frame in a tab/sub-tab/Settings tour fell from ~266 ms total to ~52 ms; most slow frames are now 21-35 ms; many tabs have none. Not at a locked 90 Hz yet: Blocker tab and its Goals / Apps sub-tabs still show a few 20-50 ms frames when opening.
-- User request same day: removed the "Your pattern" card (habits) from Blocker > Reels: `scroll_screen.dart` no longer loads or shows it, `Habits` class deleted from `habits.dart` (it still holds `ScrollRule`, `ScrollState`, `ScrollBridge`), `test/full/habits_test.dart` deleted. The `habits.dart` file name is now misleading (could be renamed `scroll_rule.dart`).
-- Added `mobile/CLAUDE.md` (folder rules: no `dart format`, check test exit status, measure before optimising, no data leaves the phone).
+**GitHub issues (each got a status comment on 2026-11-23):**
 
-**Next steps:**
-1. (Done) `test/reduce_effects_test.dart` T-UI-08 now checks the translate instead of the fade.
-2. Optionally cut the remaining Blocker-tab frames (Goals/Apps sub-tabs: many cards, each with `MeanderDivider` CustomPaint and RepaintBoundary; the long page is laid out while Offstage). Re-measure by adding the temporary logger again (`SchedulerBinding.instance.addTimingsCallback` in `runReelBot`, log frames over 20 ms) and tapping tabs with adb; remove it afterwards.
-3. (Done 2026-11-23) "Remove not useful files and code": a scan found no unreferenced Dart files and no dead Dart symbols; the only dead code found was the Habits class (already removed). Also removed the unused `ReelTracker.currentApp`; every pubspec dependency is used; Kotlin scan found nothing else. Old docs left on purpose (they link to each other):  (`docs/STATUS.md`, `PLAN.md`, `IMPLEMENTATION.md`, `RESEARCH.md` may be out of date), `docs/legal`, `fdroid/`. Do not delete docs without reading them first.
-4. "Complete all the issues in GitHub" (user request): nothing closed yet. #47 to close after commit + phone check. #2 waits on the user, #6 on F-Droid (from ~2027-02-05). #12, #37-#46 need phone checks listed in the 1.2.4.0 entry below; close only what was checked and comment the rest.
-5. Commit with `#47` in the message (closes #47 only after step 1 and a final phone check), push to `main`, comment on the issue. 1.2.4.0 still has no GitHub release (ask before publishing; semi APK is stale; run `tool/check_apks.sh`).
+| # | State | What is left |
+|---|-------|--------------|
+| 47 | closed | nothing |
+| 36 | closed earlier | nothing |
+| 2 | open | waits on the user (own accounts for the goals) |
+| 6 | open | F-Droid: submit again from about 2027-02-05 |
+| 12 | open | LinkedIn embed route not tried on the phone |
+| 37 | open | site method picker: real site limit on the phone |
+| 38 | open | done in code; close after the 1.2.4.0 release if the user agrees |
+| 39 | open | Spotlight id not confirmed on screen |
+| 40 | open | TikTok not installed on the phone |
+| 41 | open | scroll guard tripping and going home not checked |
+| 42 | open | an X video tweet not tried |
+| 43, 44 | open | need a real Apify key |
+| 45 | open | typing 0 min in the Reels tab on the phone |
+
+**Next.** Do the phone checks above, then release 1.2.4.0: bump `AppServices.version` and `pubspec.yaml`, release notes (both `play/release-notes` files), `docs/RELEASES.md` row, build both APKs (the semi APK is stale), run `tool/check_apks.sh`, publish assets named `reel-analyser-<tag>-full.apk`, `-semi.apk`, `SHA256SUMS`. Ask the user before publishing. Settings "Loading your keys" and the Ask tab still have no skeleton. Do not run `dart format`; check test exit status, not `| tail`.
+
+Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
 ## Latest (2026-11-23): 1.2.4.0 built (full APK only), installed on the phone, NOT released, NOT phone-checked
 
