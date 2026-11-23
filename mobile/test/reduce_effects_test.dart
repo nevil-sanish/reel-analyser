@@ -19,16 +19,17 @@ void main() {
   });
 
   testWidgets('T-UI-08 content rises into place, or shows at once when motion is reduced', (tester) async {
-    Widget app() => MaterialApp(home: Reveal(child: const Text('hello')));
-    await tester.pumpWidget(app());
+    double lift() => tester.widget<Transform>(find.descendant(of: find.byType(Reveal), matching: find.byType(Transform))).transform.getTranslation().y;
+    await tester.pumpWidget(MaterialApp(home: Reveal(child: const Text('hello'))));
     await tester.pump(const Duration(milliseconds: 5));
-    expect(tester.widget<FadeTransition>(find.descendant(of: find.byType(Reveal), matching: find.byType(FadeTransition))).opacity.value, lessThan(1));
+    expect(lift(), greaterThan(0));
     await tester.pumpAndSettle();
     expect(find.text('hello'), findsOneWidget);
+    expect(lift(), 0);
 
     Brand.reduceEffects.value = true;
     await tester.pumpWidget(MaterialApp(home: Reveal(key: UniqueKey(), child: const Text('now'))));
-    expect(tester.widget<FadeTransition>(find.descendant(of: find.byType(Reveal), matching: find.byType(FadeTransition))).opacity.value, 1);
+    expect(lift(), 0);
   });
 
   testWidgets('T-UI-09 vibration goes through one switch', (tester) async {

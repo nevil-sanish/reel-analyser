@@ -1,5 +1,27 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## PAUSED (2026-11-23, ~13:40 IST): #47 frame drops, pushed to main, issue still open, NOT released
+
+Resume here. Everything below is committed and pushed to `main` (analyze clean, all 177 Dart tests pass).
+
+**What was measured** (temporary frame logger, since removed): the app is raster-bound (build 2-8 ms; raster 20-200 ms on opening tabs and scrolling). Scrolling plain Settings cards with the marble background switched off gave zero slow frames, so the live-painted marble was the main cost. Cross-fades and fades (full-screen offscreen layers) were the second cost.
+
+**What was changed (all on the phone-built full APK, installed on the phone):**
+- `lib/ui/liquid.dart`: `LiquidBackground` draws the marble once into a `ui.Image` (half-resolution, redrawn on theme or size change) and shows it with `RawImage`; `Glass` no longer has a blurred shadow; `FadingTabs` switches tabs at once with `Offstage` + `TickerMode` (no cross-fade); the page transition is a short slide only (no fade, no scale, no dimming of the old page).
+- `lib/ui/motion.dart`: `Reveal` rises into place with no fade; `Skeleton` is a static pale bar (no per-bar ticker or shimmer).
+- `lib/ui/theme.dart`: splash factory `InkSparkle` (runtime shader) replaced by `InkRipple`.
+- `test/tabs_test.dart` rewritten for the new `FadingTabs` (hidden tab is offstage).
+- Result on the phone (Pixel-class 90 Hz): worst frame in a tab/sub-tab/Settings tour fell from ~266 ms total to ~52 ms; most slow frames are now 21-35 ms; many tabs have none. Not at a locked 90 Hz yet: Blocker tab and its Goals / Apps sub-tabs still show a few 20-50 ms frames when opening.
+- User request same day: removed the "Your pattern" card (habits) from Blocker > Reels: `scroll_screen.dart` no longer loads or shows it, `Habits` class deleted from `habits.dart` (it still holds `ScrollRule`, `ScrollState`, `ScrollBridge`), `test/full/habits_test.dart` deleted. The `habits.dart` file name is now misleading (could be renamed `scroll_rule.dart`).
+- Added `mobile/CLAUDE.md` (folder rules: no `dart format`, check test exit status, measure before optimising, no data leaves the phone).
+
+**Next steps:**
+1. (Done) `test/reduce_effects_test.dart` T-UI-08 now checks the translate instead of the fade.
+2. Optionally cut the remaining Blocker-tab frames (Goals/Apps sub-tabs: many cards, each with `MeanderDivider` CustomPaint and RepaintBoundary; the long page is laid out while Offstage). Re-measure by adding the temporary logger again (`SchedulerBinding.instance.addTimingsCallback` in `runReelBot`, log frames over 20 ms) and tapping tabs with adb; remove it afterwards.
+3. "Remove not useful files and code" (user request): a scan found no unreferenced Dart files and no dead Dart symbols; the only dead code found was the Habits class (already removed). Not yet looked at: Kotlin dead code, old docs (`docs/STATUS.md`, `PLAN.md`, `IMPLEMENTATION.md`, `RESEARCH.md` may be out of date), `docs/legal`, `fdroid/`. Do not delete docs without reading them first.
+4. "Complete all the issues in GitHub" (user request): nothing closed yet. #47 to close after commit + phone check. #2 waits on the user, #6 on F-Droid (from ~2027-02-05). #12, #37-#46 need phone checks listed in the 1.2.4.0 entry below; close only what was checked and comment the rest.
+5. Commit with `#47` in the message (closes #47 only after step 1 and a final phone check), push to `main`, comment on the issue. 1.2.4.0 still has no GitHub release (ask before publishing; semi APK is stale; run `tool/check_apks.sh`).
+
 ## Latest (2026-11-23): 1.2.4.0 built (full APK only), installed on the phone, NOT released, NOT phone-checked
 
 - #36 VPN no internet: `DnsVpnService` now follows the real network (callback), asks IPv4 and IPv6 DNS servers in turn with `bindSocket` + `protect`, public servers as last resort (`DnsUpstream`, tested). Cause not reproduced on the phone (needs a site limit set in the UI); fix is from reading the code: upstream was chosen once and IPv6-only mobile DNS was dropped.

@@ -6,12 +6,11 @@ import '../app_services.dart';
 import 'blocker.dart';
 import 'page_card.dart';
 import 'detect_consent.dart';
-import 'full_bridge.dart';
 import 'habits.dart';
 import 'hold_gate.dart';
 
 /// Blocker → Reel limits → Scroll guard: a most-swipes-a-day and a most-swipes-in-a-row limit for short-video feeds (past either, the
-/// app is closed and the phone goes home), and the user's own habits worked out on the phone. Swipes are counted only on the
+/// app is closed and the phone goes home). Swipes are counted only on the
 /// short-video screens of Instagram, YouTube, Snapchat and TikTok. Sits at the bottom of the Reel limits page.
 class ScrollGuardSection extends StatefulWidget {
   final AppServices services;
@@ -24,7 +23,6 @@ class ScrollGuardSection extends StatefulWidget {
 class _ScrollGuardSectionState extends State<ScrollGuardSection> {
   final _bridge = ScrollBridge();
   ScrollState? _st;
-  Habits? _habits;
   var _day = 0, _run = 0, _quiet = 30, _pause = 5;
   var _dirty = false;
   Timer? _timer;
@@ -44,19 +42,9 @@ class _ScrollGuardSectionState extends State<ScrollGuardSection> {
 
   Future<void> _load({bool keepDraft = false}) async {
     final st = await _bridge.state();
-    final full = FullBridge();
-    Habits? h;
-    try {
-      final hourly = await full.hourly(days: 14);
-      final days = await full.history(days: 14);
-      h = Habits.analyse([for (final e in hourly) e.$2], [for (final d in days) d.reels]);
-    } on Object {
-      h = null;
-    }
     if (!mounted) return;
     setState(() {
       _st = st;
-      _habits = h;
       if (keepDraft && _dirty) return;
       final r = st.rule ?? const ScrollRule();
       _day = r.maxPerDay;
@@ -117,8 +105,6 @@ class _ScrollGuardSectionState extends State<ScrollGuardSection> {
     final st = _st;
     if (st == null) return const SizedBox();
     final t = Theme.of(context);
-    final h = _habits;
-    final notes = h?.notes() ?? const <String>[];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       PageCard(
         icon: Icons.swipe_vertical_rounded,
@@ -143,19 +129,6 @@ class _ScrollGuardSectionState extends State<ScrollGuardSection> {
           ],
         ],
       ),
-      if (notes.isNotEmpty)
-        PageCard(icon: Icons.insights_rounded, title: 'Your pattern', index: 1, children: [
-          for (final n in notes) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(n)),
-          if (h != null && h.suggestedMaxSwipes > 0 && _day == 0) ...[
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => setState(() { _day = h.suggestedMaxSwipes; _dirty = true; }),
-              child: Text('Suggest ${h.suggestedMaxSwipes} swipes a day'),
-            ),
-          ],
-          const SizedBox(height: 6),
-          Text('Worked out on this phone from your own counts. Nothing is set unless you save it.', style: t.textTheme.bodySmall),
-        ]),
     ]);
   }
 }

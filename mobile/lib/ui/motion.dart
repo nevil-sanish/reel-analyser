@@ -99,14 +99,12 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  // Rises into place without a fade: a fade makes every card an offscreen layer while it plays, which dropped frames.
   @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _a,
-        child: AnimatedBuilder(
-          animation: _a,
-          child: widget.child,
-          builder: (_, child) => Transform.translate(offset: Offset(0, 16 * (1 - _a.value)), child: child),
-        ),
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _a,
+        child: widget.child,
+        builder: (_, child) => Transform.translate(offset: Offset(0, 16 * (1 - _a.value)), child: child),
       );
 }
 
@@ -128,44 +126,21 @@ class CountUp extends StatelessWidget {
       );
 }
 
-/// A resting placeholder while something loads: a pale gold bar with a light that sweeps across it.
-class Skeleton extends StatefulWidget {
+/// A resting placeholder while something loads: a pale gold bar. It does not animate: a sweeping light on every bar of every
+/// placeholder meant dozens of tickers and repaints exactly while a screen was opening.
+class Skeleton extends StatelessWidget {
   final double height;
   final double? width;
   final double radius;
   const Skeleton({this.height = 16, this.width, this.radius = 10, super.key});
 
   @override
-  State<Skeleton> createState() => _SkeletonState();
-}
-
-class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = Brand.gold.withValues(alpha: dark ? 0.12 : 0.14);
-    return RepaintBoundary(child: AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) => Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(widget.radius),
-          gradient: LinearGradient(
-            begin: Alignment(-1 + 3 * _c.value, 0),
-            end: Alignment(0 + 3 * _c.value, 0),
-            colors: [base, Brand.gold.withValues(alpha: dark ? 0.26 : 0.3), base],
-          ),
-        ),
-      ),
-    ));
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius), color: Brand.gold.withValues(alpha: dark ? 0.16 : 0.2)),
+    );
   }
 }

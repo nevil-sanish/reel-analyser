@@ -1,18 +1,74 @@
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import 'motion.dart';
 import 'theme.dart';
 
-/// Warm marble behind everything: a still base, two soft pools of gold light and a few faint veins. It never animates,
-/// so it costs nothing after the first frame.
-class LiquidBackground extends StatelessWidget {
+/// Warm marble behind everything: a still base, two soft pools of gold light and a few faint veins. It is drawn once into a
+/// picture and then shown as an image, so scrolling and page changes only blit it (drawing the gradients and curves live
+/// cost 20 to 100 ms of GPU time per frame on the phone).
+class LiquidBackground extends StatefulWidget {
   const LiquidBackground({super.key});
+
+  @override
+  State<LiquidBackground> createState() => _LiquidBackgroundState();
+}
+
+class _LiquidBackgroundState extends State<LiquidBackground> {
+  ui.Image? _image;
+  Brightness? _b;
+  Size? _size;
+  var _scale = 1.0;
+  var _gen = 0;
+
+  void _render(Brightness b, Size s, double scale) {
+    final gen = ++_gen;
+    final rec = ui.PictureRecorder();
+    final canvas = Canvas(rec)..scale(scale);
+    _Marble(b).paint(canvas, s);
+    final pic = rec.endRecording();
+    pic.toImage((s.width * scale).ceil(), (s.height * scale).ceil()).then((img) {
+      pic.dispose();
+      if (!mounted || gen != _gen) {
+        img.dispose();
+        return;
+      }
+      final old = _image;
+      setState(() => _image = img);
+      old?.dispose();
+    });
+  }
+
+  @override
+  void dispose() {
+    _gen++;
+    _image?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    return RepaintBoundary(child: CustomPaint(painter: _Marble(b), size: Size.infinite, isComplex: true, willChange: false));
+    return RepaintBoundary(
+      child: LayoutBuilder(builder: (context, box) {
+        final s = box.biggest;
+        // A softer picture is fine for a background made of gradients; half resolution keeps it small.
+        final scale = (MediaQuery.devicePixelRatioOf(context) * 0.5).clamp(0.75, 1.5);
+        if (s.isFinite && !s.isEmpty && (b != _b || s != _size || scale != _scale)) {
+          _b = b;
+          _size = s;
+          _scale = scale;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _render(b, s, scale);
+          });
+        }
+        return DecoratedBox(
+          decoration: BoxDecoration(color: Brand.base(b)),
+          child: _image == null ? const SizedBox.expand() : RawImage(image: _image, fit: BoxFit.fill, filterQuality: FilterQuality.medium, width: s.width, height: s.height),
+        );
+      }),
+    );
   }
 }
 
@@ -60,7 +116,6 @@ class Glass extends StatelessWidget {
         color: solid ? Brand.surface(b) : Brand.glass(b),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: Brand.glassEdge(b)),
-        boxShadow: [BoxShadow(color: (b == Brightness.dark ? Colors.black : Brand.goldDeep).withValues(alpha: b == Brightness.dark ? 0.35 : 0.1), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: ClipRRect(borderRadius: BorderRadius.circular(radius - 1), child: Padding(padding: padding, child: child)),
     ));
@@ -175,20 +230,18 @@ class ThemeToggle extends StatelessWidget {
   }
 }
 
-/// Page transition: the new page rises a little and fades in, the old one dims. Only a fade when motion is reduced.
+/// Page transition: the new page slides up a little. No fade and no scale: those make the page a full-screen offscreen layer
+/// while it opens, which dropped frames on the phone. Nothing moves when motion is reduced.
 class LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
   const LiquidPageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child) {
-    final inCurve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-    final out = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOutCubic);
-    final fade = FadeTransition(opacity: Tween(begin: 1.0, end: 0.88).animate(out), child: FadeTransition(opacity: inCurve, child: child));
-    if (Brand.reduceEffects.value) return fade;
+    if (Brand.reduceEffects.value) return child;
     return SlideTransition(
-      position: Tween(begin: const Offset(0, 0.035), end: Offset.zero).animate(inCurve),
-      child: ScaleTransition(scale: Tween(begin: 0.985, end: 1.0).animate(inCurve), child: fade),
+      position: Tween(begin: const Offset(0, 0.04), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+      child: child,
     );
   }
 }
@@ -247,8 +300,9 @@ class _Meander extends CustomPainter {
   bool shouldRepaint(_Meander old) => old.color != color;
 }
 
-/// Tabs that all stay alive (like IndexedStack) and cross-fade. The fade sits outside TickerMode: muting a hidden
-/// tab's tickers must not also freeze its own fade-out, or it stays half-visible over the others (the v0.8.1 bug).
+/// Tabs that all stay alive (like IndexedStack) and switch at once. A cross-fade made the whole tab a full-screen offscreen
+/// layer for 280 ms, which cost 40 to 150 ms of GPU time on the first frames of a long page. A tab that is not shown is not
+/// painted and its tickers are muted.
 class FadingTabs extends StatelessWidget {
   final int index;
   final List<Widget> children;
@@ -257,14 +311,6 @@ class FadingTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Stack(children: [
         for (final (i, page) in children.indexed)
-          AnimatedOpacity(
-            opacity: i == index ? 1 : 0,
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            child: IgnorePointer(
-              ignoring: i != index,
-              child: ExcludeSemantics(excluding: i != index, child: TickerMode(enabled: i == index, child: page)),
-            ),
-          ),
+          Offstage(offstage: i != index, child: TickerMode(enabled: i == index, child: page)),
       ]);
 }

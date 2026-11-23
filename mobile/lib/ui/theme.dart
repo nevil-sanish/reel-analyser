@@ -91,7 +91,7 @@ class Brand {
     return base0.copyWith(
       textTheme: text,
       scaffoldBackgroundColor: base(b),
-      splashFactory: InkSparkle.splashFactory,
+      splashFactory: InkRipple.splashFactory,
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
         TargetPlatform.android: LiquidPageTransitionsBuilder(),
         TargetPlatform.iOS: LiquidPageTransitionsBuilder(),
