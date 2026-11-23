@@ -23,13 +23,8 @@
         android:exported="false" android:grantUriPermissions="true">
       <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_paths"/>
     </provider>
-    <!-- The reel blocker's screen (full build only): shown over a reel past the limit or outside the schedule. -->
-    <activity android:name="app.reelbrain.BlockActivity" android:exported="false"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
-        android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleTop"
-        android:label="${appLabel}"/>
     <service android:name="app.reelbrain.LimitsService" android:exported="false" android:foregroundServiceType="specialUse">
-      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Counts the daily time in apps and sites the user limited and shows a block screen when it is used up"/>
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Counts the daily time in apps and sites the user limited and sends the user to the home screen when it is used up"/>
     </service>
     <service android:name="app.reelbrain.DnsVpnService" android:exported="false" android:permission="android.permission.BIND_VPN_SERVICE">
       <intent-filter><action android:name="android.net.VpnService"/></intent-filter>

@@ -9,7 +9,7 @@ import 'goals.dart';
 import 'full_features.dart';
 import 'detect_consent.dart';
 import 'handle_change_screen.dart';
-import 'paragraph_gate.dart';
+import 'hold_gate.dart';
 import '../ui/liquid.dart';
 import '../ui/motion.dart';
 
@@ -98,12 +98,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   Future<bool> _gate(String title, String intro, String action, String what) async {
     if (!mounted) return false;
-    return askParagraph(context, title: title, intro: '$intro It is checked on your phone only and is not stored.', action: action);
+    return askHold(context, title: title, intro: '$intro Nothing is stored or sent.');
   }
 
   /// Stops the goals for good. Written reasons are never stored. A penalty already running still runs to its last day.
   Future<void> _stop() async {
-    if (!await _gate('Stop daily goals', 'To stop the goals, write at least ${ParagraphGuard.minWords} words, by hand, about why. Pasting is not accepted. A penalty already running still ends on its last day.', 'Stop the goals', 'stop their daily coding goals for good')) return;
+    if (!await _gate('Stop daily goals', 'To stop the goals, press and hold a finger on the screen for 30 seconds. A penalty already running still ends on its last day.', 'Stop the goals', 'stop their daily coding goals for good')) return;
     await (await GoalStore.of(s.library)).saveGoalConfig(dateOf(DateTime.now()), GoalConfig(const [], {..._apps}).toJson());
     _say('Daily goals are stopped.');
     try {
@@ -126,7 +126,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
     if (goals.isEmpty) return _say('Turn on at least one goal.');
     if (_apps.isEmpty) return _say('Pick at least one app to block.');
-    if (_hasGoals && !await _gate('Change your goals', 'Changing goals that are already on takes a paragraph: write at least ${ParagraphGuard.minWords} words, by hand, about why. Pasting is not accepted.', 'Save the change', 'change their daily coding goals (targets, usernames or blocked apps)')) return;
+    if (_hasGoals && !await _gate('Change your goals', 'Changing goals that are already on takes a hold: press and hold a finger on the screen for 30 seconds.', 'Save the change', 'change their daily coding goals (targets, usernames or blocked apps)')) return;
     if (!mounted) return;
     if (!_consent) {
       if (!await askDetectionConsent(context)) return _say('Blocking needs your OK to read which app is open.');

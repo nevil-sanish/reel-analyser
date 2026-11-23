@@ -129,7 +129,7 @@ class FullFeatures extends AppFeatures {
     };
   }
 
-  /// Rules come back only on a phone that has none yet. Importing over rules already on would be a way round the typed paragraph
+  /// Rules come back only on a phone that has none yet. Importing over rules already on would be a way round the 30 second hold
   /// that loosening them takes. The blocker still needs "Allow reading the screens" on this phone before it blocks anything.
   @override
   Future<String?> importExtras(AppServices s, Map<String, Object?> extras) async {

@@ -43,7 +43,7 @@ void main() {
     expect(read('privacy'), contains('not an official API'));
     expect(read('privacy'), contains('written reason for changing a username'));
     expect(read('terms'), contains('Usernames are locked'));
-    expect(read('terms'), contains('Changing or stopping goals takes a written paragraph'));
+    expect(read('terms'), contains('Changing or stopping goals takes a 30 second hold'));
     expect(read('disclaimer'), contains('written reason'));
     expect(read('disclaimer'), contains('Daily goals'));
     expect(read('terms'), contains('can be bypassed'));

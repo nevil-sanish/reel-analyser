@@ -62,7 +62,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         'Reel Analyser will use Android\'s Accessibility service to notice when you are on an Instagram or YouTube Reels or '
             'Shorts screen, so it can count them and the time on them. It reads only those two apps, ignores every other app, '
             'never types, taps or scrolls, and keeps only an anonymous fingerprint and a count on this phone, deleted after 90 days. '
-            'If you turn on the Reel blocker (Settings), it also uses this to open a block screen over a reel past your limit, and in a browser '
+            'If you turn on the Reel blocker (Settings), it also uses this to send you to the home screen when a reel is past your limit, and in a browser '
             'it reads only the address bar. Nothing is sent anywhere. You can turn it off in Android settings at any time.'),
   };
 

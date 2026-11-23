@@ -23,7 +23,7 @@ Share a reel, a YouTube Short, a public LinkedIn post or a picture to Reel Analy
 <li>Daily goals: GitHub commits, Codeforces and LeetCode problems a day. Missing a day blocks Instagram the next day</li>
 </ul>
 
-The counter and the blocker use Android's Accessibility service, only after you switch it on and also allow it inside the app. It reads only the Instagram, YouTube and browser screens to tell that a reel is showing. It never takes screenshots, never records the screen and never sends anything off the phone. Usage access is used only for time in Instagram and YouTube.
+The counter and the blocker use Android's Accessibility service, only after you switch it on and also allow it inside the app. It reads only the Instagram, YouTube, Snapchat and TikTok screens to tell that a short video is showing, and, only if you choose the Accessibility method for website limits, the address bar of browser apps. Nowhere else. When a limit is used up, you are sent to the home screen; no block screen is drawn. It never takes screenshots, never records the screen and never sends anything off the phone. Usage access is used only for time in Instagram and YouTube.
 
 If you want none of this, install Reel Analyser Semi instead: the same notes app with only the internet permission.
 

@@ -96,6 +96,14 @@ class BlockPolicyTest {
         assertTrue(odd.rules["all"]!!.intervals.isEmpty())
     }
 
+    @Test fun `a limit of 0 minutes blocks all day and survives a round trip`() {
+        val zero = BlockConfig.parse("""{"mode":"shared","items":["instagram"],"rules":{"all":{"limitMin":0,"intervals":[]}}}""")!!
+        assertEquals(0, zero.rules["all"]!!.limitMin)
+        assertEquals(Verdict.Block("limit"), v(zero, "instagram", 600))
+        assertEquals(zero, BlockConfig.parse(zero.toJson()))
+        assertEquals("Reels and Shorts is blocked all day.", BlockPolicy.describe(zero, "instagram", "limit"))
+    }
+
     @Test fun `only the reels or shorts part of a browser site counts`() {
         assertTrue(BlockPolicy.browserSurface("instagram.com/reels/"))
         assertTrue(BlockPolicy.browserSurface("https://www.instagram.com/reel/Cabc/"))

@@ -45,7 +45,7 @@ data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<
             val ro = o.getJSONObject("rules")
             val rules = ro.keys().asSequence().associateWith { k ->
                 val r = ro.getJSONObject(k)
-                val lim = if (r.isNull("limitMin")) null else r.getInt("limitMin").takeIf { it in 1..1440 }
+                val lim = if (r.isNull("limitMin")) null else r.getInt("limitMin").takeIf { it in 0..1440 }
                 val iv = r.getJSONArray("intervals").let { a ->
                     (0 until a.length()).map { a.getJSONArray(it) }.map { Interval(it.getInt(0), it.getInt(1)) }
                 }.filter { it.start in 0..1439 && it.end in 0..1439 && it.start != it.end }
@@ -88,7 +88,7 @@ object BlockPolicy {
         if (s.pending != null && now >= s.pendingFrom) s.copy(active = s.pending, pending = null, pendingFrom = 0) else s
 
     /**
-     * The first set-up applies at once. A later change (the app asks for a typed paragraph first) waits for the next
+     * The first set-up applies at once. A later change (the app asks for a 30 second hold first) waits for the next
      * midnight, so it can never loosen today's rules.
      */
     fun save(s: BlockState, cfg: BlockConfig, now: Long): BlockState = when {
@@ -129,6 +129,7 @@ object BlockPolicy {
         val what = if (cfg?.mode == "shared") "Reels and Shorts" else name(surface, cfg?.wholeApp?.contains(surface) == true)
         return if (reason == "limit") {
             val m = r?.limitMin ?: 0
+            if (m == 0) return "$what is blocked all day."
             "You have used your daily limit of ${if (m % 60 == 0) "${m / 60} h" else if (m > 60) "${m / 60} h ${m % 60} min" else "$m min"} of $what."
         } else {
             "$what can only be watched at ${r?.intervals.orEmpty().joinToString(", ") { "${hhmm(it.start)}-${hhmm(it.end)}" }}."

@@ -68,7 +68,7 @@ object FlavorMethods {
                     BlockPhotos.wipe(ctx)
                     result.success(null)
                 }
-                "blockCancel" -> { // the app has already taken the typed paragraph
+                "blockCancel" -> { // the app has already taken the 30 second hold
                     val db = CounterDb.get(ctx)
                     val now = System.currentTimeMillis()
                     db.saveBlockState(db.currentBlockState(now).copy(suspendedDate = localDate(now)))

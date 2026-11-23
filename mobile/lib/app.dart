@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Once (and again if the documents change): the Terms and Privacy Policy, before anything else is used.
   Future<void> _askConsent() async {
     final k = widget.services.keys;
-    if (await k.flag('legal_v5') || !mounted) return;
+    if (await k.flag('legal_v6') || !mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -117,8 +117,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         child: AlertDialog(
           title: const Text('Terms, Privacy and Disclaimer'),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
-                'with your own key. The legal texts were updated: LinkedIn, X, Reddit, the website method, Snapchat, TikTok and the scroll guard are described, folders are described, there is a new Support and Refund Policy for the optional support payments, and a contact email. Please read them.'),
+            const Text('Nothing is sent to the developer. No data is collected, shared or used by the developer: no account, no analytics, '
+                'no tracking, no crash reports, not even one thing.',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            const Text('Your notes stay on this phone. The only thing that leaves it is what you choose to analyse, sent straight to the AI service '
+                'you picked, with your own key. The legal texts were updated (blocking now sends you to the home screen and a change takes a 30 second hold; '
+                'X, Reddit and the other sources are described). Please read them.'),
             const SizedBox(height: 8),
             Wrap(spacing: 4, children: [
               for (final (label, page) in [('Privacy Policy', LegalScreen.privacy), ('Terms of Use', LegalScreen.terms), ('Disclaimer', LegalScreen.disclaimer), ('Support and refunds', LegalScreen.support)])
@@ -134,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (ok == true) {
       try {
-        await k.setFlag('legal_v5');
+        await k.setFlag('legal_v6');
       } on Object catch (e) {
         debugPrint('Could not remember the agreement: $e');
       }

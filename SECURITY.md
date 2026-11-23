@@ -18,4 +18,4 @@ Only the latest release on [GitHub Releases](https://github.com/nevil-sanish/ree
 
 In scope: the Android app (both the Full and Semi builds) and the code in this repository, including how API keys are stored and sent, the in-app updater and the Accessibility service.
 
-Out of scope: the services the app talks to (Instagram, YouTube, LinkedIn, the AI providers, GitHub, Codeforces, LeetCode, Buy Me a Coffee, UPI apps). Report problems in those to their owners.
+Out of scope: the services the app talks to (Instagram, YouTube, LinkedIn, X, Reddit, Snapchat, TikTok, the AI providers, GitHub, Codeforces, LeetCode, Buy Me a Coffee, UPI apps). Report problems in those to their owners.

@@ -28,7 +28,7 @@ class ScrollRule {
   }
 
   /// True when this rule is no looser than [before]: a part that was on stays on and is not weaker. Such a change starts at
-  /// once; anything else takes the typed paragraph, like loosening a limit.
+  /// once; anything else takes the 30 second hold, like loosening a limit.
   bool noLooserThan(ScrollRule before) {
     final dayOk = before.maxPerDay == 0 || (maxPerDay > 0 && maxPerDay <= before.maxPerDay);
     final runOk = before.runSwipes == 0 ||

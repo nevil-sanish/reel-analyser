@@ -10,7 +10,9 @@ Android app that turns the Instagram Reels, YouTube Shorts, LinkedIn posts and p
 
 **How do I save a reel or Short as a note?** In Instagram, YouTube or LinkedIn tap Share, then pick the app. A few minutes later the note (summary, key points, tags) is in the Library. You can then ask questions that are answered only from your notes.
 
-**Can it block Instagram Reels and YouTube Shorts?** Yes, in the Full build: set a daily limit and allowed time slots, and the app shows a block screen over the reel once the limit is used up. Only reels are blocked, not the whole app, unless you choose that.
+**Is any data sent to the developer?** No. Nothing is collected, shared or used by the developer: no account, analytics, tracking or crash reports. Notes stay on the phone; only what you analyse goes to the AI service you chose, with your own key.
+
+**Can it block Instagram Reels and YouTube Shorts?** Yes, in the Full build: set a daily limit and allowed time slots, and the app sends you to the home screen once the limit is used up. Only reels are blocked, not the whole app, unless you choose that.
 
 **Can it limit any app or website per day?** Yes, in the Full build (*Blocker → Apps & sites*): pick an app or type a website, give it minutes per day (0 = blocked all day). Apps are timed with Android's Usage access, websites by a local DNS-only VPN you allow in Android's own box (no screen reading).
 
@@ -93,11 +95,11 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 - **What to block:** Instagram Reels, YouTube Shorts and reel or shorts pages in a browser. Pick any of them.
 - **Limits:** one shared daily limit or one for each, with a progress bar for every timer. It counts time on reels only, unless you choose the whole app.
 - **Schedule:** any number of time slots when reels are allowed. Outside them they are blocked.
-- **Block screen:** opens over the reel with a quote. Close works after 3 seconds.
+- **No block screen:** past the limit you are sent to the home screen with a one-line note.
 - **Once set:** the screen shows only *On*, the progress bars, **Edit** and **Turn off permanently**. Save appears only when something changed.
-- **Locked rules:** after the first set-up, a looser change takes a 50-word paragraph typed by hand (no paste); an accepted change starts at the next 00:00. Stricter changes apply at once.
-- **Turn off for today:** offered only while a block is in force; same typed paragraph.
-- **Remove for good:** same typed paragraph. The paragraph is checked on the phone only (length, no paste, not too fast, typing time, typical AI wording). No AI check, nothing stored.
+- **Locked rules:** after the first set-up, a looser change takes pressing and holding a finger on the screen for 30 seconds (a bar fills the screen); an accepted change starts at the next 00:00. Stricter changes apply at once.
+- **Turn off for today:** offered only while a block is in force; same 30 second hold.
+- **Remove for good:** same 30 second hold. Nothing is typed or stored.
 - **No history** of blocks is kept.
 
 **Apps & sites** give any installed app or website a time per day (0 = blocked all day). Nothing here reads the screen, as in the open-source blockers it follows (TimeLimit, Reef for apps; DNS66 and BlockAds for sites): apps are timed with Usage access and covered by a block screen (needs *Display over other apps*); websites are blocked by a local filter, a VPN that only carries DNS questions (only one VPN can run at a time; site time is counted from lookups, so it is approximate, while 0 minutes is exact). Apps that use their own secure DNS can get around the website filter.
@@ -113,8 +115,8 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 *Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day only; miss that day too and the day after is blocked as well. A day you could not be read is never counted as a miss.
 
-- **Changing or stopping:** allowed any time, but after the first set-up it takes a typed paragraph of at least 50 words (no paste), checked on the phone. A running penalty still ends on its last day.
-- **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why.
+- **Changing or stopping:** allowed any time, but after the first set-up it takes a 30 second press-and-hold. A running penalty still ends on its last day.
+- **Locked usernames:** once used, a username cannot be changed freely. Ask, come back tomorrow, then type at least 50 words about why (the only place a typed reason is still used; everything else in the blocker takes a 30 second press-and-hold).
 - **Limits:** GitHub counts public repositories only; LeetCode has no official API, so it may stop working; a changed phone clock or Accessibility turned off can bypass it.
 - **Semi is a different build, not a hidden one:** it contains none of this code.
 

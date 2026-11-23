@@ -28,6 +28,9 @@ class ReelCounterService : AccessibilityService() {
     companion object {
         @Volatile var running = false
         @Volatile private var instance: ReelCounterService? = null
+
+        /** Presses Home through Accessibility; false when the service is not running. */
+        fun home(): Boolean = instance?.performGlobalAction(GLOBAL_ACTION_HOME) ?: false
         /** Settings changed: narrow or widen the apps the service may see. */
         fun rescope() { instance?.let { s -> s.handler.post { s.applyScope() } } }
         const val PREFS = CounterPlugin.PREFS
@@ -255,7 +258,7 @@ class ReelCounterService : AccessibilityService() {
     private var siteMethodOn = false
     private var frontAt = 0L
 
-    /** Accessibility method for websites: the address bar tells which limited site is open; at its limit the block screen opens. */
+    /** Accessibility method for websites: the address bar tells which limited site is open; at its limit the person is sent home. */
     private fun siteInFront(root: AccessibilityNodeInfo, pkg: String, now: Long) {
         if (now - siteAt > 2000) { siteAt = now; siteMethodOn = siteByAddressBar(now) }
         if (!siteMethodOn) return
@@ -307,14 +310,13 @@ class ReelCounterService : AccessibilityService() {
         if (v is Verdict.Block) blockNow(surface, v.reason, now)
     }
 
-    /** Opens the block screen over what is on screen, at most every 4 seconds, and notes it once a day in the history. */
+    /** Sends the person to the home screen (no block screen), at most every 4 seconds. */
     private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null, text: String = "") {
         if (now - lastBlock <= 4000) return
         lastBlock = now
         meter.stop()
-        startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, reason)
-            .putExtra(BlockActivity.TEXT, item?.let { AppLimits.message(it) } ?: text))
+        val note = item?.let { AppLimits.message(it) } ?: text.ifEmpty { BlockPolicy.describe(currentState(now).active, surface, reason) }
+        GoHome.now(this, note)
     }
 
     /** At most 1,500 nodes and depth 40, so a huge tree can't stall the service. */

@@ -49,7 +49,7 @@ String? hostOf(String address) {
 }
 
 /// True when [after] is no looser than [before]: every limit in force is still there and not longer. Such a change starts at once;
-/// anything else needs the typed paragraph and starts at the next midnight.
+/// anything else needs the 30 second hold and starts at the next midnight.
 bool isStricter(List<LimitItem> before, List<LimitItem> after) {
   final m = {for (final i in after) i.key: i.limitMin};
   return before.every((b) => m[b.key] != null && m[b.key]! <= b.limitMin);
@@ -67,7 +67,7 @@ class LimitsState {
   /// Usage access is what times the apps; without it an app limit cannot count or block.
   final bool usageAccess;
 
-  /// "Display over other apps": lets the block screen open over an app. And the website filter (a local VPN that only carries DNS questions).
+  /// "Display over other apps": lets the app send you to the home screen when an app has used its time. And the website filter (a local VPN that only carries DNS questions).
   final bool overlay;
   final bool siteFilter;
 

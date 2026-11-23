@@ -39,7 +39,7 @@ Android greys out Accessibility for apps installed from a file. In the checklist
 
 ## 6. Accessibility
 
-Tap **Open** next to *Turn on Reel Analyser in Accessibility*, then **Installed apps → Reel Analyser + Blocker → On**. Reel Analyser only reads the Reels and Shorts screens. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
+Tap **Open** next to *Turn on Reel Analyser in Accessibility*, then **Installed apps → Reel Analyser + Blocker → On**. Reel Analyser only reads the short-video screens (Instagram Reels, YouTube Shorts, Snapchat Spotlight, TikTok) and, if you pick the Accessibility method for websites, the address bar of browser apps; nothing in any other app. When a limit is used up it presses Home for you. It never taps or scrolls, and it stores watched reels as fingerprints, never their content.
 
 ## 7. Battery
 

@@ -4,7 +4,7 @@ Reel Analyser is an independent project by Nevil Mathew Sanish (nevil-sanish), r
 
 ## Trademarks
 
-Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. LinkedIn is a trademark of LinkedIn Corporation (Microsoft). Buy Me a Coffee is a trademark of its owner. UPI is a trademark of the National Payments Corporation of India (NPCI). F-Droid is a trademark of F-Droid Limited. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. GitHub is a trademark of GitHub, Inc. LeetCode and Codeforces are trademarks of their owners. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
+Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (including Gemini) are trademarks of Google LLC. LinkedIn is a trademark of LinkedIn Corporation (Microsoft). X is a trademark of X Corp. Reddit is a trademark of Reddit, Inc. Snapchat is a trademark of Snap Inc. TikTok is a trademark of TikTok Ltd. Buy Me a Coffee is a trademark of its owner. UPI is a trademark of the National Payments Corporation of India (NPCI). F-Droid is a trademark of F-Droid Limited. OpenAI is a trademark of OpenAI. Claude and Anthropic are trademarks of Anthropic. GitHub is a trademark of GitHub, Inc. LeetCode and Codeforces are trademarks of their owners. Groq and Apify are trademarks of their owners. They are used only to say which services the app works with. Reel Analyser is not affiliated with, endorsed or sponsored by any of them.
 
 ## Third-party software
 

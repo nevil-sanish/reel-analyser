@@ -154,7 +154,7 @@ class BlockerBridge {
 
   Future<void> removeForGood() => _ch.invokeMethod('blockRemove');
 
-  /// Turns the block off until midnight. The caller has already taken the typed paragraph.
+  /// Turns the block off until midnight. The caller has already taken the 30 second hold.
   Future<void> cancelToday() => _ch.invokeMethod('blockCancel');
 }
 

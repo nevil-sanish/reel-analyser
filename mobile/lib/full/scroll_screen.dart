@@ -8,7 +8,7 @@ import 'page_card.dart';
 import 'detect_consent.dart';
 import 'full_bridge.dart';
 import 'habits.dart';
-import 'paragraph_gate.dart';
+import 'hold_gate.dart';
 
 /// Blocker → Reel limits → Scroll guard: a most-swipes-a-day and a most-swipes-in-a-row limit for short-video feeds (past either, the
 /// app is closed and the phone goes home), and the user's own habits worked out on the phone. Swipes are counted only on the
@@ -82,12 +82,11 @@ class _ScrollGuardSectionState extends State<ScrollGuardSection> {
     }
     if (before != null && before.on && !next.noLooserThan(before)) {
       if (!mounted) return;
-      final ok = await askParagraph(
+      final ok = await askHold(
         context,
         title: next.on ? 'Loosen the scroll guard' : 'Turn off the scroll guard',
-        intro: 'To loosen or turn off the scroll guard, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-            'Pasting is not accepted. It is checked on your phone only and is not stored.',
-        action: next.on ? 'Save the change' : 'Turn it off',
+        intro: 'To loosen or turn off the scroll guard, press and hold a finger on the screen for 30 seconds. '
+            'Nothing is stored or sent.',
       );
       if (!ok) return;
     }
@@ -137,7 +136,7 @@ class _ScrollGuardSectionState extends State<ScrollGuardSection> {
             _stepper('Then stay closed for', _pause, 1, 1, 120, (v) => _pause = v, unit: ' min'),
           ],
           const SizedBox(height: 8),
-          Text('Turning a part up or off later takes a typed paragraph, like the other limits. Making it stricter is free.', style: t.textTheme.bodySmall),
+          Text('Turning a part up or off later takes a 30 second press-and-hold, like the other limits. Making it stricter is free.', style: t.textTheme.bodySmall),
           if (_dirty) ...[
             const SizedBox(height: 12),
             FilledButton(onPressed: _save, child: Text(_draft.on ? 'Save the scroll guard' : 'Turn the scroll guard off')),

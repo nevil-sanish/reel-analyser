@@ -10,7 +10,7 @@ Notes, summaries, transcripts, key points and chat answers are made by AI from w
 
 ## 2. Not affiliated
 
-Reel Analyser is an independent project. It is not made, endorsed or sponsored by Instagram, Meta, YouTube, Google, LinkedIn, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid. Their names and trademarks belong to their owners and are used only to say which services the app works with. Using the app does not give you any right to those services or their content.
+Reel Analyser is an independent project. It is not made, endorsed or sponsored by Instagram, Meta, YouTube, Google, LinkedIn, X, Reddit, Snap, TikTok, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid. Their names and trademarks belong to their owners and are used only to say which services the app works with. Using the app does not give you any right to those services or their content.
 
 ## 3. Platform rules and your content
 

@@ -9,7 +9,7 @@ import 'limit_bar.dart';
 import 'detect_consent.dart';
 import 'page_card.dart';
 import 'scroll_screen.dart';
-import 'paragraph_gate.dart';
+import 'hold_gate.dart';
 import '../ui/liquid.dart';
 import '../ui/motion.dart';
 
@@ -30,7 +30,7 @@ class _RuleEdit {
 
   int? get minutes {
     final v = int.tryParse(limit.text.trim());
-    return v == null || v <= 0 ? null : (hours ? v * 60 : v);
+    return v == null || v < 0 ? null : (hours ? v * 60 : v);
   }
 
   BlockRule get rule => BlockRule(minutes, intervals);
@@ -152,13 +152,12 @@ class _BlockerScreenState extends State<BlockerScreen>
     final before = _st?.active;
     if (before != null) {
       if (!mounted) return;
-      final ok = await askParagraph(
+      final ok = await askHold(
         context,
         title: 'Change the reel limits',
-        intro: 'To change rules that are already on, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-            'Pasting is not accepted. It is checked on your phone only and is not stored. '
+        intro: 'To change rules that are already on, press and hold a finger on the screen for 30 seconds. '
+            'Nothing is stored or sent. '
             'If it is accepted, the new rules start at 00:00 tonight; until then today\'s rules stay.',
-        action: 'Check and save',
       );
       if (!ok || !mounted) return;
     }
@@ -175,12 +174,11 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 
   Future<void> _removeForGood() async {
-    final ok = await askParagraph(
+    final ok = await askHold(
       context,
       title: 'Turn off for good',
-      intro: 'To turn off the blocker and remove all its rules, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. It is checked on your phone only and is not stored.',
-      action: 'Turn off the blocker',
+      intro: 'To turn off the blocker and remove all its rules, press and hold a finger on the screen for 30 seconds. '
+          'Nothing is typed, stored or sent.',
     );
     if (!ok || !mounted) return;
     await _bridge.removeForGood();
@@ -191,12 +189,11 @@ class _BlockerScreenState extends State<BlockerScreen>
   }
 
   Future<void> _cancelToday() async {
-    final ok = await askParagraph(
+    final ok = await askHold(
       context,
       title: 'Turn off for today',
-      intro: 'To turn the block off until midnight, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted, and typing very fast locks the field until you stop for 2 seconds. It is checked on your phone only and is not stored.',
-      action: 'Turn off for today',
+      intro: 'To turn the block off until midnight, press and hold a finger on the screen for 30 seconds. '
+          'Nothing is typed, stored or sent.',
     );
     if (!ok || !mounted) return;
     await _bridge.cancelToday();
@@ -240,7 +237,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Daily limit',
-              helperText: 'Empty = no limit',
+              helperText: 'Empty = no limit. 0 = blocked all day.',
               isDense: true,
                 ),
               ),
@@ -449,7 +446,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                   // Pausing makes sense only while the block is really stopping you.
                   if (st.active != null && _editing && !st.suspendedToday && blockInEffect(st.active, st.used, _nowMinute())) ...[
                     const SizedBox(height: 8),
-                    OutlinedButton(onPressed: _cancelToday, child: const Text('Turn off for today (50-word paragraph)')),
+                    OutlinedButton(onPressed: _cancelToday, child: const Text('Turn off for today (30 s hold)')),
                   ],
                   if (st.active != null && _editing && st.suspendedToday) ...[
                     const SizedBox(height: 8),

@@ -11,7 +11,7 @@ import 'full_bridge.dart';
 import 'limit_bar.dart';
 import 'limits.dart';
 import 'page_card.dart';
-import 'paragraph_gate.dart';
+import 'hold_gate.dart';
 
 /// Blocker → Apps & sites: a daily time for any app or website. When the time is used up, the app or site is blocked until midnight.
 class LimitsScreen extends StatefulWidget {
@@ -192,13 +192,12 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
     final immediate = before.isEmpty || isStricter(before, _draft);
     if (!immediate) {
       if (!mounted) return;
-      final ok = await askParagraph(
+      final ok = await askHold(
         context,
         title: 'Change the time limits',
-        intro: 'To loosen limits that are already on, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-            'Pasting is not accepted. It is checked on your phone only and is not stored. '
+        intro: 'To loosen limits that are already on, press and hold a finger on the screen for 30 seconds. '
+            'Nothing is stored or sent. '
             'If it is accepted, the new limits start at 00:00 tonight; until then today\'s limits stay.',
-        action: 'Check and save',
       );
       if (!ok || !mounted) return;
     }
@@ -211,12 +210,11 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
   }
 
   Future<void> _removeForGood() async {
-    final ok = await askParagraph(
+    final ok = await askHold(
       context,
       title: 'Turn off for good',
-      intro: 'To remove all the app and website time limits, write at least ${ParagraphGuard.minWords} words, by hand, about why. '
-          'Pasting is not accepted. It is checked on your phone only and is not stored.',
-      action: 'Remove the limits',
+      intro: 'To remove all the app and website time limits, press and hold a finger on the screen for 30 seconds. '
+          'Nothing is stored or sent.',
     );
     if (!ok || !mounted) return;
     await _bridge.remove();
@@ -238,7 +236,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
       if (hasApp && !st.usageAccess)
         row(Icons.timer_outlined, 'Usage access is off', 'Apps are timed with it. Until you allow it, app limits count nothing and block nothing.', 'Allow', () => FullBridge().open('openUsageAccess')),
       if (hasApp && st.usageAccess && !st.overlay)
-        row(Icons.layers_outlined, 'Display over other apps is off', 'The block screen needs it to open over an app that has used up its time.', 'Allow', () => FullBridge().open('openOverlaySettings')),
+        row(Icons.layers_outlined, 'Display over other apps is off', 'Used only to send you to the home screen when an app has used up its time, if Accessibility is off.', 'Allow', () => FullBridge().open('openOverlaySettings')),
       if (hasSite && st.siteMethod == 'access' && !st.accessReady)
         row(Icons.accessibility_new_rounded, 'Accessibility is off', 'Websites are blocked by reading the browser address bar. Until Accessibility is on, website limits count nothing and block nothing.', 'Open', () => FullBridge().open('openAccessibilitySettings')),
       if (hasSite && st.siteMethod == 'vpn' && !st.siteFilter)
@@ -278,7 +276,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
           PageCard(icon: Icons.hourglass_bottom_rounded, title: on ? 'Edit the limits' : 'Time limits for apps and websites', children: [
             Text(
               'Pick an app or a website and the time you allow it each day. Past that time it is blocked until midnight. '
-              'Apps are timed with Android\'s Usage access and blocked with a screen shown over them. Websites are blocked either by a local VPN filter that only sees which site names the phone looks up (nothing reads your screen), or by reading the browser address bar with Accessibility; you choose below. '
+              'Apps are timed with Android\'s Usage access and past the limit you are sent to the home screen. Websites are blocked either by a local VPN filter that only sees which site names the phone looks up (nothing reads your screen), or by reading the browser address bar with Accessibility; you choose below. '
               'Nothing is recorded or sent.',
               style: t.textTheme.bodySmall,
             ),

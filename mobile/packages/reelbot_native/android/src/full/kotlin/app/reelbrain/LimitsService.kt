@@ -19,10 +19,10 @@ import android.provider.Settings
 
 /**
  * Daily time limits for apps and websites (full build), without reading the screen.
- *  - Apps: Android's usage events say which app is in front and for how long (Usage access); when its limit is used up the block
- *    screen opens over it (which needs "Display over other apps").
+ *  - Apps: Android's usage events say which app is in front and for how long (Usage access); when its limit is used up the person is sent
+ *    to the home screen (no block screen).
  *  - Websites: [DnsVpnService] reports which sites the phone looks up; the time they are in use is counted here, and at the limit
- *    their look-ups are refused.
+ *    their look-ups are refused (the page does not load).
  * Runs as a foreground service with a small notification, one check a second, and only while the screen is on.
  */
 class LimitsService : Service() {
@@ -142,16 +142,13 @@ class LimitsService : Service() {
             if (now - appUsedAt > 2000) { appUsed = AppUsage.todayMs(this, limits.filter { it.kind == "app" }.map { it.id }.toSet()); appUsedAt = now }
             if (AppLimits.isOver(app, appUsed[app.id] ?: 0L)) return show(app, now)
         }
-        // Sites: the browser in front has just had a look-up refused.
-        val hit = SiteFilter.lastBlocked
-        if (hit != null && now - hit.second < 3000 && fg in Browsers.packages) show(hit.first, now)
+        // Sites by VPN: a refused look-up is the whole block (the page fails to load). Nothing is drawn and nobody is sent home,
+        // because a look-up can come from a prefetch or a background app the person never opened.
     }
 
     private fun show(item: LimitItem, now: Long) {
         lastBlock = now
-        if (!overlayGranted(this)) return // Android would refuse to open the screen from the background
-        startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            .putExtra(BlockActivity.SURFACE, item.key).putExtra(BlockActivity.REASON, "applimit").putExtra(BlockActivity.TEXT, AppLimits.message(item)))
+        GoHome.now(this, AppLimits.message(item))
     }
 }
 
