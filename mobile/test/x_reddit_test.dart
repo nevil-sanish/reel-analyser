@@ -22,7 +22,7 @@ void main() {
 
     test('text, photos and the best mp4', () {
       final p = parseXPost(jsonEncode({
-        'text': 'A short thread about tea https://t.co/abc123',
+        'text': 'A short thread about tea http://t.co/abc123',
         'user': {'name': 'Tea Fan', 'screen_name': 'teafan'},
         'photos': [
           {'url': 'https://pbs.twimg.com/media/one.jpg'},

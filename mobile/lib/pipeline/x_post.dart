@@ -66,7 +66,7 @@ XPost parseXPost(String body) {
 
   var text = '${j['text'] ?? ''}'.trim();
   // The text ends with the t.co link to the post's own media; drop it, the media is analysed separately.
-  text = text.replaceAll(RegExp(r'\s*https://t\.co/\w+\s*$'), '').trim();
+  text = text.replaceAll(RegExp(r'\s*https?://t\.co/\w+\s*$'), '').trim();
 
   final images = <String>[];
   for (final p in j['photos'] is List ? j['photos'] as List : const []) {
