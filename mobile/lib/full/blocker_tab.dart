@@ -7,7 +7,6 @@ import '../ui/theme.dart';
 import 'blocker_screen.dart';
 import 'goals_screen.dart';
 import 'limits_screen.dart';
-import 'scroll_screen.dart';
 
 /// The Blocker tab: the reel limits and schedules, and the daily goals, one under a switch. Tabs stay alive behind each other, so
 /// the page is rebuilt each time the tab comes back and always shows what the blocker holds now.
@@ -43,7 +42,11 @@ class _BlockerTabState extends State<BlockerTab> {
               width: double.infinity,
               child: SegmentedButton<int>(
                 showSelectedIcon: false,
-                segments: const [ButtonSegment(value: 0, label: Text('Reel limits')), ButtonSegment(value: 1, label: Text('Apps & sites')), ButtonSegment(value: 2, label: Text('Daily goals')), ButtonSegment(value: 3, label: Text('Scroll'))],
+                segments: const [
+                  ButtonSegment(value: 0, icon: Icon(Icons.movie_filter_rounded, size: 18), label: _SegLabel('Reels')),
+                  ButtonSegment(value: 1, icon: Icon(Icons.apps_rounded, size: 18), label: _SegLabel('Apps & sites')),
+                  ButtonSegment(value: 2, icon: Icon(Icons.flag_rounded, size: 18), label: _SegLabel('Goals')),
+                ],
                 selected: {_page},
                 onSelectionChanged: (v) {
                   Haptics.select();
@@ -60,7 +63,6 @@ class _BlockerTabState extends State<BlockerTab> {
                 child: switch (_page) {
                   0 => BlockerScreen(widget.services, embedded: true),
                   1 => LimitsScreen(widget.services),
-                  3 => ScrollScreen(widget.services),
                   _ => GoalsScreen(widget.services, embedded: true),
                 },
               ),
@@ -68,4 +70,13 @@ class _BlockerTabState extends State<BlockerTab> {
           ),
         ]),
       );
+}
+
+/// A tab label that never wraps: it shrinks a little instead.
+class _SegLabel extends StatelessWidget {
+  final String text;
+  const _SegLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => FittedBox(fit: BoxFit.scaleDown, child: Text(text, maxLines: 1, softWrap: false));
 }

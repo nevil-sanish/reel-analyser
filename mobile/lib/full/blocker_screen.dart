@@ -7,6 +7,8 @@ import '../app_services.dart';
 import 'blocker.dart';
 import 'limit_bar.dart';
 import 'detect_consent.dart';
+import 'page_card.dart';
+import 'scroll_screen.dart';
 import 'paragraph_gate.dart';
 import '../ui/liquid.dart';
 import '../ui/motion.dart';
@@ -45,6 +47,14 @@ class BlockerScreen extends StatefulWidget {
   @override
   State<BlockerScreen> createState() => _BlockerScreenState();
 }
+
+const _surfaceIcons = {
+  'instagram': Icons.movie_rounded,
+  'youtube': Icons.smart_display_rounded,
+  'snapchat': Icons.photo_camera_front_rounded,
+  'tiktok': Icons.music_video_rounded,
+  'browser': Icons.language_rounded,
+};
 
 class _BlockerScreenState extends State<BlockerScreen>
     with WidgetsBindingObserver {
@@ -316,38 +326,19 @@ class _BlockerScreenState extends State<BlockerScreen>
       body: ListView(
         padding: EdgeInsets.fromLTRB(16, 8, 16, widget.embedded ? 120 : 32),
         children: [
-          Card(
-          margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    st.active == null
-                        ? 'Not set up'
-                        : st.suspendedToday
-                        ? 'Off for today'
-                        : 'On',
-                    style: t.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Blocks only the Reels, Shorts and reel pages you pick, never the rest of the app. It needs the Accessibility service '
-                    '(Settings → Set up Insights). It looks only at whether a reel or short is on screen, and in a browser at the address bar. '
-                    'Nothing is recorded or sent.',
-                    style: t.textTheme.bodySmall,
-                  ),
-                  if (st.active != null) ...[
-                    ..._bars(st, st.active!),
-                  ],
-                  if (st.suspendedToday) ...[
-                    const SizedBox(height: 12),
-                    const Text('You turned the block off for today. It comes back at midnight.'),
-                  ],
-                ],
-              ),
-            ),
+          PageCard(
+            icon: st.active == null ? Icons.shield_outlined : st.suspendedToday ? Icons.pause_circle_outline_rounded : Icons.shield_rounded,
+            title: st.active == null ? 'Not set up' : st.suspendedToday ? 'Off for today' : 'On',
+            subtitle: 'Blocks only the Reels, Shorts, Spotlight and reel pages you pick, never the rest of the app (TikTok is blocked as a whole). '
+                'It needs the Accessibility service (Settings → Set up Insights). It looks only at whether a short video is on screen, and in a browser at the address bar. '
+                'Nothing is recorded or sent.',
+            children: [
+              if (st.active != null) ..._bars(st, st.active!),
+              if (st.suspendedToday) ...[
+                const SizedBox(height: 12),
+                const Text('You turned the block off for today. It comes back at midnight.'),
+              ],
+            ],
           ),
           if (!_consent)
           Card(
@@ -379,17 +370,18 @@ class _BlockerScreenState extends State<BlockerScreen>
               ),
             ),
           if (st.active == null || _editing)
-          Card(
-          margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+          PageCard(
+            icon: Icons.shield_moon_rounded,
+            title: 'What to block',
+            index: 1,
+            children: [
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('What to block', style: t.textTheme.titleMedium),
                   for (final k in blockSurfaces)
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
+                      secondary: Icon(_surfaceIcons[k], color: t.colorScheme.primary),
                       title: Text(surfaceNames[k]!),
                       value: _items.contains(k),
                       onChanged: (v) => setState(
@@ -475,7 +467,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                   ],
                 ],
               ),
-            ),
+            ],
           ),
           if (st.active != null && !_editing) ...[
             FilledButton.tonal(onPressed: () => setState(() => _editing = true), child: const Text('Edit')),
@@ -486,6 +478,8 @@ class _BlockerScreenState extends State<BlockerScreen>
               onPressed: _removeForGood,
             ),
           ],
+          const SizedBox(height: 16),
+          ScrollGuardSection(widget.services),
         ],
       ),
     );

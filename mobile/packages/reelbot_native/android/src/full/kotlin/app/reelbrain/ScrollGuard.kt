@@ -3,22 +3,23 @@ package app.reelbrain
 import org.json.JSONObject
 
 /**
- * Scroll guard (full build). A swipe is one scroll through a short-video feed (Reels, Shorts, Spotlight, TikTok). The user sets a
- * most swipes a day and/or a burst rule ("[burstSwipes] swipes within [burstMinutes] minutes means a [pauseMinutes] minute pause").
+ * Scroll guard (full build). A swipe is one scroll through a short-video feed (Reels, Shorts, Spotlight, TikTok). A run is swipes that
+ * keep coming: it ends when you stop for [quietSec] seconds. The user sets a most swipes a day and/or a most swipes in a run. Past
+ * either, the app is closed and the phone goes to the home screen; after a run the feeds stay closed for [pauseMinutes] minutes.
  * A 0 turns that part off. Only swipe counts are kept, never what was scrolled past.
  */
-data class ScrollRule(val maxPerDay: Int = 0, val burstSwipes: Int = 0, val burstMinutes: Int = 10, val pauseMinutes: Int = 5) {
-    val on get() = maxPerDay > 0 || burstSwipes > 0
+data class ScrollRule(val maxPerDay: Int = 0, val runSwipes: Int = 0, val quietSec: Int = 30, val pauseMinutes: Int = 5) {
+    val on get() = maxPerDay > 0 || runSwipes > 0
 
-    fun toJson(): String = JSONObject().put("maxPerDay", maxPerDay).put("burstSwipes", burstSwipes)
-        .put("burstMinutes", burstMinutes).put("pauseMinutes", pauseMinutes).toString()
+    fun toJson(): String = JSONObject().put("maxPerDay", maxPerDay).put("runSwipes", runSwipes)
+        .put("quietSec", quietSec).put("pauseMinutes", pauseMinutes).toString()
 
     companion object {
         /** Null for anything malformed or out of range, so a damaged value never blocks. */
         fun parse(json: String?): ScrollRule? = try {
             val o = JSONObject(json ?: return null)
-            val r = ScrollRule(o.getInt("maxPerDay"), o.getInt("burstSwipes"), o.getInt("burstMinutes"), o.getInt("pauseMinutes"))
-            r.takeIf { it.maxPerDay in 0..5000 && it.burstSwipes in 0..500 && it.burstMinutes in 1..120 && it.pauseMinutes in 1..120 }
+            val r = ScrollRule(o.getInt("maxPerDay"), o.getInt("runSwipes"), o.getInt("quietSec"), o.getInt("pauseMinutes"))
+            r.takeIf { it.maxPerDay in 0..5000 && it.runSwipes in 0..500 && it.quietSec in 5..300 && it.pauseMinutes in 1..120 }
         } catch (e: Exception) {
             null
         }
@@ -35,18 +36,33 @@ object ScrollGuard {
     /** Scroll events come in bursts for one swipe; events closer than this are the same swipe. */
     const val SWIPE_GAP_MS = 500L
 
-    /** [swipesToday] includes the swipe just made; [recent] holds the times of recent swipes, newest last. */
-    fun verdict(rule: ScrollRule, swipesToday: Long, recent: List<Long>, now: Long): ScrollVerdict {
+    /** [swipesToday] and [run] include the swipe just made. */
+    fun verdict(rule: ScrollRule, swipesToday: Long, run: Int): ScrollVerdict {
         if (rule.maxPerDay > 0 && swipesToday >= rule.maxPerDay) return ScrollVerdict.DayLimit
-        if (rule.burstSwipes > 0 && recent.count { it > now - rule.burstMinutes * 60_000L } >= rule.burstSwipes) return ScrollVerdict.Pause(rule.pauseMinutes)
+        if (rule.runSwipes > 0 && run >= rule.runSwipes) return ScrollVerdict.Pause(rule.pauseMinutes)
         return ScrollVerdict.Ok
     }
 
     fun message(v: ScrollVerdict, rule: ScrollRule, leftMin: Int = 0) = when (v) {
         is ScrollVerdict.DayLimit -> "You have scrolled your ${rule.maxPerDay} swipes for today."
-        is ScrollVerdict.Pause -> "That was ${rule.burstSwipes} swipes in ${rule.burstMinutes} minutes. Take a break for ${maxOf(leftMin, 1)} more min."
+        is ScrollVerdict.Pause -> "${rule.runSwipes} swipes in a row. Take a break for ${maxOf(leftMin, 1)} min."
         else -> ""
     }
+}
+
+/** The length of the run of swipes that keep coming: it starts over after a quiet gap. */
+class SwipeRun {
+    private var last = 0L
+    private var n = 0
+
+    /** Records a swipe at [now]; returns how many swipes the run has. */
+    fun onSwipe(now: Long, quietMs: Long): Int {
+        if (now - last > quietMs) n = 0
+        last = now
+        return ++n
+    }
+
+    fun reset() { n = 0 }
 }
 
 /** Turns a stream of scroll events into swipes: a new swipe starts after a quiet gap. */

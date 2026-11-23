@@ -2,14 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
-/// The scroll guard rule: most swipes a day and a burst rule. 0 turns a part off. Same shape as Kotlin's `ScrollRule`.
+/// The scroll guard rule: most swipes a day, and most swipes in a run (a run ends after [quietSec] seconds without a swipe).
+/// Past either the app is closed and the phone goes home. 0 turns a part off. Same shape as Kotlin's `ScrollRule`.
 class ScrollRule {
-  final int maxPerDay, burstSwipes, burstMinutes, pauseMinutes;
-  const ScrollRule({this.maxPerDay = 0, this.burstSwipes = 0, this.burstMinutes = 10, this.pauseMinutes = 5});
+  final int maxPerDay, runSwipes, quietSec, pauseMinutes;
+  const ScrollRule({this.maxPerDay = 0, this.runSwipes = 0, this.quietSec = 30, this.pauseMinutes = 5});
 
-  bool get on => maxPerDay > 0 || burstSwipes > 0;
+  bool get on => maxPerDay > 0 || runSwipes > 0;
 
-  String toJson() => jsonEncode({'maxPerDay': maxPerDay, 'burstSwipes': burstSwipes, 'burstMinutes': burstMinutes, 'pauseMinutes': pauseMinutes});
+  String toJson() => jsonEncode({'maxPerDay': maxPerDay, 'runSwipes': runSwipes, 'quietSec': quietSec, 'pauseMinutes': pauseMinutes});
 
   static ScrollRule? parse(String? json) {
     if (json == null) return null;
@@ -17,8 +18,8 @@ class ScrollRule {
       final o = jsonDecode(json) as Map;
       return ScrollRule(
         maxPerDay: (o['maxPerDay'] as num).toInt(),
-        burstSwipes: (o['burstSwipes'] as num).toInt(),
-        burstMinutes: (o['burstMinutes'] as num).toInt(),
+        runSwipes: (o['runSwipes'] as num).toInt(),
+        quietSec: (o['quietSec'] as num).toInt(),
         pauseMinutes: (o['pauseMinutes'] as num).toInt(),
       );
     } on Object {
@@ -30,9 +31,9 @@ class ScrollRule {
   /// once; anything else takes the typed paragraph, like loosening a limit.
   bool noLooserThan(ScrollRule before) {
     final dayOk = before.maxPerDay == 0 || (maxPerDay > 0 && maxPerDay <= before.maxPerDay);
-    final burstOk = before.burstSwipes == 0 ||
-        (burstSwipes > 0 && burstSwipes <= before.burstSwipes && burstMinutes >= before.burstMinutes && pauseMinutes >= before.pauseMinutes);
-    return dayOk && burstOk;
+    final runOk = before.runSwipes == 0 ||
+        (runSwipes > 0 && runSwipes <= before.runSwipes && quietSec >= before.quietSec && pauseMinutes >= before.pauseMinutes);
+    return dayOk && runOk;
   }
 }
 

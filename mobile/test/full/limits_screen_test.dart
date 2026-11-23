@@ -33,7 +33,7 @@ void main() {
     expect(find.text('Turn the limits on'), findsOneWidget);
     await tester.tap(find.text('Turn the limits on'));
     await tester.pumpAndSettle();
-    expect(find.text('On'), findsOneWidget);
+    expect(find.text('Limits are on'), findsOneWidget);
     expect(find.textContaining('5 min of 30 min'), findsOneWidget);
   });
 }

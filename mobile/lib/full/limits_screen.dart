@@ -10,6 +10,7 @@ import 'detect_consent.dart';
 import 'full_bridge.dart';
 import 'limit_bar.dart';
 import 'limits.dart';
+import 'page_card.dart';
 import 'paragraph_gate.dart';
 
 /// Blocker → Apps & sites: a daily time for any app or website. When the time is used up, the app or site is blocked until midnight.
@@ -120,9 +121,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
 
   Widget _methodCard(LimitsState st) {
     final t = Theme.of(context);
-    return _card([
-      Text('How websites are blocked', style: t.textTheme.titleSmall),
-      const SizedBox(height: 8),
+    return PageCard(icon: Icons.language_rounded, title: 'How websites are blocked', children: [
       SegmentedButton<String>(
         segments: const [
           ButtonSegment(value: 'vpn', label: Text('VPN'), icon: Icon(Icons.vpn_lock_rounded)),
@@ -265,8 +264,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
         _permissions(st),
         if ({...st.active, ..._draft}.any((i) => i.isSite)) _methodCard(st),
         if (on && !_editing) ...[
-          _card([
-            Text('On', style: t.textTheme.titleLarge),
+          PageCard(icon: Icons.timer_rounded, title: 'Limits are on', children: [
             for (final i in st.active) LimitBar(label: '${i.label}${i.isSite ? ' (website)' : ''}', usedMs: st.used[i.key] ?? 0, limitMin: i.limitMin),
             const SizedBox(height: 10),
             Text('When the time is used up, the app or website is blocked until midnight. Website time is counted from the sites your phone looks up, so it is approximate; 0 minutes (blocked all day) is exact.', style: t.textTheme.bodySmall),
@@ -277,9 +275,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
           const SizedBox(height: 8),
           TextButton.icon(icon: const Icon(Icons.delete_forever_outlined), label: const Text('Turn off permanently'), onPressed: _removeForGood),
         ] else ...[
-          _card([
-            Text(on ? 'Edit the limits' : 'Time limits for apps and websites', style: t.textTheme.titleLarge),
-            const SizedBox(height: 6),
+          PageCard(icon: Icons.hourglass_bottom_rounded, title: on ? 'Edit the limits' : 'Time limits for apps and websites', children: [
             Text(
               'Pick an app or a website and the time you allow it each day. Past that time it is blocked until midnight. '
               'Apps are timed with Android\'s Usage access and blocked with a screen shown over them. Websites are blocked either by a local VPN filter that only sees which site names the phone looks up (nothing reads your screen), or by reading the browser address bar with Accessibility; you choose below. '

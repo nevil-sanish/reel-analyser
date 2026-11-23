@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelbrain/core/models.dart';
 import 'package:reelbrain/pipeline/gemini.dart';
@@ -24,6 +26,7 @@ const _videoPost = '''<html><head>
 </head></html>''';
 
 void main() {
+  embedTests();
   test('a text and picture post: full text, author, post pictures (not the company logo)', () {
     final p = parseLinkedIn(_textPost);
     expect(p.text, startsWith('Big news! Registrations'));
@@ -93,5 +96,25 @@ void main() {
     expect(m.transcript, 'Video 1:\nHello all\n\nVideo 2:\nWatch this');
     expect(m.mentions, ['Flutter']);
     expect(identical(mergeAnalyses([('Video', v1)]), v1), isTrue);
+  });
+}
+
+void embedTests() {
+  group('LinkedIn public embed (1.2.4.0)', () {
+    test('the embed address comes from the post id in the link', () {
+      expect(linkedInEmbedUrl(Uri.parse('https://www.linkedin.com/posts/jason-haider_x-ugcPost-7221657670615719939-AbCd?utm_source=share')),
+          'https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7221657670615719939');
+      expect(linkedInEmbedUrl(Uri.parse('https://www.linkedin.com/posts/someone_hello-activity-7221657762403958785-xyz')),
+          'https://www.linkedin.com/embed/feed/update/urn:li:activity:7221657762403958785');
+      expect(linkedInEmbedUrl(Uri.parse('https://www.linkedin.com/feed/update/urn:li:share:7000000000000000001/')),
+          'https://www.linkedin.com/embed/feed/update/urn:li:share:7000000000000000001');
+      expect(linkedInEmbedUrl(Uri.parse('https://www.linkedin.com/in/someone')), isNull);
+    });
+
+    test('an embed page gives the text and the author', () {
+      final p = parseLinkedInEmbed(File('test/fixtures_linkedin_embed.html').readAsStringSync());
+      expect(p.text, startsWith('When confronted with items too massive to move alone'));
+      expect(p.author, 'Test Author');
+    });
   });
 }

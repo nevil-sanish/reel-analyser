@@ -648,7 +648,16 @@ class Runner {
       return _failed('LinkedIn is limiting requests from this network right now. Nothing was retried; share the post again later.');
     }
     if (r.statusCode == 429 || r.statusCode >= 500) throw GeminiException(GeminiFailure.retryLater, 'LinkedIn is busy (HTTP ${r.statusCode})');
-    final p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
+    var p = r.statusCode == 200 ? parseLinkedIn(utf8.decode(r.bodyBytes, allowMalformed: true)) : const LinkedInPost();
+    // The post page is sometimes refused (404) to a logged-out phone. LinkedIn's own public embed page for the same post is asked
+    // once, the same way (no login, no cookies); nothing is retried.
+    final embed = linkedInEmbedUrl(u);
+    if (p.isEmpty && embed != null) {
+      _step('Trying LinkedIn\'s public embed page', 0.2);
+      final e = await _stoppable(client.get(Uri.parse(embed), headers: {'User-Agent': linkedInUserAgent, 'Accept-Language': 'en-US,en;q=0.9'}))
+          .timeout(const Duration(seconds: 30));
+      if (e.statusCode == 200) p = parseLinkedInEmbed(utf8.decode(e.bodyBytes, allowMalformed: true));
+    }
     if (p.isEmpty) {
       // Even a public post is sometimes refused to a logged-out visitor; nothing is retried automatically.
       return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Read in app '

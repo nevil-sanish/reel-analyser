@@ -4,26 +4,28 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import 'blocker.dart';
+import 'page_card.dart';
 import 'detect_consent.dart';
 import 'full_bridge.dart';
 import 'habits.dart';
 import 'paragraph_gate.dart';
 
-/// Blocker → Scroll: a most-swipes-a-day and a "too many swipes too fast" pause for short-video feeds, and the user's own habits
-/// worked out on the phone. Swipes are counted only on the short-video screens of Instagram, YouTube, Snapchat and TikTok.
-class ScrollScreen extends StatefulWidget {
+/// Blocker → Reel limits → Scroll guard: a most-swipes-a-day and a most-swipes-in-a-row limit for short-video feeds (past either, the
+/// app is closed and the phone goes home), and the user's own habits worked out on the phone. Swipes are counted only on the
+/// short-video screens of Instagram, YouTube, Snapchat and TikTok. Sits at the bottom of the Reel limits page.
+class ScrollGuardSection extends StatefulWidget {
   final AppServices services;
-  const ScrollScreen(this.services, {super.key});
+  const ScrollGuardSection(this.services, {super.key});
 
   @override
-  State<ScrollScreen> createState() => _ScrollScreenState();
+  State<ScrollGuardSection> createState() => _ScrollGuardSectionState();
 }
 
-class _ScrollScreenState extends State<ScrollScreen> {
+class _ScrollGuardSectionState extends State<ScrollGuardSection> {
   final _bridge = ScrollBridge();
   ScrollState? _st;
   Habits? _habits;
-  var _day = 0, _burst = 0, _window = 10, _pause = 5;
+  var _day = 0, _run = 0, _quiet = 30, _pause = 5;
   var _dirty = false;
   Timer? _timer;
 
@@ -58,15 +60,15 @@ class _ScrollScreenState extends State<ScrollScreen> {
       if (keepDraft && _dirty) return;
       final r = st.rule ?? const ScrollRule();
       _day = r.maxPerDay;
-      _burst = r.burstSwipes;
-      _window = r.burstMinutes;
+      _run = r.runSwipes;
+      _quiet = r.quietSec;
       _pause = r.pauseMinutes;
     });
   }
 
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-  ScrollRule get _draft => ScrollRule(maxPerDay: _day, burstSwipes: _burst, burstMinutes: _window, pauseMinutes: _pause);
+  ScrollRule get _draft => ScrollRule(maxPerDay: _day, runSwipes: _run, quietSec: _quiet, pauseMinutes: _pause);
 
   Future<void> _save() async {
     final before = _st?.rule;
@@ -111,11 +113,6 @@ class _ScrollScreenState extends State<ScrollScreen> {
     ]);
   }
 
-  Widget _card(List<Widget> children) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children)),
-      );
-
   @override
   Widget build(BuildContext context) {
     final st = _st;
@@ -123,36 +120,32 @@ class _ScrollScreenState extends State<ScrollScreen> {
     final t = Theme.of(context);
     final h = _habits;
     final notes = h?.notes() ?? const <String>[];
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 120), children: [
-      _card([
-        Text('Scroll guard', style: t.textTheme.titleLarge),
-        const SizedBox(height: 6),
-        Text(
-          'Counts swipes through short videos (Instagram Reels, YouTube Shorts, Snapchat Spotlight, TikTok) and stops you when you pass the limits you set. '
-          'Only the number of swipes is kept on this phone, never what you scrolled past.',
-          style: t.textTheme.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        Text('Swipes today: ${st.swipesToday}', style: t.textTheme.titleMedium),
-      ]),
-      _card([
-        _stepper('Most swipes a day', _day, 20, 0, 5000, (v) => _day = v),
-        _stepper('Pause after this many swipes', _burst, 5, 0, 500, (v) => _burst = v),
-        if (_burst > 0) ...[
-          _stepper('…within', _window, 5, 5, 120, (v) => _window = v, unit: ' min'),
-          _stepper('Pause for', _pause, 1, 1, 120, (v) => _pause = v, unit: ' min'),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      PageCard(
+        icon: Icons.swipe_vertical_rounded,
+        title: 'Scroll guard',
+        subtitle: 'Watches how you swipe through short videos (Instagram Reels, YouTube Shorts, Snapchat Spotlight, TikTok). '
+            'When the same scrolling keeps going past your limit, the app is closed and you land on the home screen. '
+            'Only the number of swipes is kept on this phone, never what you scrolled past.',
+        children: [
+          Text('Swipes today: ${st.swipesToday}', style: t.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          _stepper('Most swipes a day', _day, 20, 0, 5000, (v) => _day = v),
+          _stepper('Most swipes in a row', _run, 5, 0, 500, (v) => _run = v),
+          if (_run > 0) ...[
+            _stepper('A run ends after a quiet of', _quiet, 5, 5, 300, (v) => _quiet = v, unit: ' s'),
+            _stepper('Then stay closed for', _pause, 1, 1, 120, (v) => _pause = v, unit: ' min'),
+          ],
+          const SizedBox(height: 8),
+          Text('Turning a part up or off later takes a typed paragraph, like the other limits. Making it stricter is free.', style: t.textTheme.bodySmall),
+          if (_dirty) ...[
+            const SizedBox(height: 12),
+            FilledButton(onPressed: _save, child: Text(_draft.on ? 'Save the scroll guard' : 'Turn the scroll guard off')),
+          ],
         ],
-        const SizedBox(height: 8),
-        Text('Turning a part up or off later takes a typed paragraph, like the other limits. Making it stricter is free.', style: t.textTheme.bodySmall),
-        if (_dirty) ...[
-          const SizedBox(height: 12),
-          FilledButton(onPressed: _save, child: Text(_draft.on ? 'Save' : 'Turn off')),
-        ],
-      ]),
+      ),
       if (notes.isNotEmpty)
-        _card([
-          Text('Your pattern', style: t.textTheme.titleMedium),
-          const SizedBox(height: 6),
+        PageCard(icon: Icons.insights_rounded, title: 'Your pattern', index: 1, children: [
           for (final n in notes) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(n)),
           if (h != null && h.suggestedMaxSwipes > 0 && _day == 0) ...[
             const SizedBox(height: 8),

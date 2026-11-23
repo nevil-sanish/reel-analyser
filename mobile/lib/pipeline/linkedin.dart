@@ -158,3 +158,19 @@ Analysis mergeAnalyses(List<(String, Analysis)> parts) {
     onScreenText: joined((a) => a.onScreenText),
   );
 }
+
+/// LinkedIn's own public "Embed this post" page for a post link: no login, no cookies. The post id is in the link
+/// (`...-ugcPost-<id>-...`, `...-activity-<id>-...`, `...-share-<id>-...` or `urn:li:<kind>:<id>`). Null when the link has none.
+String? linkedInEmbedUrl(Uri u) {
+  final m = RegExp(r'(?:urn:li:|[-/_])(ugcPost|activity|share)[-:](\d{15,25})').firstMatch(Uri.decodeFull(u.path));
+  if (m == null) return null;
+  return 'https://www.linkedin.com/embed/feed/update/urn:li:${m.group(1)}:${m.group(2)}';
+}
+
+/// The embed page carries the post in its meta tags; its title reads "Author | 12 likes · 1 comment | LinkedIn".
+LinkedInPost parseLinkedInEmbed(String html) {
+  final p = parseLinkedIn(html);
+  final t = _meta(html, 'og:title');
+  final author = t.contains(' | ') ? t.split(' | ').first.trim() : '';
+  return LinkedInPost(author: author.isNotEmpty ? author : p.author, text: p.text, images: p.images, videos: p.videos, thumbnail: p.thumbnail);
+}

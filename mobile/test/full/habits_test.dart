@@ -4,19 +4,19 @@ import 'package:reelbrain/full/habits.dart';
 void main() {
   group('scroll rule', () {
     test('stricter changes are free, looser ones are not', () {
-      const before = ScrollRule(maxPerDay: 200, burstSwipes: 20, burstMinutes: 10, pauseMinutes: 5);
-      expect(const ScrollRule(maxPerDay: 150, burstSwipes: 20, burstMinutes: 10, pauseMinutes: 5).noLooserThan(before), isTrue);
-      expect(const ScrollRule(maxPerDay: 250, burstSwipes: 20).noLooserThan(before), isFalse);
-      expect(const ScrollRule(maxPerDay: 0, burstSwipes: 20).noLooserThan(before), isFalse);
-      expect(const ScrollRule(maxPerDay: 200).noLooserThan(before), isFalse, reason: 'dropping the burst rule loosens');
-      expect(const ScrollRule(maxPerDay: 200, burstSwipes: 20, pauseMinutes: 3).noLooserThan(before), isFalse, reason: 'a shorter pause loosens');
+      const before = ScrollRule(maxPerDay: 200, runSwipes: 20, quietSec: 30, pauseMinutes: 5);
+      expect(const ScrollRule(maxPerDay: 150, runSwipes: 20, quietSec: 30, pauseMinutes: 5).noLooserThan(before), isTrue);
+      expect(const ScrollRule(maxPerDay: 250, runSwipes: 20).noLooserThan(before), isFalse);
+      expect(const ScrollRule(maxPerDay: 0, runSwipes: 20).noLooserThan(before), isFalse);
+      expect(const ScrollRule(maxPerDay: 200).noLooserThan(before), isFalse, reason: 'dropping the run rule loosens');
+      expect(const ScrollRule(maxPerDay: 200, runSwipes: 20, pauseMinutes: 3).noLooserThan(before), isFalse, reason: 'a shorter pause loosens');
       expect(const ScrollRule(maxPerDay: 100).noLooserThan(const ScrollRule()), isTrue, reason: 'from off, anything is stricter');
     });
 
     test('json round trip and damage', () {
-      const r = ScrollRule(maxPerDay: 120, burstSwipes: 15, burstMinutes: 20, pauseMinutes: 7);
+      const r = ScrollRule(maxPerDay: 120, runSwipes: 15, quietSec: 40, pauseMinutes: 7);
       final b = ScrollRule.parse(r.toJson())!;
-      expect([b.maxPerDay, b.burstSwipes, b.burstMinutes, b.pauseMinutes], [120, 15, 20, 7]);
+      expect([b.maxPerDay, b.runSwipes, b.quietSec, b.pauseMinutes], [120, 15, 40, 7]);
       expect(ScrollRule.parse('nope'), isNull);
       expect(ScrollRule.parse(null), isNull);
     });

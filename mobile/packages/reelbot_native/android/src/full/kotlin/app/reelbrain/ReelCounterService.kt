@@ -54,10 +54,9 @@ class ReelCounterService : AccessibilityService() {
     private var lastTree = 0L
     private var ticking = false
     private val swipes = SwipeCounter()
-    private val recentSwipes = ArrayDeque<Long>()
+    private val run = SwipeRun()
     private var feedNow = false
     private var pausedUntil = 0L
-    private var scrollApp = ""
     private var ruleAt = 0L
     private var rule: ScrollRule? = null
 
@@ -148,29 +147,34 @@ class ReelCounterService : AccessibilityService() {
 
     private fun scrollOn(now: Long) = scrollRule(now) != null
 
-    /** In a short-video feed: while a pause runs, or the day's swipes are used up, the block screen opens. */
-    private fun scrollCheck(app: String, now: Long) {
+    /** In a short-video feed: while a pause runs, or the day's swipes are used up, the app is closed and the phone goes home. */
+    private fun scrollCheck(now: Long) {
         val r = scrollRule(now) ?: return
         if (now < pausedUntil) {
-            blockNow(app, "scroll", now, text = ScrollGuard.message(ScrollVerdict.Pause(r.pauseMinutes), r, ((pausedUntil - now) / 60_000L).toInt() + 1))
+            goHome(now, ScrollGuard.message(ScrollVerdict.Pause(r.pauseMinutes), r, ((pausedUntil - now) / 60_000L).toInt() + 1))
             return
         }
-        val date = localDate(now)
-        if (r.maxPerDay > 0 && (db.usedToday(date)["swipes:all"] ?: 0L) >= r.maxPerDay) {
-            blockNow(app, "scroll", now, text = ScrollGuard.message(ScrollVerdict.DayLimit, r))
-        }
+        if (r.maxPerDay > 0 && (db.usedToday(localDate(now))["swipes:all"] ?: 0L) >= r.maxPerDay) goHome(now, ScrollGuard.message(ScrollVerdict.DayLimit, r))
     }
 
-    /** A new swipe in a feed: counted, and the burst and day rules checked. */
+    /** A new swipe in a feed: counted, and the run and day rules checked. */
     private fun onSwipe(now: Long) {
         val r = scrollRule(now) ?: return
         val date = localDate(now)
         sink.addUse(date, "swipes:all", 1)
-        while (recentSwipes.isNotEmpty() && recentSwipes.first() < now - 120 * 60_000L) recentSwipes.removeFirst()
-        recentSwipes.addLast(now)
-        val v = ScrollGuard.verdict(r, db.usedToday(date)["swipes:all"] ?: 0L, recentSwipes.toList(), now)
-        if (v is ScrollVerdict.Pause) { pausedUntil = now + v.minutes * 60_000L; recentSwipes.clear() }
-        if (v !is ScrollVerdict.Ok) blockNow(scrollApp, "scroll", now, text = ScrollGuard.message(v, r, (r.pauseMinutes)))
+        val n = run.onSwipe(now, r.quietSec * 1000L)
+        val v = ScrollGuard.verdict(r, db.usedToday(date)["swipes:all"] ?: 0L, n)
+        if (v is ScrollVerdict.Pause) { pausedUntil = now + v.minutes * 60_000L; run.reset() }
+        if (v !is ScrollVerdict.Ok) goHome(now, ScrollGuard.message(v, r, r.pauseMinutes))
+    }
+
+    /** Closes the feed the way a person would: the Home action, then a short note. At most every 4 seconds. */
+    private fun goHome(now: Long, text: String) {
+        if (now - lastBlock <= 4000) return
+        lastBlock = now
+        meter.stop()
+        performGlobalAction(GLOBAL_ACTION_HOME)
+        handler.post { android.widget.Toast.makeText(this, text, android.widget.Toast.LENGTH_LONG).show() }
     }
 
     private fun consented() = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CONSENT, false)
@@ -230,8 +234,7 @@ class ReelCounterService : AccessibilityService() {
         val obs = DetectionRules.read(app, nodes, Box(r.left, r.top, r.right, r.bottom))
         tracker.observe(now, app, obs.inReels, obs.item)
         feedNow = obs.inReels
-        scrollApp = app
-        if (obs.inReels) scrollCheck(app, now)
+        if (obs.inReels) scrollCheck(now)
         // Whole-app time: anywhere in the app counts, and past the rule the app itself is blocked, not just its reels.
         val whole = app in (currentState(now).active?.wholeApp ?: emptySet())
         enforce(now, if (obs.inReels || whole) app else null)
@@ -243,10 +246,9 @@ class ReelCounterService : AccessibilityService() {
         tracker.observe(now, null, false, null)
         val on = DetectionRules.feedOn(app, collect(root))
         feedNow = on
-        scrollApp = app
         val whole = app == "tiktok" || app in (currentState(now).active?.wholeApp ?: emptySet())
         enforce(now, if (on || whole) app else null)
-        if (on) scrollCheck(app, now)
+        if (on) scrollCheck(now)
     }
 
     private var siteAt = 0L
