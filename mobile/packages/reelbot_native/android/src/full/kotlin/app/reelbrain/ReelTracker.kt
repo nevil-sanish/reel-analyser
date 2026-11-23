@@ -76,7 +76,6 @@ class ReelTracker(
     private var committed = false
 
     val active get() = app != null
-    val currentApp get() = app
     val current get() = fp to item
 
     @Synchronized
