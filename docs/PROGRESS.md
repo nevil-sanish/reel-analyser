@@ -1,5 +1,11 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-23, ~20:30 IST): 1.2.5.0 built and installed (Full) on the phone; phone checks done for #42, #43/#48; rest listed below
+
+**Done this round.** Reddit now reads from the Arctic Shift archive first (`redditPostId`, `arcticShiftPostUri`, `parseArcticShiftPost` in `reddit.dart`, `Runner._reddit`), Apify second; Privacy/Terms 2.5, `legal_v7`, ENDPOINTS section REDDIT-ARCTIC. Reels limit hint wraps (`helperMaxLines: 2`). Version 1.2.5.0 (build 58).
+
+**Phone results (Full 1.2.5.0, adb only, nothing saved in your settings).** #42 X video tweet: saved, video downloaded. #43/#48 Reddit post from the archive: saved without a key. #12/#44 LinkedIn `lnkd.in` link: page and embed fail from a login wall, then Apify answers "key was rejected": **the Apify key in Settings is not accepted; re-enter it and test again.** #45: 0 accepted in the Daily limit field (not saved). #41: Scroll guard card shows and counted 7 swipes today. Not tested: #37 (needs a site limit and the VPN consent dialog, which only the user can accept), #39 Spotlight, #40 TikTok (not installed; user will test, noted on #40), Reddit via Apify (needs a `/s/` share link or a post under an hour old), #2 and #6 (user said skip).
+
 ## Latest (2026-11-23, ~20:10 IST): v1.2.4.0 RELEASED on GitHub (both APKs and SHA256SUMS, digests checked); #38 closed
 
 Checks before release: analyze clean, 177 Dart tests, `check_apks.sh` OK. NOT phone-checked (the phone was in use, nothing tapped). Still open, each waits on something outside the code: #2 (your accounts), #6 (F-Droid, from ~2027-02-05), #12 (LinkedIn embed on the phone), #37 (site method on the phone), #39 (Spotlight id), #40 (TikTok not installed), #41 (scroll guard on the phone), #42 (X video tweet), #43/#44 (real Apify key), #45 (0 min on the phone). Next: phone checks, then close those that pass.

@@ -1,1 +1,1 @@
-Save X (Twitter) posts for free, and with your own Apify key Reddit and hard LinkedIn posts. Smoother tabs and scrolling, loading placeholders, a short intro page listing what can be saved. Updated Privacy Policy and Terms.
+Reddit posts now save for free through a public archive, with no login or key (very new posts may be missing; your own Apify key still works as a backup). Save X posts too. Privacy Policy and Terms updated (2.5).

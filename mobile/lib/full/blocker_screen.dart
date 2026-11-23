@@ -238,8 +238,9 @@ class _BlockerScreenState extends State<BlockerScreen>
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Daily limit',
-              helperText: 'Empty = no limit. 0 = blocked all day.',
-              isDense: true,
+                  helperText: 'Empty = no limit. 0 = blocked all day.',
+                  helperMaxLines: 2,
+                  isDense: true,
                 ),
               ),
             ),
