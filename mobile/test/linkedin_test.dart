@@ -100,6 +100,21 @@ void main() {
 }
 
 void embedTests() {
+  test('Apify gets the activity post address', () {
+    expect(
+        linkedInApifyUrl(Uri.parse('https://www.linkedin.com/posts/a_b-share-7529787441982099457-rUm8/?highlightedUpdateUrn=urn%3Ali%3Aactivity%3A7529787443110264832')),
+        'https://www.linkedin.com/feed/update/urn:li:activity:7529787443110264832/');
+    expect(linkedInApifyUrl(Uri.parse('https://www.linkedin.com/posts/a_b-ugcPost-7221657670615719939-AbCd')),
+        'https://www.linkedin.com/feed/update/urn:li:ugcPost:7221657670615719939/');
+    expect(linkedInApifyUrl(Uri.parse('https://www.linkedin.com/pulse/x')), 'https://www.linkedin.com/pulse/x');
+  });
+
+  test('the sign-up wall is not a post', () {
+    const wall = '<html><head><title>Sign Up | LinkedIn</title><meta property="og:title" content="Sign Up | LinkedIn">'
+        '<meta property="og:description" content="500 million+ members | Manage your professional identity."></head></html>';
+    expect(parseLinkedIn(wall).isEmpty, isTrue);
+  });
+
   group('LinkedIn public embed (1.2.4.0)', () {
     test('the embed address comes from the post id in the link', () {
       expect(linkedInEmbedUrl(Uri.parse('https://www.linkedin.com/posts/jason-haider_x-ugcPost-7221657670615719939-AbCd?utm_source=share')),

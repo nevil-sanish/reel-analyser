@@ -9,7 +9,7 @@ object ShareUrls {
     private val ytBe = Regex("""https?://youtu\.be/([A-Za-z0-9_-]{6,})""")
     // LinkedIn posts, updates and articles, on www. or a country subdomain, and lnkd.in short links.
     private val li = Regex("""https?://(?:[a-z]{2,3}\.)?(?:www\.)?linkedin\.com/(?:posts|feed/update|pulse)/[^\s?#"'<>]+""")
-    private val liShort = Regex("""https?://lnkd\.in/[A-Za-z0-9_-]+""")
+    private val liShort = Regex("""https?://lnkd\.in/(?:p/)?[A-Za-z0-9_-]+""")
     // X posts: x.com or twitter.com `/<user>/status/<id>`, `/i/status/<id>`, `/i/web/status/<id>`.
     private val x = Regex("""https?://(?:www\.|mobile\.|m\.)?(?:x|twitter)\.com/(?:[A-Za-z0-9_]{1,15}|i|i/web)/status(?:es)?/(\d{1,25})""")
     // Reddit posts: /r/<sub>/comments/<id>, /r/<sub>/s/<code> (a share link, passed on as it is), redd.it/<id>.

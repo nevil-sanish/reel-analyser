@@ -71,6 +71,15 @@ String _name(Object? v) => switch (v) {
     };
 
 /// Reads a public post page. Fields it cannot find stay empty.
+/// LinkedIn's sign-up or sign-in page answers 200 for a logged-out visitor and carries its own generic title and description;
+/// those must never be taken for a post.
+bool _isLoginWall(String html) {
+  final t = _meta(html, 'og:title').toLowerCase();
+  final title = RegExp(r'<title>([^<]*)', caseSensitive: false).firstMatch(html)?.group(1)?.toLowerCase() ?? '';
+  final wall = RegExp(r'^(sign up|sign in|log in|login|join linkedin|linkedin login|linkedin: log in)');
+  return wall.hasMatch(t.trim()) || wall.hasMatch(title.trim()) || _meta(html, 'og:description').startsWith('500 million+ members');
+}
+
 LinkedInPost parseLinkedIn(String html) {
   var author = '', text = '', thumb = '';
   final images = <String>[], videos = <String>[];
@@ -108,6 +117,7 @@ LinkedInPost parseLinkedIn(String html) {
       }
     }
   }
+  if (text.isEmpty && _isLoginWall(html)) return const LinkedInPost();
   if (text.isEmpty) text = _meta(html, 'og:description');
   if (text.isEmpty) text = _meta(html, 'og:title');
   if (images.isEmpty && videos.isEmpty) {
@@ -165,6 +175,16 @@ String? linkedInEmbedUrl(Uri u) {
   final m = RegExp(r'(?:urn:li:|[-/_])(ugcPost|activity|share)[-:](\d{15,25})').firstMatch(Uri.decodeFull(u.path));
   if (m == null) return null;
   return 'https://www.linkedin.com/embed/feed/update/urn:li:${m.group(1)}:${m.group(2)}';
+}
+
+/// The address the Apify actor is given: the actor reads `feed/update/urn:li:activity:<id>`. The activity number comes from the
+/// `highlightedUpdateUrn` of a resolved short link, else from the id in the link's path; any other link is passed on as it is.
+String linkedInApifyUrl(Uri u) {
+  final h = RegExp(r'^urn:li:activity:(\d{15,25})$').firstMatch(u.queryParameters['highlightedUpdateUrn'] ?? '');
+  if (h != null) return 'https://www.linkedin.com/feed/update/urn:li:activity:${h.group(1)}/';
+  final m = RegExp(r'(?:urn:li:|[-/_])(ugcPost|activity|share)[-:](\d{15,25})').firstMatch(Uri.decodeFull(u.path));
+  if (m != null) return 'https://www.linkedin.com/feed/update/urn:li:${m.group(1)}:${m.group(2)}/';
+  return u.toString();
 }
 
 /// The embed page carries the post in its meta tags; its title reads "Author | 12 likes · 1 comment | LinkedIn".

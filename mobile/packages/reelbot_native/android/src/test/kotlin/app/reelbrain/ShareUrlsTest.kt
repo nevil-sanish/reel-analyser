@@ -44,6 +44,7 @@ class ShareUrlsTest {
         assertEquals("7221657670615719939", l.code)
         assertEquals("linkedin", ShareUrls.extract("https://in.linkedin.com/feed/update/urn:li:activity:7525935221964451840/")!!.app)
         assertEquals("https://lnkd.in/gAbC12", ShareUrls.extract("see https://lnkd.in/gAbC12")!!.url)
+        assertEquals("https://lnkd.in/p/dEG72umG", ShareUrls.extract("see https://lnkd.in/p/dEG72umG")!!.url)
         assertNull(ShareUrls.extract("https://www.linkedin.com/in/someone"))
     }
 

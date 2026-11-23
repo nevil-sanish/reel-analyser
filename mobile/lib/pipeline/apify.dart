@@ -60,6 +60,6 @@ Future<String?> apifyActorRun(http.Client client, String key, String actor, Map<
       .timeout(const Duration(seconds: 150));
   if (r.statusCode == 401 || r.statusCode == 403) throw ApifyException('Your Apify key was rejected. Check it in Settings.');
   if (r.statusCode == 402) throw ApifyException('Your Apify account is out of credit.');
-  if (r.statusCode != 200 && r.statusCode != 201) return null;
+  if (r.statusCode != 200 && r.statusCode != 201) throw ApifyException('Apify could not run this (HTTP ${r.statusCode}).');
   return utf8.decode(r.bodyBytes);
 }

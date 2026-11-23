@@ -630,8 +630,8 @@ class Runner {
   /// LinkedIn: the public post page (no login) gives the text, author, pictures and, for a video, the mp4. The video is
   /// watched like a reel; otherwise the pictures, otherwise the text alone. The page and the video are not kept.
   Future<String> _linkedin(PendingItem item) async {
-    final u = Uri.parse(item.url);
-    if (!isLinkedInHost(u.host)) return _failed('Not a LinkedIn link.');
+    final first = Uri.parse(item.url);
+    if (!isLinkedInHost(first.host)) return _failed('Not a LinkedIn link.');
     final opened = File(linkedInPagePath(tempDir.path, item.id));
     if (await opened.exists()) {
       final html = await opened.readAsString();
@@ -645,6 +645,8 @@ class Runner {
       return _linkedinPost(item, p);
     }
     _step('Fetching from LinkedIn', 0.12);
+    var u = Uri.parse(item.url);
+    if (u.host.toLowerCase() == 'lnkd.in') u = await _resolveShort(u);
     final r = await _stoppable(client.get(u, headers: {'User-Agent': linkedInUserAgent, 'Accept-Language': 'en-US,en;q=0.9'}))
         .timeout(const Duration(seconds: 30));
     // 999 is LinkedIn's "too many requests from this network" answer: never retried, so the app never keeps knocking.
@@ -664,10 +666,12 @@ class Runner {
     }
     // Last resort, only for a user who saved an Apify key: one actor run for this post (no LinkedIn account or cookies).
     final key = p.isEmpty ? await apifyKey() : null;
+    var asked = false;
     if (key != null) {
+      asked = true;
       _step('Asking Apify for the post', 0.25);
       try {
-        final body = await _stoppable(apifyActorRun(client, key, linkedInActor, linkedInActorInput(item.url)));
+        final body = await _stoppable(apifyActorRun(client, key, linkedInActor, linkedInActorInput(linkedInApifyUrl(u))));
         if (body != null) p = parseLinkedInActor(body);
       } on ApifyException catch (e) {
         return _failed('$e');
@@ -675,10 +679,32 @@ class Runner {
     }
     if (p.isEmpty) {
       // Even a public post is sometimes refused to a logged-out visitor; nothing is retried automatically.
+      if (asked) return _failed('Apify ran but returned no post for this link (LinkedIn may need a login for it, or the post is private). Tap Read in app to open it here, or share a screenshot instead.');
       return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Read in app '
           'to open it here, or share a screenshot of the post instead; screenshots never contact LinkedIn.');
     }
     return _linkedinPost(item, p);
+  }
+
+  /// A lnkd.in short link answers with one redirect to the post; its address (without the query) is read once, so the page, the
+  /// embed and Apify all get the real post. Any failure keeps the short link.
+  Future<Uri> _resolveShort(Uri u) async {
+    try {
+      final rq = http.Request('GET', u)
+        ..followRedirects = false
+        ..headers['User-Agent'] = linkedInUserAgent;
+      final res = await _stoppable(client.send(rq)).timeout(const Duration(seconds: 20));
+      await res.stream.drain<void>();
+      final loc = res.headers['location'];
+      final to = loc == null ? null : u.resolve(loc);
+      if (to != null && to.host.toLowerCase().endsWith('linkedin.com') && to.pathSegments.isNotEmpty) {
+        final h = to.queryParameters['highlightedUpdateUrn'];
+        return Uri(scheme: 'https', host: to.host, path: to.path, queryParameters: h == null ? null : {'highlightedUpdateUrn': h});
+      }
+    } on Exception {
+      // keep the short link
+    }
+    return u;
   }
 
   Future<String> _linkedinPost(PendingItem item, LinkedInPost p) async {

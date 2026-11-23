@@ -1,5 +1,13 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-23, ~21:25 IST): v1.2.5.0 is the published release; fixes after it are committed but NOT released (would be 1.2.5.1)
+
+**Fixed after 1.2.5.0 (#49, #12).** (1) `ShareUrls.kt`: `lnkd.in/p/<id>` was cut to `lnkd.in/p` (404). (2) `_resolveShort` in `runner.dart` resolves a lnkd.in link once (301 Location, no cookies). (3) `parseLinkedIn` now rejects LinkedIn's sign-up page (`Sign Up | LinkedIn`, '500 million+ members'), which had been saved as a wrong note. (4) Apify gets `feed/update/urn:li:activity:<id>` (`linkedInApifyUrl`). (5) `apifyActorRun` throws with the HTTP status; a run that returns nothing says so. 180 Dart tests, Kotlin tests pass; Full APK with these fixes is on the phone.
+
+**Still failing (#12, #44).** With a valid Apify key the actor `memo23~linkedin-posts-scraper` returns `[]` for `https://lnkd.in/p/dEG72umG` (post by himanii, share id 7529787441982099457), with the activity URL and with the /posts/ URL. Cause unknown without the actor's own run log (Apify console, run history). Open-source scrapers do the same thing (cookies, or a paid fetch service); faking a crawler user agent was not tried because it bypasses LinkedIn's login wall and the Terms forbid that. Options: try another public Apify LinkedIn actor, or use Read in app.
+
+**Phone results this round.** X video tweet saved (#42 closed); Reddit saved through Arctic Shift (#43, #48 closed); 0 accepted in the Reels limit (#45, not saved). Not tested: #37, #39, #41 blocking, #40 (user will test).
+
 ## Latest (2026-11-23, ~20:30 IST): 1.2.5.0 built and installed (Full) on the phone; phone checks done for #42, #43/#48; rest listed below
 
 **Done this round.** Reddit now reads from the Arctic Shift archive first (`redditPostId`, `arcticShiftPostUri`, `parseArcticShiftPost` in `reddit.dart`, `Runner._reddit`), Apify second; Privacy/Terms 2.5, `legal_v7`, ENDPOINTS section REDDIT-ARCTIC. Reels limit hint wraps (`helperMaxLines: 2`). Version 1.2.5.0 (build 58).
