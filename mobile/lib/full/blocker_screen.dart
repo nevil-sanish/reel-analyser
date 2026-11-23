@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../ui/skeletons.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
@@ -309,7 +310,7 @@ class _BlockerScreenState extends State<BlockerScreen>
     if (st == null) {
       return _shell(
         appBar: AppBar(title: const Text('Reel blocker')),
-        body: const SizedBox(),
+        body: const SkeletonCards(count: 3),
       );
     }
     final p = st.pending;

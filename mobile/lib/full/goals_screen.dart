@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../ui/skeletons.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
@@ -235,7 +236,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    if (!_loaded) return _shell(appBar: AppBar(title: const Text('Daily goals')), body: const SizedBox());
+    if (!_loaded) return _shell(appBar: AppBar(title: const Text('Daily goals')), body: const SkeletonCards(count: 3));
     const locked = false;
     final today = dateOf(DateTime.now());
     final blocked = _until != null && _until!.compareTo(today) >= 0;

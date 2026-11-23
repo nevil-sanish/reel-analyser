@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'skeletons.dart';
 import 'package:flutter/services.dart';
 
 import 'liquid.dart';
@@ -54,7 +55,7 @@ class LegalScreen extends StatelessWidget {
           future: rootBundle.loadString(asset),
           builder: (context, snap) => snap.hasData
               ? ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 40), children: render(context, snap.data!))
-              : const Center(child: CircularProgressIndicator()),
+              : const SkeletonText(),
         ),
       );
 }

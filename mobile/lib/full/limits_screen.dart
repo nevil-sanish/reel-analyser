@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../ui/skeletons.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
@@ -252,7 +253,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     final st = _st;
-    if (st == null) return const SizedBox();
+    if (st == null) return const SkeletonCards(count: 3);
     final t = Theme.of(context);
     final on = st.active.isNotEmpty;
     final startsAt = st.pending == null ? null : DateTime.fromMillisecondsSinceEpoch(st.pendingFrom);

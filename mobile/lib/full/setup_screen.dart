@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../ui/skeletons.dart';
 
 import '../app_services.dart';
 import 'blocker.dart';
@@ -107,7 +108,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     return LiquidScaffold(
       appBar: AppBar(title: const Text('Set up Insights')),
       body: s == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonCards(count: 4)
           : ListView(
               children: [
                 if (s.sdkInt >= 33)

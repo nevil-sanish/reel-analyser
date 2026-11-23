@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../ui/skeletons.dart';
+
 import '../app_services.dart';
 import 'debug_screen.dart';
 import '../ui/liquid.dart';
@@ -23,6 +25,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
   FullBridge get b => FullBridge();
   var _range = 7;
   List<DayTotal> _days = [];
+  bool _loaded = false;
   List<(int, int)> _hours = List.filled(24, (0, 0));
   CounterStatus? _status;
   Timer? _timer;
@@ -53,6 +56,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
     final status = await b.status();
     if (!mounted) return;
     setState(() {
+      _loaded = true;
       _days = fillDays(days, _range, DateTime.now());
       _hours = hours;
       _status = status;
@@ -67,6 +71,7 @@ class _InsightsScreenState extends State<InsightsScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    if (!_loaded) return LiquidScaffold(background: false, appBar: AppBar(title: const Text('Insights')), body: const SkeletonCards(count: 4));
     final today = _days.isEmpty ? DayTotal(localDate(), const {}, 0, 0) : _days.last;
     // Reel counts only exist with the optional Accessibility counter; time comes from Usage access without it.
     final counting = _status?.serviceEnabled == true || _days.any((d) => d.reels > 0);

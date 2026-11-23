@@ -7,6 +7,7 @@ import '../app_services.dart';
 import '../core/models.dart';
 import '../native/counter_bridge.dart';
 import '../pipeline/linkedin.dart';
+import 'skeletons.dart';
 import '../pipeline/runner.dart';
 import 'archive_screen.dart';
 import 'folders_ui.dart';
@@ -30,6 +31,7 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserver {
   AppServices get s => widget.services;
   List<Reel> _reels = [];
+  bool _loaded = false;
   String _kind = 'all';
   final _selected = <String>{};
   List<Folder> _folders = [];
@@ -106,6 +108,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
       _folderOf = folderOf;
       if (!folders.any((f) => f.id == _folder)) _folder = 0;
       _reels = reels;
+      _loaded = true;
       _queued = queued;
       _failed = failed;
       _shared = shared;
@@ -298,7 +301,8 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                       text: '$_waiting waiting to be analysed',
                       detail: s.runner.lastProblem,
                     ),
-            if (_reels.isEmpty && _waiting == 0)
+            if (!_loaded) ...[const SkeletonCard(), const SkeletonCard(), const SkeletonCard()],
+            if (_loaded && _reels.isEmpty && _waiting == 0)
               Padding(
                 padding: const EdgeInsets.only(top: 48),
                 child: Column(children: [

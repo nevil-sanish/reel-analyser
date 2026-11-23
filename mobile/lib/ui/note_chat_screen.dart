@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'skeletons.dart';
 
 import '../app_services.dart';
 import '../core/models.dart';
@@ -266,7 +267,7 @@ class _NoteChatScreenState extends State<NoteChatScreen> {
         children: [
           Expanded(
             child: !_loaded
-                ? const SizedBox()
+                ? const SkeletonCards(count: 2)
                 : _turns.isEmpty
                 ? ListView(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
