@@ -1,1 +1,1 @@
-Updated Privacy Policy, Terms and Disclaimer for the full and semi builds. New warning: while Accessibility is on, payment and banking apps such as Google Pay may refuse to work. No other change.
+Block Snapchat Spotlight and TikTok. New Scroll guard: a limit on swipes a day and a pause after too many swipes too fast, with your own habits shown on the phone. Choose VPN or Accessibility to block websites. Fixed: no internet while the website VPN was on. Typed paragraph now needs 30 seconds instead of 90.

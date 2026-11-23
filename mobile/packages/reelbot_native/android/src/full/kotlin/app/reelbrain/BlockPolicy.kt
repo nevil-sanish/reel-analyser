@@ -13,7 +13,7 @@ data class Interval(val start: Int, val end: Int) {
 data class BlockRule(val limitMin: Int?, val intervals: List<Interval>)
 
 /**
- * What the user chose to block. `items` are `instagram`, `youtube` and `browser`. In `shared` mode one rule (`all`)
+ * What the user chose to block. `items` are `instagram`, `youtube`, `snapchat`, `tiktok` and `browser`. In `shared` mode one rule (`all`)
  * covers them together, and their reel time is added up; in `separate` mode each item has its own rule. Apps in [wholeApp]
  * (`instagram`, `youtube`) count all the time spent in the app, not only reels, and past the rule the whole app is blocked.
  */
@@ -33,8 +33,9 @@ data class BlockConfig(val mode: String, val items: Set<String>, val rules: Map<
     }.toString()
 
     companion object {
-        val surfaces = setOf("instagram", "youtube", "browser")
-        val wholeAppSurfaces = setOf("instagram", "youtube")
+        val surfaces = setOf("instagram", "youtube", "snapchat", "tiktok", "browser")
+        /** Apps where the user can choose reels/shorts only or the whole app. TikTok is all short video, so it always counts whole. */
+        val wholeAppSurfaces = setOf("instagram", "youtube", "snapchat")
 
         /** Null for anything that isn't a well-formed config, so a damaged value never blocks or crashes. */
         fun parse(json: String?): BlockConfig? = try {
@@ -117,6 +118,8 @@ object BlockPolicy {
     fun name(surface: String, whole: Boolean = false) = when (surface) {
         "instagram" -> if (whole) "Instagram" else "Instagram Reels"
         "youtube" -> if (whole) "YouTube" else "YouTube Shorts"
+        "snapchat" -> if (whole) "Snapchat" else "Snapchat Spotlight"
+        "tiktok" -> "TikTok"
         else -> "Reels and Shorts on the web"
     }
 

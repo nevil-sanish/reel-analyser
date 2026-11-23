@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import '../ui/motion.dart';
 import 'blocker.dart';
+import 'detect_consent.dart';
 import 'full_bridge.dart';
 import 'limit_bar.dart';
 import 'limits.dart';
@@ -92,6 +93,52 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
       ),
     );
     return v;
+  }
+
+  /// Switching how websites are blocked. The new way must already work, so the switch can never turn the blocking off.
+  Future<void> _pickMethod(String m) async {
+    final st = _st;
+    if (st == null || m == st.siteMethod) return;
+    if (m == 'access') {
+      final bridge = BlockerBridge();
+      if (!await bridge.consent()) {
+        if (!mounted || !await askDetectionConsent(context, forSites: true)) return;
+        await bridge.setConsent(true);
+      }
+      await _load(keepDraft: true);
+      if (!(_st?.accessReady ?? false)) {
+        await FullBridge().open('openAccessibilitySettings');
+        return _say('Turn on Reel Analyser + Blocker in Accessibility, then choose Accessibility here again.');
+      }
+    } else if (!st.siteFilter) {
+      await FullBridge().open('enableSiteFilter');
+      return _say('Allow the VPN box, then choose VPN here again.');
+    }
+    await _bridge.setSiteMethod(m);
+    await _load(keepDraft: true);
+  }
+
+  Widget _methodCard(LimitsState st) {
+    final t = Theme.of(context);
+    return _card([
+      Text('How websites are blocked', style: t.textTheme.titleSmall),
+      const SizedBox(height: 8),
+      SegmentedButton<String>(
+        segments: const [
+          ButtonSegment(value: 'vpn', label: Text('VPN'), icon: Icon(Icons.vpn_lock_rounded)),
+          ButtonSegment(value: 'access', label: Text('Accessibility'), icon: Icon(Icons.accessibility_new_rounded)),
+        ],
+        selected: {st.siteMethod},
+        onSelectionChanged: (v) => _pickMethod(v.first),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        st.siteMethod == 'vpn'
+            ? 'VPN: a local filter on the phone that only sees which site names are looked up. Works in every browser and app; no screen is read. Only one VPN can run at a time.'
+            : 'Accessibility: reads only the address bar of Chrome, Firefox, Brave, Edge, Samsung Internet, Opera, Vivaldi, DuckDuckGo and Kiwi. No VPN, so another VPN can run. Payment apps such as Google Pay may stop working while Accessibility is on.',
+        style: t.textTheme.bodySmall,
+      ),
+    ]);
   }
 
   Future<void> _addApp() async {
@@ -193,7 +240,9 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
         row(Icons.timer_outlined, 'Usage access is off', 'Apps are timed with it. Until you allow it, app limits count nothing and block nothing.', 'Allow', () => FullBridge().open('openUsageAccess')),
       if (hasApp && st.usageAccess && !st.overlay)
         row(Icons.layers_outlined, 'Display over other apps is off', 'The block screen needs it to open over an app that has used up its time.', 'Allow', () => FullBridge().open('openOverlaySettings')),
-      if (hasSite && !st.siteFilter)
+      if (hasSite && st.siteMethod == 'access' && !st.accessReady)
+        row(Icons.accessibility_new_rounded, 'Accessibility is off', 'Websites are blocked by reading the browser address bar. Until Accessibility is on, website limits count nothing and block nothing.', 'Open', () => FullBridge().open('openAccessibilitySettings')),
+      if (hasSite && st.siteMethod == 'vpn' && !st.siteFilter)
         row(Icons.vpn_lock_rounded, 'Website filter is off', 'Websites are blocked by a local filter that only sees which site names are looked up, no pages and no screen. Android shows its own VPN box. Only one VPN can run at a time.', 'Turn on', () => FullBridge().open('enableSiteFilter')),
     ]);
   }
@@ -214,6 +263,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
         _permissions(st),
+        if ({...st.active, ..._draft}.any((i) => i.isSite)) _methodCard(st),
         if (on && !_editing) ...[
           _card([
             Text('On', style: t.textTheme.titleLarge),
@@ -232,8 +282,8 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
             const SizedBox(height: 6),
             Text(
               'Pick an app or a website and the time you allow it each day. Past that time it is blocked until midnight. '
-              'Apps are timed with Android\'s Usage access and blocked with a screen shown over them. Websites are blocked by a local filter that only sees which site names the phone looks up. '
-              'Nothing reads your screen, and nothing is recorded or sent.',
+              'Apps are timed with Android\'s Usage access and blocked with a screen shown over them. Websites are blocked either by a local VPN filter that only sees which site names the phone looks up (nothing reads your screen), or by reading the browser address bar with Accessibility; you choose below. '
+              'Nothing is recorded or sent.',
               style: t.textTheme.bodySmall,
             ),
             const SizedBox(height: 8),

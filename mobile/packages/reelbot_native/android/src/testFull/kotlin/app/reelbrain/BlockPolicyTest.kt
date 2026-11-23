@@ -90,7 +90,7 @@ class BlockPolicyTest {
         assertNull(BlockConfig.parse(null))
         assertNull(BlockConfig.parse("nonsense"))
         assertNull(BlockConfig.parse("""{"mode":"x","items":[],"rules":{}}"""))
-        val odd = BlockConfig.parse("""{"mode":"shared","items":["instagram","tiktok"],"rules":{"all":{"limitMin":99999,"intervals":[[5,5],[2000,3]]}}}""")!!
+        val odd = BlockConfig.parse("""{"mode":"shared","items":["instagram","facebook"],"rules":{"all":{"limitMin":99999,"intervals":[[5,5],[2000,3]]}}}""")!!
         assertEquals(setOf("instagram"), odd.items)
         assertNull(odd.rules["all"]!!.limitMin)
         assertTrue(odd.rules["all"]!!.intervals.isEmpty())

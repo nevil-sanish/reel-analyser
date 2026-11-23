@@ -34,6 +34,7 @@ class ReelCounterService : AccessibilityService() {
         const val CAPTURE = "debug_capture"
         /** The user's opt-in to reading the reel screens. Until it is on, the service reads nothing, even if Accessibility is on. */
         const val CONSENT = "detect_consent"
+        const val SCROLL_RULE = "scroll_rule"
         private const val CHANNEL = "reelbot_alerts"
     }
 
@@ -52,12 +53,19 @@ class ReelCounterService : AccessibilityService() {
     private var nullSince = 0L
     private var lastTree = 0L
     private var ticking = false
+    private val swipes = SwipeCounter()
+    private val recentSwipes = ArrayDeque<Long>()
+    private var feedNow = false
+    private var pausedUntil = 0L
+    private var scrollApp = ""
+    private var ruleAt = 0L
+    private var rule: ScrollRule? = null
 
     // Keeps dwell, leaving and screen time right while a video plays with no accessibility events.
     private val tick = object : Runnable {
         override fun run() {
             evaluate()
-            if (tracker.active || meter.active) handler.postDelayed(this, 1000) else ticking = false
+            if (tracker.active || meter.active || System.currentTimeMillis() - frontAt < SiteFilter.FRONT_MS) handler.postDelayed(this, 1000) else ticking = false
         }
     }
 
@@ -114,8 +122,9 @@ class ReelCounterService : AccessibilityService() {
         val pk = LinkedHashSet<String>()
         if (consented()) {
             val now = System.currentTimeMillis()
-            pk += DetectionRules.apps.keys
-            if (db.currentBlockState(now).active?.items?.contains("browser") == true) pk += Browsers.packages
+            val cfg = db.currentBlockState(now).active
+            pk += DetectionRules.apps.filter { (_, a) -> a in DetectionRules.counted || cfg?.items?.contains(a) == true || scrollOn(now) }.keys
+            if (db.currentBlockState(now).active?.items?.contains("browser") == true || siteByAddressBar(now)) pk += Browsers.packages
         }
         if (pk.isEmpty()) pk += packageName
         val arr = pk.toTypedArray()
@@ -123,6 +132,45 @@ class ReelCounterService : AccessibilityService() {
             info.packageNames = arr
             serviceInfo = info
         }
+    }
+
+    /** The user chose Accessibility for websites and has a website limit: the browsers' address bars are read, nothing else. */
+    private fun siteByAddressBar(now: Long) =
+        SiteMethod.get(this) == "access" && db.currentLimits(now).active.any { it.kind == "site" }
+
+    private fun scrollRule(now: Long): ScrollRule? {
+        if (now - ruleAt > 2000) {
+            ruleAt = now
+            rule = ScrollRule.parse(getSharedPreferences(PREFS, MODE_PRIVATE).getString(SCROLL_RULE, null))?.takeIf { it.on }
+        }
+        return rule
+    }
+
+    private fun scrollOn(now: Long) = scrollRule(now) != null
+
+    /** In a short-video feed: while a pause runs, or the day's swipes are used up, the block screen opens. */
+    private fun scrollCheck(app: String, now: Long) {
+        val r = scrollRule(now) ?: return
+        if (now < pausedUntil) {
+            blockNow(app, "scroll", now, text = ScrollGuard.message(ScrollVerdict.Pause(r.pauseMinutes), r, ((pausedUntil - now) / 60_000L).toInt() + 1))
+            return
+        }
+        val date = localDate(now)
+        if (r.maxPerDay > 0 && (db.usedToday(date)["swipes:all"] ?: 0L) >= r.maxPerDay) {
+            blockNow(app, "scroll", now, text = ScrollGuard.message(ScrollVerdict.DayLimit, r))
+        }
+    }
+
+    /** A new swipe in a feed: counted, and the burst and day rules checked. */
+    private fun onSwipe(now: Long) {
+        val r = scrollRule(now) ?: return
+        val date = localDate(now)
+        sink.addUse(date, "swipes:all", 1)
+        while (recentSwipes.isNotEmpty() && recentSwipes.first() < now - 120 * 60_000L) recentSwipes.removeFirst()
+        recentSwipes.addLast(now)
+        val v = ScrollGuard.verdict(r, db.usedToday(date)["swipes:all"] ?: 0L, recentSwipes.toList(), now)
+        if (v is ScrollVerdict.Pause) { pausedUntil = now + v.minutes * 60_000L; recentSwipes.clear() }
+        if (v !is ScrollVerdict.Ok) blockNow(scrollApp, "scroll", now, text = ScrollGuard.message(v, r, (r.pauseMinutes)))
     }
 
     private fun consented() = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CONSENT, false)
@@ -135,9 +183,10 @@ class ReelCounterService : AccessibilityService() {
         val pkg = e.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return
         val now = System.currentTimeMillis()
+        if (e.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED && pkg in DetectionRules.apps && feedNow && swipes.onScroll(now)) onSwipe(now)
         if (pkg !in DetectionRules.apps && pkg !in Browsers.packages && !tracker.active && !meter.active) return
         if (now - lastEval >= 250) evaluate()
-        if ((tracker.active || meter.active) && !ticking) {
+        if ((tracker.active || meter.active || now - frontAt < SiteFilter.FRONT_MS) && !ticking) {
             ticking = true
             handler.postDelayed(tick, 1000)
         }
@@ -151,6 +200,7 @@ class ReelCounterService : AccessibilityService() {
         val root = rootInActiveWindow ?: run {
             if (nullSince == 0L) nullSince = now
             if (now - nullSince >= 1500) {
+                feedNow = false
                 tracker.observe(now, null, false, null)
                 val date = localDate(now)
                 meter.observe(now, null, date)
@@ -163,7 +213,9 @@ class ReelCounterService : AccessibilityService() {
         val app = DetectionRules.apps[pkg]
         if (app == null) {
             tracker.observe(now, null, false, null)
+            feedNow = false
             enforce(now, if (pkg in Browsers.packages) browserReel(root, pkg) else null)
+            if (pkg in Browsers.packages) siteInFront(root, pkg, now)
             return
         }
         // Missed daily goals: the whole app is blocked, so nothing on its screen is read at all.
@@ -172,24 +224,58 @@ class ReelCounterService : AccessibilityService() {
             blockNow(app, "commit", now)
             return
         }
+        if (app !in DetectionRules.counted) return feedApp(root, app, now)
         val nodes = collect(root)
         val r = Rect().also(root::getBoundsInScreen)
         val obs = DetectionRules.read(app, nodes, Box(r.left, r.top, r.right, r.bottom))
         tracker.observe(now, app, obs.inReels, obs.item)
+        feedNow = obs.inReels
+        scrollApp = app
+        if (obs.inReels) scrollCheck(app, now)
         // Whole-app time: anywhere in the app counts, and past the rule the app itself is blocked, not just its reels.
         val whole = app in (currentState(now).active?.wholeApp ?: emptySet())
         enforce(now, if (obs.inReels || whole) app else null)
         if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(CAPTURE, false)) capture(now, app, obs, nodes)
     }
 
+    /** Snapchat and TikTok: no counting, only the blocker and the scroll guard. */
+    private fun feedApp(root: AccessibilityNodeInfo, app: String, now: Long) {
+        tracker.observe(now, null, false, null)
+        val on = DetectionRules.feedOn(app, collect(root))
+        feedNow = on
+        scrollApp = app
+        val whole = app == "tiktok" || app in (currentState(now).active?.wholeApp ?: emptySet())
+        enforce(now, if (on || whole) app else null)
+        if (on) scrollCheck(app, now)
+    }
+
+    private var siteAt = 0L
+    private var siteMethodOn = false
+    private var frontAt = 0L
+
+    /** Accessibility method for websites: the address bar tells which limited site is open; at its limit the block screen opens. */
+    private fun siteInFront(root: AccessibilityNodeInfo, pkg: String, now: Long) {
+        if (now - siteAt > 2000) { siteAt = now; siteMethodOn = siteByAddressBar(now) }
+        if (!siteMethodOn) return
+        val text = addressText(root, pkg) ?: return
+        val item = SiteFilter.onFront(text, now)
+        if (SiteFilter.active(now).any { AppLimits.siteMatches(it.id, text) }) frontAt = now
+        if (item != null) blockNow(item.key, "applimit", now, item)
+    }
+
+    private fun addressText(root: AccessibilityNodeInfo, pkg: String): String? {
+        for (id in Browsers.addressIds) {
+            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() }
+            if (t != null) return t
+        }
+        return null
+    }
+
     /** `browser` when the address bar shows a reel or a short. Only the address bar is read, and only when the browser is blocked. */
     private fun browserReel(root: AccessibilityNodeInfo, pkg: String): String? {
         if ("browser" !in (currentState(System.currentTimeMillis()).active?.items ?: return null)) return null
-        for (id in Browsers.addressIds) {
-            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() } ?: continue
-            return if (BlockPolicy.browserSurface(t)) "browser" else null
-        }
-        return null
+        val t = addressText(root, pkg) ?: return null
+        return if (BlockPolicy.browserSurface(t)) "browser" else null
     }
 
                 private var punishAt = 0L
@@ -220,13 +306,13 @@ class ReelCounterService : AccessibilityService() {
     }
 
     /** Opens the block screen over what is on screen, at most every 4 seconds, and notes it once a day in the history. */
-    private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null) {
+    private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null, text: String = "") {
         if (now - lastBlock <= 4000) return
         lastBlock = now
         meter.stop()
         startActivity(Intent(this, BlockActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(BlockActivity.SURFACE, surface).putExtra(BlockActivity.REASON, reason)
-            .putExtra(BlockActivity.TEXT, item?.let { AppLimits.message(it) } ?: ""))
+            .putExtra(BlockActivity.TEXT, item?.let { AppLimits.message(it) } ?: text))
     }
 
     /** At most 1,500 nodes and depth 40, so a huge tree can't stall the service. */

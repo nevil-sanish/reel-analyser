@@ -28,12 +28,14 @@ class BlockRule {
   const BlockRule(this.limitMin, this.intervals);
 }
 
-const blockSurfaces = ['instagram', 'youtube', 'browser'];
-const wholeAppSurfaces = {'instagram', 'youtube'};
-const wholeAppNames = {'instagram': 'the whole Instagram app', 'youtube': 'the whole YouTube app'};
+const blockSurfaces = ['instagram', 'youtube', 'snapchat', 'tiktok', 'browser'];
+const wholeAppSurfaces = {'instagram', 'youtube', 'snapchat'};
+const wholeAppNames = {'instagram': 'the whole Instagram app', 'youtube': 'the whole YouTube app', 'snapchat': 'the whole Snapchat app'};
 const surfaceNames = {
   'instagram': 'Instagram Reels',
   'youtube': 'YouTube Shorts',
+  'snapchat': 'Snapchat Spotlight',
+  'tiktok': 'TikTok (the whole app)',
   'browser': 'Browser (reels and shorts pages)',
 };
 
@@ -163,7 +165,7 @@ class ParagraphGuard {
   /// The most characters one edit may add. A suggestion or a swiped word fits; a pasted sentence does not.
   static const maxJump = 20;
   static const minWords = 50;
-  static const minTyping = Duration(seconds: 90);
+  static const minTyping = Duration(seconds: 30);
 
   /// Typing faster than [maxBurst] characters within [burstWindow] locks the field. It opens again only after [cooldown] with
   /// no typing at all; every try while locked starts the cooldown again.

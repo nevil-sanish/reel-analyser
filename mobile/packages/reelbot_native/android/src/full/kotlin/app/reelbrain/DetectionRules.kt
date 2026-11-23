@@ -24,7 +24,22 @@ data class Observation(val inReels: Boolean, val item: ItemText?)
  * The id lists are the doc's starting guesses: replace them with ids from the debug screen's capture (§3.0).
  */
 object DetectionRules {
-    val apps = mapOf("com.instagram.android" to "instagram", "com.google.android.youtube" to "youtube")
+    val apps = mapOf(
+        "com.instagram.android" to "instagram", "com.google.android.youtube" to "youtube",
+        "com.snapchat.android" to "snapchat",
+        "com.zhiliaoapp.musically" to "tiktok", "com.ss.android.ugc.trill" to "tiktok", "com.ss.android.ugc.aweme" to "tiktok",
+        "com.zhiliaoapp.musically.go" to "tiktok",
+    )
+
+    /** Instagram and YouTube are read in detail for the counter. Snapchat and TikTok only say whether a short-video feed is showing. */
+    val counted = setOf("instagram", "youtube")
+
+    /** Snapchat Spotlight and TikTok player ids (facts from open-source blockers; the layout can change with an app update). */
+    private val feedIds = mapOf("snapchat" to setOf("spotlight_container"), "tiktok" to setOf("player_view", "simplayer_api_player_view"))
+
+    /** True when [app]'s short-video feed is on screen. Every TikTok screen is a feed or its comments, so it always counts. */
+    fun feedOn(app: String, nodes: List<NodeSnap>): Boolean =
+        app == "tiktok" || nodes.any { it.id in (feedIds[app] ?: emptySet()) && it.visible }
 
     /** They briefly cover a reel without you leaving it. */
     val ignored = setOf(

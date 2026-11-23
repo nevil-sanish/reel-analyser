@@ -77,7 +77,8 @@ void main() {
       typeAll(short, 'I want it gone because it is hard.');
       expect(short.check(), contains('at least'));
       final fast = ParagraphGuard();
-      typeAll(fast, para, every: const Duration(milliseconds: 400));
+      typeAll(fast, List.filled(50, 'ab').join(' '), every: const Duration(milliseconds: 400));
+      expect(ParagraphGuard.minTyping, const Duration(seconds: 30));
       expect(fast.check(), contains('by hand'));
     });
 

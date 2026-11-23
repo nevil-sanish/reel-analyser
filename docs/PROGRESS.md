@@ -1,5 +1,14 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-23): 1.2.4.0 built (full APK only), installed on the phone, NOT released, NOT phone-checked
+
+- #36 VPN no internet: `DnsVpnService` now follows the real network (callback), asks IPv4 and IPv6 DNS servers in turn with `bindSocket` + `protect`, public servers as last resort (`DnsUpstream`, tested). Cause not reproduced on the phone (needs a site limit set in the UI); fix is from reading the code: upstream was chosen once and IPv6-only mobile DNS was dropped.
+- #37 sites: Limits screen picker VPN or Accessibility (`site_method` pref, `SiteMethod`). Accessibility reads only the browser address bar (`ReelCounterService.siteInFront`), scope widens only with that method and a site limit. Switching is allowed only when the new method already works.
+- #38 typed paragraph timer 90 s to 30 s (50 words kept).
+- #39 Snapchat Spotlight (`spotlight_container`) and #40 TikTok (whole app) are blocker items; ids from open-source Scrolless (GPL-3.0, facts only). TikTok is not installed on the phone; Spotlight id not yet confirmed on screen.
+- #41 Scroll guard tab (swipes a day, burst pause) and habits suggestions (`habits.dart`, computed on the phone). Counts only in short-video feeds. Rule is in prefs (not in backup yet).
+- Legal: Privacy and Terms 2.3. To check on the phone: add a site limit, use VPN and Accessibility methods, internet works on Wi-Fi and mobile data; open Snapchat Spotlight with a block set; scroll guard pause.
+
 Hand-off for a new chat. The list of what is still to do is in [TODO.md](TODO.md). Read this first, then that.
 
 ## Latest (2026-11-15): v1.2.3.1 RELEASED (legal texts, Accessibility payment-app warning, #35); before it v1.2.3.0 RELEASED (blocking via local DNS VPN + Usage access/overlay, no screen reading, #34); before it v1.2.2.6 RELEASED (erase also hides old Insights time); before it v1.2.2.5 RELEASED (narrow Accessibility scope, lock full-only, smoothness); before it v1.2.2.4 RELEASED (fixes fingerprint unlock, #29); before it v1.2.2.3 RELEASED (instant app lock, full-only fingerprint unlock, rename to Reel Analyser + Blocker); before it v1.2.2.1 RELEASED (adds the App lock, #26); before it v1.2.2.0 RELEASED (GitHub). Issues #15 to #25 closed; not all checked on the phone

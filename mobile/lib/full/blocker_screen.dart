@@ -407,7 +407,7 @@ class _BlockerScreenState extends State<BlockerScreen>
                             const SizedBox(height: 4),
                             SegmentedButton<bool>(
                               segments: [
-                                ButtonSegment(value: false, label: Text(k == 'youtube' ? 'Shorts only' : 'Reels only')),
+                                ButtonSegment(value: false, label: Text(k == 'youtube' ? 'Shorts only' : k == 'snapchat' ? 'Spotlight only' : 'Reels only')),
                                 ButtonSegment(value: true, label: Text('Whole app')),
                               ],
                               selected: {_whole.contains(k)},

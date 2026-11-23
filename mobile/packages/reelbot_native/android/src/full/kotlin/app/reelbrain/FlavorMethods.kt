@@ -24,6 +24,7 @@ object FlavorMethods {
     /** Erase all my data: the blocker photos too. */
     fun onErase(ctx: Context) {
         BlockPhotos.wipe(ctx)
+        ctx.getSharedPreferences(ReelCounterService.PREFS, Context.MODE_PRIVATE).edit().remove(ReelCounterService.SCROLL_RULE).apply()
         AppUsage.eraseBefore(ctx, System.currentTimeMillis())
     }
 
@@ -33,7 +34,7 @@ object FlavorMethods {
     private class Full(val ctx: Context) {
         fun handle(call: MethodCall, result: MethodChannel.Result): Boolean {
             // What the Accessibility service may see depends on these settings, so it is told to look again after they change.
-            if (call.method in setOf("blockSave", "blockRemove", "blockCancel", "punishSet", "limitsSave", "limitsRemove", "setDetectionConsent")) {
+            if (call.method in setOf("blockSave", "blockRemove", "blockCancel", "punishSet", "limitsSave", "limitsRemove", "setDetectionConsent", "setSiteMethod", "scrollSave")) {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ ReelCounterService.rescope() }, 500)
             }
             when (call.method) {
@@ -86,6 +87,25 @@ object FlavorMethods {
                     result.success(null)
                 }
                 "openOverlaySettings" -> result.success(launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}"))))
+                "scrollState" -> {
+                    val date = localDate(System.currentTimeMillis())
+                    result.success(mapOf(
+                        "rule" to ScrollRule.parse(prefs().getString(ReelCounterService.SCROLL_RULE, null))?.takeIf { it.on }?.toJson(),
+                        "swipesToday" to (CounterDb.get(ctx).usedToday(date)["swipes:all"] ?: 0L),
+                    ))
+                }
+                "scrollSave" -> {
+                    val r = ScrollRule.parse(call.argument<String>("rule"))
+                    if (r == null) result.success("invalid") else {
+                        prefs().edit().putString(ReelCounterService.SCROLL_RULE, if (r.on) r.toJson() else null).apply()
+                        result.success("ok")
+                    }
+                }
+                "setSiteMethod" -> {
+                    SiteMethod.set(ctx, call.argument<String>("method") ?: "vpn")
+                    LimitsService.sync(ctx)
+                    result.success(null)
+                }
                 "enableSiteFilter" -> result.success(launch(Intent(ctx, VpnConsentActivity::class.java)))
                 "installedApps" -> CounterPlugin.offMain(result) { installedApps() }
                 "detectionConsent" -> result.success(prefs().getBoolean(ReelCounterService.CONSENT, false))
@@ -166,6 +186,8 @@ object FlavorMethods {
                 "usageAccess" to AppUsage.granted(ctx),
                 "overlay" to LimitsService.overlayGranted(ctx),
                 "siteFilter" to (android.net.VpnService.prepare(ctx) == null),
+                "siteMethod" to SiteMethod.get(ctx),
+                "accessReady" to (ReelCounterService.running && prefs().getBoolean(ReelCounterService.CONSENT, false)),
             )
         }
 

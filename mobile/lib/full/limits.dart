@@ -70,7 +70,14 @@ class LimitsState {
   /// "Display over other apps": lets the block screen open over an app. And the website filter (a local VPN that only carries DNS questions).
   final bool overlay;
   final bool siteFilter;
-  const LimitsState(this.active, this.pending, this.pendingFrom, this.used, this.usageAccess, {this.overlay = false, this.siteFilter = false});
+
+  /// How websites are blocked: `vpn` (a local filter on DNS look-ups) or `access` (the browser's address bar, read with Accessibility).
+  final String siteMethod;
+
+  /// Accessibility is running and the user allowed reading the screens, so the `access` method can work.
+  final bool accessReady;
+  const LimitsState(this.active, this.pending, this.pendingFrom, this.used, this.usageAccess,
+      {this.overlay = false, this.siteFilter = false, this.siteMethod = 'vpn', this.accessReady = false});
 }
 
 class InstalledApp {
@@ -94,12 +101,16 @@ class LimitsBridge {
       m['usageAccess'] == true,
       overlay: m['overlay'] == true,
       siteFilter: m['siteFilter'] == true,
+      siteMethod: m['siteMethod'] == 'access' ? 'access' : 'vpn',
+      accessReady: m['accessReady'] == true,
     );
   }
 
   /// "ok" or "invalid". [immediate]: the change is no looser than what is in force.
   Future<String> save(List<LimitItem> items, {required bool immediate}) async =>
       (await _ch.invokeMethod<String>('limitsSave', {'items': LimitItem.encode(items), 'immediate': immediate}))!;
+
+  Future<void> setSiteMethod(String method) => _ch.invokeMethod('setSiteMethod', {'method': method});
 
   Future<void> remove() => _ch.invokeMethod('limitsRemove');
 
