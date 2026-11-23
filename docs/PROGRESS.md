@@ -1,8 +1,8 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
-## Latest (2026-11-23, ~15:00 IST): 1.2.4.0 release-ready, NOT published, NOT phone-checked
+## Latest (2026-11-23, ~20:10 IST): v1.2.4.0 RELEASED on GitHub (both APKs and SHA256SUMS, digests checked); #38 closed
 
-Both APKs rebuilt (`mobile/build/app/outputs/flutter-apk/`), analyze clean, 177 Dart tests pass, `tool/check_apks.sh` OK (stale `BlockActivity` expectation removed). Both release-notes files and the RELEASES row rewritten. Not done: phone checks (the screen was on, so nothing was tapped) and the publish, which waits for the user's yes. Every open issue still needs the phone, the user's accounts, an Apify key, or F-Droid time.
+Checks before release: analyze clean, 177 Dart tests, `check_apks.sh` OK. NOT phone-checked (the phone was in use, nothing tapped). Still open, each waits on something outside the code: #2 (your accounts), #6 (F-Droid, from ~2027-02-05), #12 (LinkedIn embed on the phone), #37 (site method on the phone), #39 (Spotlight id), #40 (TikTok not installed), #41 (scroll guard on the phone), #42 (X video tweet), #43/#44 (real Apify key), #45 (0 min on the phone). Next: phone checks, then close those that pass.
 
 ## Latest (2026-11-23, ~14:30 IST): #47 frame drops DONE and closed; everything pushed to `main` (15b8c0d); 1.2.4.0 NOT released
 
@@ -20,7 +20,7 @@ Both APKs rebuilt (`mobile/build/app/outputs/flutter-apk/`), analyze clean, 177 
 | 6 | open | F-Droid: submit again from about 2027-02-05 |
 | 12 | open | LinkedIn embed route not tried on the phone |
 | 37 | open | site method picker: real site limit on the phone |
-| 38 | open | done in code; close after the 1.2.4.0 release if the user agrees |
+| 38 | closed | done, released in 1.2.4.0 |
 | 39 | open | Spotlight id not confirmed on screen |
 | 40 | open | TikTok not installed on the phone |
 | 41 | open | scroll guard tripping and going home not checked |
