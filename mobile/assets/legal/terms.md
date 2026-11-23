@@ -1,6 +1,6 @@
 # Terms of Use
 
-Reel Analyser · Effective 23 November 2026 · Version 2.4
+Reel Analyser · Effective 23 November 2026 · Version 2.5
 
 These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), the independent developer of Reel Analyser. By installing or using Reel Analyser you agree to these terms, the Privacy Policy, the Disclaimer and, if you support the app, the Support and Refund Policy. If you do not agree, do not use the app.
 
@@ -58,7 +58,7 @@ Reel Analyser is an independent app. It is not affiliated with, endorsed or spon
 
 ## 9. Availability
 
-Instagram, YouTube, LinkedIn, X and Reddit can change or block how their pages are read (LinkedIn posts that need a login cannot be read, and Reddit posts can be read only with your own Apify token), so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
+Instagram, YouTube, LinkedIn, X and Reddit can change or block how their pages are read (LinkedIn posts that need a login cannot be read, and Reddit posts are read from the free public Arctic Shift archive, which may lack very new or removed posts, and otherwise only with your own Apify token), so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
 
 ## 10. Permission to use the app
 

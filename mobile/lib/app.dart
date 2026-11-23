@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Once (and again if the documents change): the Terms and Privacy Policy, before anything else is used.
   Future<void> _askConsent() async {
     final k = widget.services.keys;
-    if (await k.flag('legal_v6') || !mounted) return;
+    if (await k.flag('legal_v7') || !mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (ok == true) {
       try {
-        await k.setFlag('legal_v6');
+        await k.setFlag('legal_v7');
       } on Object catch (e) {
         debugPrint('Could not remember the agreement: $e');
       }

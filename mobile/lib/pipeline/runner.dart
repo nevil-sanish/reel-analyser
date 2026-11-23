@@ -750,24 +750,37 @@ class Runner {
     );
   }
 
-  /// Reddit: no login-free route exists, so only through the user's own Apify key.
+  /// Reddit: the free Arctic Shift archive first (no login), then the user's own Apify key.
   Future<String> _reddit(PendingItem item) async {
     final u = Uri.parse(item.url);
     if (!isRedditHost(u.host)) return _failed('Not a Reddit link.');
-    final key = await apifyKey();
-    if (key == null) {
-      return _failed('Reddit does not show posts to apps that are not signed in. To save Reddit posts, add your own Apify key in '
-          'Settings (Apify has a free monthly credit), or share a screenshot of the post; screenshots never contact Reddit.');
-    }
-    _step('Asking Apify for the post', 0.15);
     RedditPost p = const RedditPost();
-    try {
-      final body = await _stoppable(apifyActorRun(client, key, redditActor, redditActorInput(item.url)));
-      if (body != null) p = parseRedditItems(body);
-    } on ApifyException catch (e) {
-      return _failed('$e');
+    final id = redditPostId(item.url);
+    if (id != null) {
+      _step('Looking for the post in the Arctic Shift archive', 0.1);
+      try {
+        final r = await _stoppable(client.get(arcticShiftPostUri(id)).timeout(const Duration(seconds: 20)));
+        if (r.statusCode == 200) p = parseArcticShiftPost(utf8.decode(r.bodyBytes));
+      } on Exception {
+        // archive unreachable: fall through to Apify
+      }
     }
-    if (p.isEmpty) return _failed('Apify did not return this Reddit post (it may be private, removed or a short link it could not follow).');
+    if (p.isEmpty) {
+      final key = await apifyKey();
+      if (key == null) {
+        return _failed('This Reddit post is not in the free archive yet (new posts can take about an hour) and Reddit does not show posts to '
+            'apps that are not signed in. Try again later, add your own Apify key in Settings (Apify has a free monthly credit), or share '
+            'a screenshot of the post; screenshots never contact Reddit.');
+      }
+      _step('Asking Apify for the post', 0.15);
+      try {
+        final body = await _stoppable(apifyActorRun(client, key, redditActor, redditActorInput(item.url)));
+        if (body != null) p = parseRedditItems(body);
+      } on ApifyException catch (e) {
+        return _failed('$e');
+      }
+      if (p.isEmpty) return _failed('Apify did not return this Reddit post (it may be private, removed or a short link it could not follow).');
+    }
     _name(p.title.isNotEmpty ? p.title : p.body);
     return _socialPost(
       item,

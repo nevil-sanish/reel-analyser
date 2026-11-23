@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Reel Analyser · Effective 23 November 2026 · Version 2.4
+Reel Analyser · Effective 23 November 2026 · Version 2.5
 
 ## 1. The short version
 
@@ -40,6 +40,7 @@ We do not receive any of it. It goes directly from your phone to these services,
 
 - **Google Gemini API** (ai.google.dev): the video, frames, thumbnail and caption of a reel you share; or your saved notes and question when you chat (a folder's chat sends only that folder's notes). When you press Organize, the title, tags and first line of each note are sent so they can be sorted into folders. Used with your Gemini key.
 - **OpenAI, Anthropic (Claude), Groq**: the same kind of content, only if you add that provider's key and it is used as a fallback or for chat.
+- **Arctic Shift** (Reddit posts, no account or token): when you share a Reddit post, the post's short id (the letters and digits in its link, no account, no token, no other data of yours) is sent to the public Reddit archive Arctic Shift (arctic-shift.photon-reddit.com), which answers with the post's text and picture links. Your IP address is visible to it. Posts that are very new or removed may not be there; then, only if you added an Apify token, the Apify step below is used.
 - **Apify** (optional): the reel's link code, only if you add an Apify token and Instagram will not hand over the video. With the same token, the link of a LinkedIn post that LinkedIn will not show to the app, and the link of a Reddit post (Reddit shows posts to no app that is not signed in), are sent to Apify, which reads the post and returns its text and pictures. The token is sent only to Apify, in a request header.
 - **Instagram (Meta) and YouTube (Google)**: to read the reel you shared, the app requests the public page or video of that link, like a web browser. They see your IP address and device details, as with any browser, and their own policies apply. The in-app link view loads the same pages.
 - **LinkedIn**: to read a LinkedIn post you shared, the app requests its public page (linkedin.com, without any login or account) and, for a picture or video post, its pictures or video from LinkedIn's media host (licdn.com). Tracking parameters in the shared link (such as who shared it) are removed first. LinkedIn sees your IP address and device details, as with any browser. Posts that need a login cannot be read.

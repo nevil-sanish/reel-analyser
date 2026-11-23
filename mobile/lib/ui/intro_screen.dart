@@ -27,7 +27,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     (
       Icons.apps_rounded,
       'What you can save',
-      'Instagram, YouTube, X, LinkedIn and photos you share. Reddit, and LinkedIn posts that need a login, work only with your own Apify key.',
+      'Instagram, YouTube, X, LinkedIn, Reddit and photos you share. New Reddit posts and LinkedIn posts that need a login need your own Apify key.',
     ),
     (Icons.insights_rounded, 'Know your scroll', 'See how many reels you watch each day and for how long. Counted, never recorded.'),
     (Icons.lock_rounded, 'Only on your phone', 'No account, no server. Your notes stay here; a reel you share goes only to the AI you choose.'),

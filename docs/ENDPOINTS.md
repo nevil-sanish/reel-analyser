@@ -179,6 +179,12 @@ Rules for every `IG-*` call:
 
 ---
 
+### REDDIT-ARCTIC: Reddit post from the Arctic Shift archive (1.2.5.0, both builds)
+- **Owner** `lib/pipeline/reddit.dart` (`redditPostId`, `arcticShiftPostUri`, `parseArcticShiftPost`) and `Runner._reddit`.
+- **Request:** `GET https://arctic-shift.photon-reddit.com/api/posts/ids?ids=t3_<id>`. No login, no key, no cookies; only the post id is sent. `/s/` share links have no id and go straight to Apify.
+- **Response:** `data[0]` with `author`, `subreddit`, `title`, `selftext`, `url`, `media_metadata` (gallery pictures), `media.reddit_video.fallback_url`. Media only from Reddit hosts. `[removed]`/`[deleted]` counts as empty.
+- **Fails when:** the post is newer than about an hour or was never archived (`data: []`), or the archive is down. Then, with an Apify key, `APIFY-RUN` is used (`trudax~reddit-scraper-lite`); without one the share fails with a plain message. Reddit's own `.json`, `.rss`, `api.reddit.com` and old.reddit answer 403/429/302 (checked 2026-11-23).
+
 ## 4. App-internal interfaces
 
 ### SHARE-IN: share intent

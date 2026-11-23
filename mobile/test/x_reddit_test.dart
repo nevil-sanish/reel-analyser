@@ -57,6 +57,35 @@ void main() {
   });
 
   group('Reddit', () {
+    test('post id from links and the Arctic Shift answer', () {
+      expect(redditPostId('https://www.reddit.com/r/programming/comments/1y3j8uc/some_title/'), '1y3j8uc');
+      expect(redditPostId('https://redd.it/1y3j8uc'), '1y3j8uc');
+      expect(redditPostId('https://www.reddit.com/r/programming/s/AbCdEf'), isNull);
+      expect(redditPostId('https://evil.test/comments/1y3j8uc/x'), isNull);
+      expect(arcticShiftPostUri('1y3j8uc').toString(), 'https://arctic-shift.photon-reddit.com/api/posts/ids?ids=t3_1y3j8uc');
+      final p = parseArcticShiftPost(jsonEncode({
+        'data': [
+          {
+            'author': 'someone',
+            'subreddit': 'programming',
+            'title': 'A title',
+            'selftext': 'Body text',
+            'url': 'https://i.redd.it/abc.jpg',
+            'media_metadata': {
+              'a': {'s': {'u': 'https://preview.redd.it/a.jpg?width=1&amp;s=x'}},
+              'b': {'s': {'u': 'https://evil.test/b.jpg'}},
+            },
+          }
+        ]
+      }));
+      expect(p.title, 'A title');
+      expect(p.body, 'Body text');
+      expect(p.images, ['https://preview.redd.it/a.jpg?width=1&s=x']);
+      final gone = parseArcticShiftPost(jsonEncode({'data': [{'title': '[removed]', 'selftext': '[deleted]', 'url': 'https://example.com/x'}]}));
+      expect(gone.isEmpty, isTrue);
+      expect(parseArcticShiftPost('{"data":[]}').isEmpty, isTrue);
+      expect(parseArcticShiftPost('nope').isEmpty, isTrue);
+    });
     test('first post of the actor rows', () {
       final p = parseRedditItems(jsonEncode([
         {'dataType': 'comment', 'body': 'ignore me'},

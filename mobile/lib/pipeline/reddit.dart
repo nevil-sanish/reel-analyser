@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-/// Reddit posts (1.2.4.0, both builds). Reddit shows a post to a logged-out app nowhere: the `.json`, `.rss` and old.reddit pages
-/// all answer 403 or 429. So a Reddit post is read only through the user's own Apify key (kept on the phone, sent in a header),
-/// and nothing is tried without it.
+/// Reddit posts (both builds). Reddit shows a post to a logged-out app nowhere: the `.json`, `.rss` and old.reddit pages all
+/// answer 403 or 429. First the free public Arctic Shift archive is asked for the post id (no login, no key); a post newer than
+/// about an hour may not be there yet. Then, with the user's own Apify key (kept on the phone, sent in a header), Apify.
 class RedditPost {
   final String author;
   final String subreddit;
@@ -69,4 +69,65 @@ RedditPost parseRedditItems(String body) {
     );
   }
   return const RedditPost();
+}
+
+/// The post id of a full Reddit link (`/comments/<id>/...`) or a redd.it short link; null for `/s/` share links and anything else.
+String? redditPostId(String url) {
+  final u = Uri.tryParse(url);
+  if (u == null || !isRedditHost(u.host)) return null;
+  final seg = u.pathSegments.where((e) => e.isNotEmpty).toList();
+  final String? id;
+  if (u.host.toLowerCase() == 'redd.it') {
+    id = seg.isEmpty ? null : seg.first;
+  } else {
+    final i = seg.indexOf('comments');
+    id = i >= 0 && i + 1 < seg.length ? seg[i + 1] : null;
+  }
+  return id != null && RegExp(r'^[a-z0-9]{4,10}$').hasMatch(id) ? id : null;
+}
+
+Uri arcticShiftPostUri(String id) => Uri.https('arctic-shift.photon-reddit.com', '/api/posts/ids', {'ids': 't3_$id'});
+
+String _unescape(String s) => s.replaceAll('&amp;', '&');
+
+/// The post from Arctic Shift's `/api/posts/ids` answer. Removed or deleted bodies count as empty.
+RedditPost parseArcticShiftPost(String body) {
+  Object? j;
+  try {
+    j = jsonDecode(body);
+  } on FormatException {
+    return const RedditPost();
+  }
+  final data = j is Map ? j['data'] : null;
+  if (data is! List || data.isEmpty || data.first is! Map) return const RedditPost();
+  final i = data.first as Map;
+  String text(Object? v) {
+    final t = '${v ?? ''}'.trim();
+    return t == '[removed]' || t == '[deleted]' ? '' : t;
+  }
+
+  final images = <String>[];
+  final meta = i['media_metadata'];
+  if (meta is Map) {
+    for (final m in meta.values) {
+      final src = m is Map && m['s'] is Map ? (m['s'] as Map)['u'] : null;
+      if (src is String && isRedditMedia(_unescape(src))) images.add(_unescape(src));
+    }
+  }
+  final url = '${i['url'] ?? ''}';
+  if (images.isEmpty && isRedditMedia(url) && RegExp(r'\.(jpe?g|png|webp)(\?|$)', caseSensitive: false).hasMatch(url)) images.add(url);
+  var video = '';
+  final media = i['media'];
+  final rv = media is Map ? media['reddit_video'] : null;
+  if (rv is Map && '${rv['fallback_url'] ?? ''}'.isNotEmpty && isRedditMedia(_unescape('${rv['fallback_url']}'))) {
+    video = _unescape('${rv['fallback_url']}');
+  }
+  return RedditPost(
+    author: text(i['author']),
+    subreddit: text(i['subreddit']),
+    title: text(i['title']),
+    body: text(i['selftext']),
+    images: images.take(maxRedditImages).toList(),
+    videoUrl: video,
+  );
 }
