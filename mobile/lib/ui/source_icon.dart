@@ -14,6 +14,8 @@ class SourceIcon extends StatelessWidget {
         'youtube' => 'YouTube',
         'photo' => 'Shared photo',
         'linkedin' => 'LinkedIn',
+        'x' => 'X',
+        'reddit' => 'Reddit',
         _ => 'Instagram',
       };
 
@@ -30,6 +32,14 @@ class SourceIcon extends StatelessWidget {
           child: Center(
             child: Text('in', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * 0.5, height: 1, fontFamily: 'sans-serif')),
           ),
+        ),
+      'x' => DecoratedBox(
+          decoration: BoxDecoration(color: Colors.black, borderRadius: r, border: Border.all(color: const Color(0xFF3A3A3A))),
+          child: Center(child: Text('X', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * 0.55, height: 1, fontFamily: 'sans-serif'))),
+        ),
+      'reddit' => DecoratedBox(
+          decoration: BoxDecoration(color: const Color(0xFFFF4500), borderRadius: r),
+          child: Center(child: Text('r/', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * 0.5, height: 1, fontFamily: 'sans-serif'))),
         ),
       'photo' => DecoratedBox(
           decoration: BoxDecoration(gradient: Brand.gradient, borderRadius: r),

@@ -174,3 +174,33 @@ LinkedInPost parseLinkedInEmbed(String html) {
   final author = t.contains(' | ') ? t.split(' | ').first.trim() : '';
   return LinkedInPost(author: author.isNotEmpty ? author : p.author, text: p.text, images: p.images, videos: p.videos, thumbnail: p.thumbnail);
 }
+
+/// The Apify actor used for a post LinkedIn will not show to a logged-out visitor (only with the user's own Apify key), and
+/// what it is sent for one post. It needs no LinkedIn cookies or account.
+const linkedInActor = 'memo23~linkedin-posts-scraper';
+
+Map<String, Object?> linkedInActorInput(String url) => {
+      'startUrls': [url],
+      'maxItems': 1,
+    };
+
+/// The actor's first row: `postText`, `author.name` and `mediaUrl` (a picture or a video, on LinkedIn's media host).
+LinkedInPost parseLinkedInActor(String body) {
+  Object? j;
+  try {
+    j = jsonDecode(body);
+  } on FormatException {
+    return const LinkedInPost();
+  }
+  if (j is! List || j.isEmpty || j.first is! Map) return const LinkedInPost();
+  final i = j.first as Map;
+  final a = i['author'];
+  final media = '${i['mediaUrl'] ?? ''}';
+  final video = isLinkedInMedia(media) && (media.contains('/playlist/vid/') || media.contains('.mp4'));
+  return LinkedInPost(
+    author: a is Map ? '${a['name'] ?? ''}'.trim() : '',
+    text: '${i['postText'] ?? ''}'.trim(),
+    images: isLinkedInMedia(media) && !video ? [media] : const [],
+    videos: video ? [media] : const [],
+  );
+}

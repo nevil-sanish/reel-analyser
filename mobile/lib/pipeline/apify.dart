@@ -47,3 +47,19 @@ Future<ApifyResult?> apifyFetch(http.Client client, String key, String code) asy
     author: '${i['ownerUsername'] ?? ''}',
   );
 }
+
+/// One run of any Apify actor for a single input, returning the dataset body (JSON text). The key goes in a header, never the URL.
+/// Used for LinkedIn and Reddit posts; null when the actor answered with nothing usable.
+Future<String?> apifyActorRun(http.Client client, String key, String actor, Map<String, Object?> input) async {
+  final r = await client
+      .post(
+        Uri.parse('https://api.apify.com/v2/acts/$actor/run-sync-get-dataset-items?timeout=120'),
+        headers: {'Authorization': 'Bearer $key', 'Content-Type': 'application/json'},
+        body: jsonEncode(input),
+      )
+      .timeout(const Duration(seconds: 150));
+  if (r.statusCode == 401 || r.statusCode == 403) throw ApifyException('Your Apify key was rejected. Check it in Settings.');
+  if (r.statusCode == 402) throw ApifyException('Your Apify account is out of credit.');
+  if (r.statusCode != 200 && r.statusCode != 201) return null;
+  return utf8.decode(r.bodyBytes);
+}

@@ -6,7 +6,7 @@ These terms are an agreement between you and Nevil Mathew Sanish ("we", "us"), t
 
 ## 1. What the app is
 
-Reel Analyser turns the reels, shorts, LinkedIn posts and pictures you share with it into searchable notes, sorts them into folders, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. It works on your phone with AI services you choose and pay for yourself.
+Reel Analyser turns the reels, shorts, LinkedIn, X and Reddit posts and pictures you share with it into searchable notes, sorts them into folders, lets you ask questions about your notes, and optionally shows how much you use Instagram and YouTube. It works on your phone with AI services you choose and pay for yourself.
 
 There are two versions. **Semi** is the notes, chat and folders only. **Full** adds optional self-control tools you set up yourself: Insights, the Reel blocker (Instagram Reels, YouTube Shorts and reel pages in a browser, once you pass a daily limit or outside the times you allow), time limits for apps and websites, Daily goals and an app lock with fingerprint or face. Sections 6 and 7 and the app lock apply to the full version only.
 
@@ -20,7 +20,7 @@ The app needs your own API keys for the AI services you want to use. You are res
 
 ## 4. Your content and your responsibility
 
-You are responsible for what you share with the app. Only analyse content you have the right to use, respect copyright and other people's privacy, and follow the terms of Instagram, YouTube, LinkedIn and any AI provider. Notes are for your personal use. Do not use the app for anything unlawful, to harass others, or to bypass access controls, rate limits or any platform's rules. The app does not host or publish your content.
+You are responsible for what you share with the app. Only analyse content you have the right to use, respect copyright and other people's privacy, and follow the terms of Instagram, YouTube, LinkedIn, X, Reddit and any AI provider. Notes are for your personal use. Do not use the app for anything unlawful, to harass others, or to bypass access controls, rate limits or any platform's rules. The app does not host or publish your content.
 
 ## 5. AI-generated notes can be wrong
 
@@ -54,11 +54,11 @@ Daily goals (full version) are an optional, self-imposed habit tool. You choose 
 
 ## 8. Not affiliated
 
-Reel Analyser is an independent app. It is not affiliated with, endorsed or sponsored by Instagram, Meta, YouTube, Google, LinkedIn, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid. All names and trademarks belong to their owners and are used only to say which services the app works with.
+Reel Analyser is an independent app. It is not affiliated with, endorsed or sponsored by Instagram, Meta, YouTube, Google, LinkedIn, X, Reddit, Microsoft, GitHub, Codeforces, LeetCode, OpenAI, Anthropic, Groq, Apify, Buy Me a Coffee, NPCI or F-Droid. All names and trademarks belong to their owners and are used only to say which services the app works with.
 
 ## 9. Availability
 
-Instagram, YouTube and LinkedIn can change or block how their pages are read (LinkedIn posts that need a login cannot be read), so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
+Instagram, YouTube, LinkedIn, X and Reddit can change or block how their pages are read (LinkedIn posts that need a login cannot be read, and Reddit posts can be read only with your own Apify token), so some reels may not be fetched, or may only be summarised from a caption or thumbnail. Optional features depend on permissions you grant and can be switched off at any time. Updates may add or change features, and these terms and the Privacy Policy are updated with them. We may change or stop any part of the app.
 
 ## 10. Permission to use the app
 

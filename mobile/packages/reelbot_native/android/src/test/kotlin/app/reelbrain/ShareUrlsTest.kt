@@ -46,4 +46,26 @@ class ShareUrlsTest {
         assertEquals("https://lnkd.in/gAbC12", ShareUrls.extract("see https://lnkd.in/gAbC12")!!.url)
         assertNull(ShareUrls.extract("https://www.linkedin.com/in/someone"))
     }
+
+    @Test fun `x posts become one canonical link`() {
+        val a = ShareUrls.extract("look https://x.com/someone/status/1893456789012345678?s=20&t=abc")!!
+        assertEquals("https://x.com/i/status/1893456789012345678", a.url)
+        assertEquals("x", a.app)
+        assertEquals("1893456789012345678", a.code)
+        assertEquals(a.url, ShareUrls.extract("https://twitter.com/someone/status/1893456789012345678")!!.url)
+        assertEquals(a.url, ShareUrls.extract("https://mobile.twitter.com/i/web/status/1893456789012345678")!!.url)
+        assertNull(ShareUrls.extract("https://x.com/someone"))
+        assertNull(ShareUrls.extract("https://x.com/home"))
+    }
+
+    @Test fun `reddit posts and share links`() {
+        val a = ShareUrls.extract("https://www.reddit.com/r/android/comments/1abcd23/some_title/?utm_source=share")!!
+        assertEquals("https://www.reddit.com/r/android/comments/1abcd23/", a.url)
+        assertEquals("reddit", a.app)
+        assertEquals("1abcd23", a.code)
+        assertEquals("https://www.reddit.com/r/android/comments/1abcd23/", ShareUrls.extract("https://old.reddit.com/r/android/comments/1abcd23/x/")!!.url)
+        assertEquals("https://www.reddit.com/r/android/s/AbCdEf12Gh", ShareUrls.extract("https://www.reddit.com/r/android/s/AbCdEf12Gh")!!.url)
+        assertEquals("https://www.reddit.com/comments/1abcd23/", ShareUrls.extract("https://redd.it/1abcd23")!!.url)
+        assertNull(ShareUrls.extract("https://www.reddit.com/r/android/"))
+    }
 }

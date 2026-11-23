@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           title: const Text('Terms, Privacy and Disclaimer'),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Reel Analyser keeps your notes on this phone and sends a reel only to the AI service you choose, '
-                'with your own key. The legal texts were updated: LinkedIn and folders are described, there is a new Support and Refund Policy for the optional support payments, and a contact email. Please read them.'),
+                'with your own key. The legal texts were updated: LinkedIn, X, Reddit, the website method, Snapchat, TikTok and the scroll guard are described, folders are described, there is a new Support and Refund Policy for the optional support payments, and a contact email. Please read them.'),
             const SizedBox(height: 8),
             Wrap(spacing: 4, children: [
               for (final (label, page) in [('Privacy Policy', LegalScreen.privacy), ('Terms of Use', LegalScreen.terms), ('Disclaimer', LegalScreen.disclaimer), ('Support and refunds', LegalScreen.support)])

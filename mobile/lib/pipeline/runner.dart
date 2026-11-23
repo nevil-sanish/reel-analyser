@@ -15,6 +15,8 @@ import 'apify.dart';
 import 'gemini.dart';
 import 'linkedin.dart';
 import 'providers.dart';
+import 'reddit.dart';
+import 'x_post.dart';
 
 /// The keys that can make notes: Gemini (several, taken in turn) for video, OpenAI and Claude from frames.
 class AnalysisKeys {
@@ -563,6 +565,8 @@ class Runner {
         'youtube' => await _youtube(item),
         'photo' => await _photo(item),
         'linkedin' => await _linkedin(item),
+        'x' => await _x(item),
+        'reddit' => await _reddit(item),
         _ => await _instagram(item),
       };
     } on GeminiException catch (e) {
@@ -658,6 +662,17 @@ class Runner {
           .timeout(const Duration(seconds: 30));
       if (e.statusCode == 200) p = parseLinkedInEmbed(utf8.decode(e.bodyBytes, allowMalformed: true));
     }
+    // Last resort, only for a user who saved an Apify key: one actor run for this post (no LinkedIn account or cookies).
+    final key = p.isEmpty ? await apifyKey() : null;
+    if (key != null) {
+      _step('Asking Apify for the post', 0.25);
+      try {
+        final body = await _stoppable(apifyActorRun(client, key, linkedInActor, linkedInActorInput(item.url)));
+        if (body != null) p = parseLinkedInActor(body);
+      } on ApifyException catch (e) {
+        return _failed('$e');
+      }
+    }
     if (p.isEmpty) {
       // Even a public post is sometimes refused to a logged-out visitor; nothing is retried automatically.
       return _failed('LinkedIn did not show this post to the app (HTTP ${r.statusCode}). Nothing was retried. Tap Read in app '
@@ -704,6 +719,116 @@ class Runner {
     final a = await _captionAndThumbnail(context, p.thumbnail.isEmpty ? null : await _bytes(p.thumbnail));
     await _save(item, a, p.thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail', 0, author: p.author, caption: caption);
     return p.thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail';
+  }
+
+  /// X: the post's own embed endpoint answers a public post's id with its text, pictures and mp4 (no login, no third party).
+  Future<String> _x(PendingItem item) async {
+    final u = Uri.parse(item.url);
+    final id = isXHost(u.host) ? xPostId(u) : null;
+    if (id == null) return _failed('Not an X post link.');
+    _step('Fetching from X', 0.12);
+    final r = await _stoppable(client.get(xSyndicationUrl(id))).timeout(const Duration(seconds: 30));
+    if (r.statusCode == 429 || r.statusCode >= 500) throw GeminiException(GeminiFailure.retryLater, 'X is busy (HTTP ${r.statusCode})');
+    final p = r.statusCode == 200 ? parseXPost(utf8.decode(r.bodyBytes, allowMalformed: true)) : const XPost();
+    if (p.isEmpty) {
+      return _failed(p.unavailable || r.statusCode == 404
+          ? 'X does not show this post to the app (deleted, private or age-restricted). Share a screenshot of the post instead.'
+          : 'X did not return this post (HTTP ${r.statusCode}). Share a screenshot of the post instead.');
+    }
+    _step(p.videoUrl.isEmpty ? 'Got the post' : 'Got the post and its video', 0.35);
+    _name(p.text.isNotEmpty ? p.text : p.author);
+    return _socialPost(
+      item,
+      label: 'X post',
+      author: p.author,
+      text: p.text,
+      images: p.images,
+      videoUrl: p.videoUrl,
+      thumbnail: p.thumbnail,
+      referer: 'https://x.com/',
+      prefix: 'x',
+    );
+  }
+
+  /// Reddit: no login-free route exists, so only through the user's own Apify key.
+  Future<String> _reddit(PendingItem item) async {
+    final u = Uri.parse(item.url);
+    if (!isRedditHost(u.host)) return _failed('Not a Reddit link.');
+    final key = await apifyKey();
+    if (key == null) {
+      return _failed('Reddit does not show posts to apps that are not signed in. To save Reddit posts, add your own Apify key in '
+          'Settings (Apify has a free monthly credit), or share a screenshot of the post; screenshots never contact Reddit.');
+    }
+    _step('Asking Apify for the post', 0.15);
+    RedditPost p = const RedditPost();
+    try {
+      final body = await _stoppable(apifyActorRun(client, key, redditActor, redditActorInput(item.url)));
+      if (body != null) p = parseRedditItems(body);
+    } on ApifyException catch (e) {
+      return _failed('$e');
+    }
+    if (p.isEmpty) return _failed('Apify did not return this Reddit post (it may be private, removed or a short link it could not follow).');
+    _name(p.title.isNotEmpty ? p.title : p.body);
+    return _socialPost(
+      item,
+      label: 'Reddit post${p.subreddit.isEmpty ? '' : ' in r/${p.subreddit}'}',
+      author: p.author.isEmpty ? '' : 'u/${p.author}',
+      text: [p.title, p.body].where((s) => s.isNotEmpty).join('\n\n'),
+      images: p.images,
+      videoUrl: p.videoUrl,
+      thumbnail: '',
+      referer: 'https://www.reddit.com/',
+      prefix: 'reddit',
+    );
+  }
+
+  /// Text, pictures and at most one video of a post from X or Reddit, analysed like a LinkedIn post: pictures together, the video
+  /// watched, then one note. Temporary files are removed.
+  Future<String> _socialPost(
+    PendingItem item, {
+    required String label,
+    required String author,
+    required String text,
+    required List<String> images,
+    required String videoUrl,
+    required String thumbnail,
+    required String referer,
+    required String prefix,
+  }) async {
+    final context = [
+      label,
+      if (author.isNotEmpty) 'Author: $author',
+      if (text.isNotEmpty) 'Post text: $text',
+      if (images.isNotEmpty && videoUrl.isNotEmpty) 'The post has ${images.length} picture(s) and a video; this part is one of them.',
+    ].join('\n');
+    final caption = text.length > 2000 ? text.substring(0, 2000) : text;
+    final parts = <(String, Analysis)>[];
+    final pics = [for (final i in images) ?await _bytes(i)];
+    if (pics.isNotEmpty) {
+      _step('Reading ${pics.length == 1 ? 'the picture' : 'the ${pics.length} pictures'}', 0.4);
+      parts.add((pics.length == 1 ? 'Picture' : 'Pictures', await _pictures(pics, context)));
+    }
+    if (videoUrl.isNotEmpty) {
+      _step('Watching the video', 0.6);
+      final path = await _download(videoUrl, '${item.id}', referer: referer, prefix: prefix);
+      if (path != null) {
+        final file = File(path);
+        try {
+          parts.add(('Video', await _video(file, context)));
+        } on GeminiException catch (e) {
+          if (e.kind != GeminiFailure.rejected) rethrow;
+        } finally {
+          if (await file.exists()) await file.delete();
+        }
+      }
+    }
+    if (parts.isNotEmpty) {
+      await _save(item, mergeAnalyses(parts), 'done', 0, author: author, caption: caption);
+      return 'done';
+    }
+    final a = await _captionAndThumbnail(context, thumbnail.isEmpty ? null : await _bytes(thumbnail));
+    await _save(item, a, thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail', 0, author: author, caption: caption);
+    return thumbnail.isEmpty ? 'text-only' : 'caption+thumbnail';
   }
 
   Future<String> _youtube(PendingItem item) async {
