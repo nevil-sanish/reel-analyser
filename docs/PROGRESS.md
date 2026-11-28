@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~13:00 IST): #51 site blocker (Accessibility method) fixed and phone-checked; NOT released
+
+**#51.** (1) Typing a limited site in Chrome's address bar sent the person home before Enter: `ReelCounterService.readAddress` now ignores the bar while it has focus. (2) Reopening a blocked site could get through: the site re-block gap is 1.2 s (`SITE_GAP_MS`, was the 4 s Home gap), and `FrontAddress` (`SiteFilter.kt`) keeps the last opened address while Chrome hides its bar on scroll, so blocking and site time continue. Unit tests in `FrontAddressTest`. Phone (Full APK from this commit, installed with `install -r`): youtube.com at 0 min, Accessibility method; typing kept Chrome open, Enter sent it home in about 1 s, 5 reopens and 3 `m.youtube.com` links with a swipe were all blocked, example.com stayed open. The youtube.com 0-min limit added for the test stays until midnight (the user agreed). Not checked: a non-zero site limit counting time while the bar is hidden; browsers other than Chrome. Release 1.2.5.2 only when the user asks.
+
 ## Next (2026-11-24): start with #50
 
 #50 (feedback from the app, 1.2.5.1): the Blocker page vibrates when opened and transitions are not smooth. Same area as #47 (Blocker tab and its Goals/Apps sub-tabs still had 20-50 ms frames on first open). Plan: add the temporary frame logger (see the #47 note), open Blocker and each sub-tab, find the cause, fix, remove the logger, release 1.2.5.2 only when the user asks. Also open: #12/#44 (Apify returns no rows for https://lnkd.in/p/dEG72umG; check the run log in the Apify console), #37, #39, #41 (blocking untested), #40 (user tests TikTok), #2, #6.

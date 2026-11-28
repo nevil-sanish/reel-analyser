@@ -42,6 +42,25 @@ object SiteFilter {
     fun active(now: Long): List<LimitItem> = sites.filter { (seen[it.id] ?: 0L) > now - ACTIVE_MS || (front[it.id] ?: 0L) > now - FRONT_MS }
 }
 
+/**
+ * The page a browser in front shows, from its address bar. While the bar has focus it holds what is being typed, so nothing
+ * counts until the page is opened. Chrome hides the bar once a page scrolls; then the last page read is kept, until the bar is
+ * read again, another browser or app comes to the front, or [clear].
+ */
+class FrontAddress {
+    private var pkg: String? = null
+    private var last: String? = null
+
+    /** [text] is the bar's text, null when no bar is on screen; [typing] when the bar has focus. Returns the open page, if known. */
+    fun read(pkg: String, text: String?, typing: Boolean): String? {
+        if (pkg != this.pkg) { this.pkg = pkg; last = null }
+        if (typing) last = null else if (text != null) last = text
+        return last
+    }
+
+    fun clear() { pkg = null; last = null }
+}
+
 /** How limited websites are blocked: `vpn` (a local filter on DNS look-ups, all apps) or `access` (the browser's address bar, read with Accessibility). */
 object SiteMethod {
     const val KEY = "site_method"

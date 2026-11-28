@@ -39,6 +39,8 @@ class ReelCounterService : AccessibilityService() {
         const val CONSENT = "detect_consent"
         const val SCROLL_RULE = "scroll_rule"
         private const val CHANNEL = "reelbot_alerts"
+        /** Going home takes well under a second, so a limited site still in front after this was opened again. */
+        private const val SITE_GAP_MS = 1200L
     }
 
     private lateinit var db: CounterDb
@@ -208,6 +210,7 @@ class ReelCounterService : AccessibilityService() {
             if (nullSince == 0L) nullSince = now
             if (now - nullSince >= 1500) {
                 feedNow = false
+                address.clear()
                 tracker.observe(now, null, false, null)
                 val date = localDate(now)
                 meter.observe(now, null, date)
@@ -217,12 +220,15 @@ class ReelCounterService : AccessibilityService() {
         nullSince = 0L
         val pkg = root.packageName?.toString() ?: return
         if (pkg in DetectionRules.ignored) return // neither leaving nor watching
+        if (pkg !in Browsers.packages) address.clear()
         val app = DetectionRules.apps[pkg]
         if (app == null) {
             tracker.observe(now, null, false, null)
             feedNow = false
-            enforce(now, if (pkg in Browsers.packages) browserReel(root, pkg) else null)
-            if (pkg in Browsers.packages) siteInFront(root, pkg, now)
+            if (pkg !in Browsers.packages) { enforce(now, null); return }
+            val addr = readAddress(root, pkg)
+            enforce(now, browserReel(addr))
+            siteInFront(addr, now)
             return
         }
         // Missed daily goals: the whole app is blocked, so nothing on its screen is read at all.
@@ -259,27 +265,28 @@ class ReelCounterService : AccessibilityService() {
     private var frontAt = 0L
 
     /** Accessibility method for websites: the address bar tells which limited site is open; at its limit the person is sent home. */
-    private fun siteInFront(root: AccessibilityNodeInfo, pkg: String, now: Long) {
+    private fun siteInFront(text: String?, now: Long) {
         if (now - siteAt > 2000) { siteAt = now; siteMethodOn = siteByAddressBar(now) }
-        if (!siteMethodOn) return
-        val text = addressText(root, pkg) ?: return
+        if (!siteMethodOn || text == null) return
         val item = SiteFilter.onFront(text, now)
         if (SiteFilter.active(now).any { AppLimits.siteMatches(it.id, text) }) frontAt = now
-        if (item != null) blockNow(item.key, "applimit", now, item)
+        // A quick reopen of the site must not slip through the gap meant for the Home animation.
+        if (item != null) blockNow(item.key, "applimit", now, item, gap = SITE_GAP_MS)
     }
 
-    private fun addressText(root: AccessibilityNodeInfo, pkg: String): String? {
-        for (id in Browsers.addressIds) {
-            val t = root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstNotNullOfOrNull { it.text?.toString() }
-            if (t != null) return t
+    private val address = FrontAddress()
+
+    /** The open page's address from the browser's address bar, kept while the bar is scrolled away (see [FrontAddress]). */
+    private fun readAddress(root: AccessibilityNodeInfo, pkg: String): String? {
+        val n = Browsers.addressIds.firstNotNullOfOrNull { id ->
+            root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstOrNull { it.text != null }
         }
-        return null
+        return address.read(pkg, n?.text?.toString(), n?.isFocused == true)
     }
 
     /** `browser` when the address bar shows a reel or a short. Only the address bar is read, and only when the browser is blocked. */
-    private fun browserReel(root: AccessibilityNodeInfo, pkg: String): String? {
-        if ("browser" !in (currentState(System.currentTimeMillis()).active?.items ?: return null)) return null
-        val t = addressText(root, pkg) ?: return null
+    private fun browserReel(t: String?): String? {
+        if (t == null || "browser" !in (currentState(System.currentTimeMillis()).active?.items ?: return null)) return null
         return if (BlockPolicy.browserSurface(t)) "browser" else null
     }
 
@@ -310,9 +317,9 @@ class ReelCounterService : AccessibilityService() {
         if (v is Verdict.Block) blockNow(surface, v.reason, now)
     }
 
-    /** Sends the person to the home screen (no block screen), at most every 4 seconds. */
-    private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null, text: String = "") {
-        if (now - lastBlock <= 4000) return
+    /** Sends the person to the home screen (no block screen), at most once per [gap]. */
+    private fun blockNow(surface: String, reason: String, now: Long, item: LimitItem? = null, text: String = "", gap: Long = 4000) {
+        if (now - lastBlock <= gap) return
         lastBlock = now
         meter.stop()
         val note = item?.let { AppLimits.message(it) } ?: text.ifEmpty { BlockPolicy.describe(currentState(now).active, surface, reason) }
