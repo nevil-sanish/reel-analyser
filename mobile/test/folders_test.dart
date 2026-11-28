@@ -12,55 +12,80 @@ Reel note(String url, String title, {List<String> tags = const [], List<String> 
 void main() {
   sqfliteFfiInit();
 
-  group('matching a new note to a folder (no AI)', () {
+  group('matching a new note to folders (no AI)', () {
     const cooking = Folder(1, 'Cooking'), ml = Folder(2, 'Machine Learning'), fit = Folder(3, 'Fitness');
 
     test('every word of the folder name must be in the note', () {
-      expect(matchFolder(note('a', 'Five minute pasta', tags: ['cooking', 'pasta']), [cooking, ml, fit]), 1);
-      expect(matchFolder(note('b', 'Intro to machine learning'), [cooking, ml, fit]), 2);
-      expect(matchFolder(note('c', 'Learning to juggle'), [cooking, ml, fit]), isNull, reason: 'only half of "Machine Learning"');
-      expect(matchFolder(note('d', 'A sunset'), [cooking, ml, fit]), isNull);
+      expect(matchFolders(note('a', 'Five minute pasta', tags: ['cooking', 'pasta']), [cooking, ml, fit]), {1});
+      expect(matchFolders(note('b', 'Intro to machine learning'), [cooking, ml, fit]), {2});
+      expect(matchFolders(note('c', 'Learning to juggle'), [cooking, ml, fit]), isEmpty, reason: 'only half of "Machine Learning"');
+      expect(matchFolders(note('d', 'A sunset'), [cooking, ml, fit]), isEmpty);
     });
 
     test('simple plurals and -ing forms match', () {
-      expect(matchFolder(note('a', 'Cook rice right'), [cooking]), 1);
-      expect(matchFolder(note('b', 'Three recipes'), [const Folder(9, 'Recipe')]), 9);
+      expect(matchFolders(note('a', 'Cook rice right'), [cooking]), {1});
+      expect(matchFolders(note('b', 'Three recipes'), [const Folder(9, 'Recipe')]), {9});
     });
 
-    test('a tie leaves the note in All', () {
-      expect(matchFolder(note('a', 'Cooking for fitness', tags: ['cooking', 'fitness']), [cooking, fit]), isNull);
+    test('a note that fits two folders goes in both', () {
+      expect(matchFolders(note('a', 'Cooking for fitness', tags: ['cooking', 'fitness']), [cooking, fit]), {1, 3});
     });
   });
 
   group('organize answers', () {
-    final folders = [const Folder(1, 'Cooking')];
+    final folders = [const Folder(1, 'Cooking'), const Folder(2, 'Claude AI')];
     final notes = [
-      for (var i = 0; i < 8; i++) note('u$i', 'note $i'),
+      for (var i = 0; i < 9; i++) note('u$i', 'note $i'),
     ];
 
-    test('their folders by name, any case; unknown names and numbers are ignored', () {
+    test('a note goes in every one of their folders named, any case; unknown names and numbers are ignored', () {
       final p = OrganizePlan();
-      expect(p.addAnswer('Sure! {"assign": {"0": "cooking", "1": "Nope", "2": null, "99": "Cooking"}, "suggest": []}', folders, notes), isTrue);
-      expect(p.assign, {'u0': 1, 'u1': null, 'u2': null});
+      expect(p.addAnswer('Sure! {"assign": {"0": ["cooking", "CLAUDE AI"], "1": "Nope", "2": null, "3": "Cooking", "99": ["Cooking"]}, "suggest": []}', folders, notes), isTrue);
+      expect(p.assign, {'u0': {1, 2}, 'u3': {1}});
     });
 
-    test('a new folder needs $minSuggested notes, never "All", never a name they already have', () {
+    test('a new folder needs $minSuggested notes, never "All", never the same topic as theirs', () {
       final p = OrganizePlan()
         ..addAnswer(
-            '{"assign": {"0": "Cooking"}, "suggest": ['
+            '{"assign": {}, "suggest": ['
             '{"name": "Python", "notes": [1, 2, 3]}, {"name": "Solo", "notes": [4]}, {"name": "All", "notes": [5, 6, 7]},'
-            '{"name": "COOKING", "notes": [5, 6, 7]}, {"name": "Travel", "notes": [0, 5, 6]}]}',
+            '{"name": "COOKING", "notes": [5, 6, 7]}, {"name": "Claude Anthropic AI", "notes": [4, 5, 6, 7]}]}',
             folders,
             notes);
-      expect([for (final (n, u) in p.suggestions()) '$n:${u.join(',')}'], ['Python:u1,u2,u3'],
-          reason: 'Travel loses u0 (already in Cooking) and falls below $minSuggested');
+      expect([for (final (n, u) in p.suggestions(folders, {})) '$n:${u.join(',')}'], ['Python:u1,u2,u3']);
+    });
+
+    test('two suggestions for one topic: only the bigger is kept', () {
+      final p = OrganizePlan()
+        ..addAnswer('{"assign": {}, "suggest": [{"name": "AI Agents", "notes": [0, 1, 2, 3]}, {"name": "Agents AI tools", "notes": [5, 6, 7]}]}', folders, notes);
+      expect([for (final (n, _) in p.suggestions(folders, {})) n], ['AI Agents']);
+    });
+
+    test('a suggestion whose notes already sit together in one folder is dropped', () {
+      final p = OrganizePlan()
+        ..addAnswer('{"assign": {"4": ["Claude AI"]}, "suggest": [{"name": "Prompting", "notes": [3, 4, 5, 6]}, {"name": "Travel", "notes": [0, 1, 2]}]}', folders, notes);
+      final grouped = {'u3': {2}, 'u5': {2}};
+      expect([for (final (n, _) in p.suggestions(folders, grouped)) n], ['Travel'], reason: '3 of 4 Prompting notes are in Claude AI');
+    });
+
+    test('a suggestion mostly inside a bigger one is dropped', () {
+      final p = OrganizePlan()
+        ..addAnswer('{"assign": {}, "suggest": [{"name": "Python", "notes": [0, 1, 2, 3, 4]}, {"name": "Django", "notes": [0, 1, 2]}]}', folders, notes);
+      expect([for (final (n, _) in p.suggestions(folders, {})) n], ['Python']);
     });
 
     test('suggestions from several chunks merge by name', () {
       final p = OrganizePlan()
         ..addAnswer('{"assign": {}, "suggest": [{"name": "Python", "notes": [0, 1]}]}', folders, notes.sublist(0, 4))
         ..addAnswer('{"assign": {}, "suggest": [{"name": "python", "notes": [0]}]}', folders, notes.sublist(4));
-      expect([for (final (n, u) in p.suggestions()) '$n:${u.join(',')}'], ['Python:u0,u1,u4']);
+      expect([for (final (n, u) in p.suggestions(folders, {})) '$n:${u.join(',')}'], ['Python:u0,u1,u4']);
+    });
+
+    test('same topic by name', () {
+      expect(sameTopic('Claude AI', 'Claude Anthropic AI'), isTrue);
+      expect(sameTopic('Claude AI', 'ai claude'), isTrue);
+      expect(sameTopic('AI', 'Claude AI'), isFalse);
+      expect(sameTopic('Cooking', 'Fitness'), isFalse);
     });
 
     test('garbage is not usable', () {
@@ -73,7 +98,7 @@ void main() {
         Reel(url: 'https://secret.link/x', app: 'instagram', title: 'Pasta', summary: '', tags: const ['food'], transcript: 'hidden words', savedAt: 1),
       ]);
       expect(r, contains('0. Pasta [food]'));
-      expect(r, contains('Their folders: Cooking'));
+      expect(r, contains('Their folders: Cooking, Claude AI'));
       expect(r, isNot(contains('secret.link')));
       expect(r, isNot(contains('hidden words')));
     });
@@ -94,7 +119,7 @@ void main() {
     test('deleting a folder keeps its notes and removes its chat; each folder has its own thread', () async {
       final a = (await db.addFolder('A', 1))!, b = (await db.addFolder('B', 2))!;
       await db.saveReel(note('u1', 't'));
-      await db.setFolders({'u1': a});
+      await db.addToFolders({'u1': {a}});
       await db.saveFolderChat(a, ['q a', 'answer a'], 1);
       await db.saveFolderChat(b, ['q b', 'answer b'], 1);
       await db.saveFolderChat(0, ['q all', 'answer all'], 1);
@@ -104,19 +129,30 @@ void main() {
       expect(await db.folderChat(a), isEmpty);
       expect(await db.folderChat(b), ['q b', 'answer b']);
       expect(await db.folderChat(0), ['q all', 'answer all']);
-      expect(await db.folderOf(), isEmpty);
+      expect(await db.foldersOf(), isEmpty);
       expect((await db.reels()).single.url, 'u1');
     });
 
     test('re-saving a note keeps its folder; erase clears everything', () async {
       final a = (await db.addFolder('A', 1))!;
       await db.saveReel(note('u1', 't'));
-      await db.setFolders({'u1': a});
+      await db.addToFolders({'u1': {a}});
       await db.saveReel(note('u1', 'renamed'));
-      expect(await db.folderOf(), {'u1': a});
+      expect(await db.foldersOf(), {'u1': {a}});
       await db.eraseAll();
       expect(await db.folders(), isEmpty);
-      expect(await db.folderOf(), isEmpty);
+      expect(await db.foldersOf(), isEmpty);
+    });
+
+    test('a note in several folders; taking it out of one keeps the others', () async {
+      final a = (await db.addFolder('A', 1))!, b = (await db.addFolder('B', 2))!;
+      await db.addToFolders({'u1': {a, b}, 'u2': {a}});
+      await db.addToFolders({'u1': {a}});
+      expect(await db.foldersOf(), {'u1': {a, b}, 'u2': {a}});
+      await db.removeFromFolder(['u1', 'u2'], a);
+      expect(await db.foldersOf(), {'u1': {b}});
+      await db.deleteFolder(b);
+      expect(await db.foldersOf(), isEmpty);
     });
   });
 
@@ -144,6 +180,26 @@ void main() {
     expect((await db.reels()).single.title, 'Old note');
     expect(await db.folders(), isEmpty);
     expect(await db.addFolder('New', 1), isNotNull);
+    await db.close();
+    await dir.delete(recursive: true);
+  });
+
+  test('a version 8 library keeps each note in its folder after the upgrade to several folders', () async {
+    final dir = await Directory.systemTemp.createTemp('lib8');
+    final path = '${dir.path}/reel_brain.db';
+    final fresh = await LibraryDb.open(factory: databaseFactoryFfi, path: path);
+    final a = (await fresh.addFolder('Cooking', 1))!;
+    await fresh.saveReel(note('u1', 'Pasta'));
+    await fresh.close();
+    // Turn it back into a version 8 file: the one-folder table instead of note_folders.
+    final raw = await databaseFactoryFfi.openDatabase(path);
+    await raw.execute('DROP TABLE note_folders');
+    await raw.execute('CREATE TABLE folder_items (url TEXT PRIMARY KEY, folderId INTEGER NOT NULL)');
+    await raw.insert('folder_items', {'url': 'u1', 'folderId': a});
+    await raw.setVersion(8);
+    await raw.close();
+    final db = await LibraryDb.open(factory: databaseFactoryFfi, path: path);
+    expect(await db.foldersOf(), {'u1': {a}});
     await db.close();
     await dir.delete(recursive: true);
   });

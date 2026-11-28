@@ -463,7 +463,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: _eraseAll,
             ),
           ]),
-          Center(child: Text('Reel Analyser ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
+          Center(child: Text('${s.features.appName} ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
     );

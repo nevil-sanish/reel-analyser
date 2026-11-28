@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../core/creator.dart';
 import '../core/models.dart';
 import '../native/counter_bridge.dart';
 import '../pipeline/linkedin.dart';
@@ -35,12 +36,12 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
   String _kind = 'all';
   final _selected = <String>{};
   List<Folder> _folders = [];
-  Map<String, int> _folderOf = {};
+  Map<String, Set<int>> _folderOf = {};
 
   /// The open folder; 0 = All.
   int _folder = 0;
 
-  List<Reel> get _inFolder => _folder == 0 ? _reels : [for (final r in _reels) if (_folderOf[r.url] == _folder) r];
+  List<Reel> get _inFolder => _folder == 0 ? _reels : [for (final r in _reels) if (_folderOf[r.url]?.contains(_folder) ?? false) r];
   List<Reel> get _visible => [for (final r in _inFolder) if (_kind == 'all' || r.kind == _kind) r];
   String get _folderName => _folder == 0 ? 'All' : _folders.firstWhere((f) => f.id == _folder, orElse: () => const Folder(0, 'All')).name;
 
@@ -101,7 +102,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
     final shared = s.runner.lockBusy ? await Runner.sharedJobs(s.sharedDir, DateTime.now().millisecondsSinceEpoch) : <Job>[];
     final hasKey = (await s.keys.geminiKeys).isNotEmpty || await s.keys.openai != null || await s.keys.claude != null;
     final folders = await s.library.folders();
-    final folderOf = await s.library.folderOf();
+    final folderOf = await s.library.foldersOf();
     if (!mounted) return;
     setState(() {
       _folders = folders;
@@ -153,7 +154,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
               },
               onMove: () async {
                 final picked = [for (final r in _reels) if (_selected.contains(r.url)) r];
-                if (await moveToFolder(context, s, picked)) {
+                if (await editFolders(context, s, picked)) {
                   setState(_selected.clear);
                   _reload();
                 }
@@ -205,7 +206,7 @@ class _LibraryScreenState extends State<LibraryScreen> with WidgetsBindingObserv
                         onLongPress: f.id == 0 ? null : () => manageFolder(context, s, f, _reload),
                         child: ChoiceChip(
                           avatar: Icon(f.id == 0 ? Icons.all_inbox_rounded : Icons.folder_rounded, size: 18),
-                          label: _ChipLabel(f.name, f.id == 0 ? _reels.length : _reels.where((r) => _folderOf[r.url] == f.id).length, selected: _folder == f.id),
+                          label: _ChipLabel(f.name, f.id == 0 ? _reels.length : _reels.where((r) => _folderOf[r.url]?.contains(f.id) ?? false).length, selected: _folder == f.id),
                           selected: _folder == f.id,
                           showCheckmark: false,
                           onSelected: (_) {
@@ -758,7 +759,7 @@ class ReelCard extends StatelessWidget {
                   SourceIcon(reel.app),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : reel.app == 'linkedin' ? 'LinkedIn' : reel.app == 'x' ? 'X' : reel.app == 'reddit' ? 'Reddit' : 'Instagram') : (reel.app == 'x' || reel.app == 'reddit') ? reel.author : '@${reel.author}',
+                    child: Text(reel.author.isEmpty ? (photo ? 'Photo' : yt ? 'YouTube' : reel.app == 'linkedin' ? 'LinkedIn' : reel.app == 'x' ? 'X' : reel.app == 'reddit' ? 'Reddit' : 'Instagram') : Creator.of(reel)?.name ?? reel.author,
                         style: t.textTheme.labelLarge, overflow: TextOverflow.ellipsis),
                   ),
                   Text(savedAgo(reel.savedAt, DateTime.now()), style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.outline)),
@@ -795,7 +796,7 @@ class ReelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
                 if (reel.overview.isNotEmpty || reel.summary.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(reel.overview.isEmpty ? reel.summary : reel.overview.take(2).map((o) => '• $o').join('\n'),
+                  Text(reel.overview.isEmpty ? reel.summary : reel.overview.take(2).map((o) => '• ${o.replaceAll('**', '')}').join('\n'),
                       maxLines: 3, overflow: TextOverflow.ellipsis,
                       style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant, height: 1.35)),
                 ],
@@ -822,7 +823,7 @@ PreferredSizeWidget selectionBar({
       title: Text('$count selected'),
       actions: [
         IconButton(tooltip: 'Select all', icon: const Icon(Icons.select_all_rounded), onPressed: onAll),
-        if (onMove != null) IconButton(tooltip: 'Move to folder', icon: const Icon(Icons.drive_file_move_outline), onPressed: onMove),
+        if (onMove != null) IconButton(tooltip: 'Folders', icon: const Icon(Icons.folder_copy_outlined), onPressed: onMove),
         IconButton(tooltip: 'Mark read', icon: const Icon(Icons.done_all_rounded), onPressed: () => onAction('read')),
         IconButton(tooltip: 'Mark unread', icon: const Icon(Icons.mark_email_unread_outlined), onPressed: () => onAction('unread')),
         IconButton(

@@ -62,7 +62,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
   Widget build(BuildContext context) => ValueListenableBuilder(
       valueListenable: Brand.mode,
       builder: (_, mode, _) => MaterialApp(
-        title: 'Reel Analyser + Blocker',
+        title: widget.services.features.appName,
         themeMode: mode,
         debugShowCheckedModeBanner: false,
         // Above the navigator, so a build's cover (the full build's passcode screen) also covers dialogs and every page.
@@ -72,7 +72,7 @@ class _ReelBotAppState extends State<ReelBotApp> {
         home: AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
           child: _intro
-              ? IntroScreen(onDone: () async {
+              ? IntroScreen(name: widget.services.features.appName, blocker: widget.services.features.hasBlocker, onDone: () async {
                   try {
                     await widget.services.keys.setIntroSeen();
                   } on Object catch (e) {

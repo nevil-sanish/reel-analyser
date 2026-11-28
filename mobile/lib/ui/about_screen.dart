@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../app_services.dart';
 import '../core/distribution.dart';
 import 'developer_card.dart';
+import 'intro_screen.dart';
 import 'legal_screen.dart';
 import 'liquid.dart';
 import 'section_card.dart';
@@ -129,14 +130,17 @@ class AboutScreen extends StatelessWidget {
               )
             else
               _link(context, Icons.system_update_outlined, 'Check for updates', () => checkForUpdate(context, services), subtitle: 'You have ${AppServices.version}'),
+            _link(context, Icons.auto_stories_outlined, 'What the app does', () => Navigator.push(context, MaterialPageRoute(builder: (c) =>
+                IntroScreen(name: services.features.appName, blocker: services.features.hasBlocker, onDone: () => Navigator.pop(c)))),
+                subtitle: 'The welcome tour again'),
             _link(context, Icons.privacy_tip_outlined, 'Privacy Policy', () => open(LegalScreen.privacy)),
             _link(context, Icons.gavel_outlined, 'Terms of Use', () => open(LegalScreen.terms)),
             _link(context, Icons.info_outline, 'Disclaimer', () => open(LegalScreen.disclaimer)),
             _link(context, Icons.receipt_long_outlined, 'Support and Refund Policy', () => open(LegalScreen.support)),
             _link(context, Icons.article_outlined, 'Open-source licenses',
-                () => showLicensePage(context: context, applicationName: 'Reel Analyser', applicationVersion: AppServices.version)),
+                () => showLicensePage(context: context, applicationName: services.features.appName, applicationVersion: AppServices.version)),
           ]),
-          Center(child: Text('Reel Analyser ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
+          Center(child: Text('${services.features.appName} ${AppServices.version}', style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
     );

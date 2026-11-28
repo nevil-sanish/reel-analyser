@@ -1066,12 +1066,12 @@ class Runner {
     await _sortIntoFolder(saved);
   }
 
-  /// A new note goes into the folder its words clearly match (no AI call). A note already in a folder keeps it.
+  /// A new note goes into every folder its words clearly match (no AI call); the folders it is already in stay.
   Future<void> _sortIntoFolder(Reel r) async {
     final folders = await library.folders();
-    if (folders.isEmpty || (await library.folderOf()).containsKey(r.url)) return;
-    final f = matchFolder(r, folders);
-    if (f != null) await library.setFolders({r.url: f});
+    if (folders.isEmpty) return;
+    final f = matchFolders(r, folders);
+    if (f.isNotEmpty) await library.addToFolders({r.url: f});
   }
 
   Future<List<int>?> _bytes(String url) async {

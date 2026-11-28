@@ -19,8 +19,9 @@ class Brand {
   static const ink = Color(0xFF1C1A14);
   static const ivory = Color(0xFFF6F1E4);
   static const marble = Color(0xFFFBF9F4);
-  static const night = Color(0xFF0F0E0B);
-  static const nightSurface = Color(0xFF191712);
+  /// Dark: a warm, deep black (not gray) and a card a shade lighter with a hint of gold in it.
+  static const night = Color(0xFF0B0A07);
+  static const nightSurface = Color(0xFF18140C);
 
   /// What sits on gold fills: dark ink, never white.
   static const onGold = ink;
@@ -38,7 +39,18 @@ class Brand {
 
   /// The tint of a card: nearly opaque, so text stays sharp and nothing needs a blur (which is slow on many phones).
   static Color glass(Brightness b) => b == Brightness.dark ? nightSurface.withValues(alpha: 0.94) : Colors.white.withValues(alpha: 0.9);
-  static Color glassEdge(Brightness b) => gold.withValues(alpha: b == Brightness.dark ? 0.32 : 0.38);
+  static Color glassEdge(Brightness b) => gold.withValues(alpha: b == Brightness.dark ? 0.34 : 0.38);
+
+  /// A card's fill: lit from above, a little darker at the foot, so it reads as a raised slab rather than a flat panel.
+  static LinearGradient cardFill(Brightness b, {bool solid = false}) => b == Brightness.dark
+      ? LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
+          const Color(0xFF211B10).withValues(alpha: solid ? 1 : 0.96),
+          const Color(0xFF130F08).withValues(alpha: solid ? 1 : 0.96),
+        ])
+      : LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
+          Colors.white.withValues(alpha: solid ? 1 : 0.94),
+          const Color(0xFFFCF8EE).withValues(alpha: solid ? 1 : 0.92),
+        ]);
 
   static TextStyle serif(TextStyle? base, {double? size, double weight = 600, double? spacing, double? height}) =>
       (base ?? const TextStyle()).copyWith(
@@ -66,7 +78,7 @@ class Brand {
       surface: base(b),
       onSurface: dark ? ivory : ink,
       onSurfaceVariant: dark ? const Color(0xFFB9B09A) : const Color(0xFF6B6455),
-      surfaceContainerHighest: dark ? const Color(0xFF241F14) : const Color(0xFFF1EBDA),
+      surfaceContainerHighest: dark ? const Color(0xFF262012) : const Color(0xFFF1EBDA),
       outline: gold.withValues(alpha: 0.6),
       outlineVariant: gold.withValues(alpha: 0.28),
       error: dark ? const Color(0xFFE58B7B) : const Color(0xFF9E3B2D),

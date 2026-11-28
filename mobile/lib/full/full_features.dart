@@ -39,6 +39,12 @@ class FullFeatures extends AppFeatures {
   String get flavor => 'full';
 
   @override
+  String get appName => 'Reel Analyser + Blocker';
+
+  @override
+  bool get hasBlocker => true;
+
+  @override
   Widget wrap(AppServices s, Widget child) => LockGate(lock: AppLock(KeyLockStorage(s.keys), hasher: AppLock.nativeHash), biometrics: BridgeBiometrics(), child: child);
 
   @override

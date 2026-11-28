@@ -30,7 +30,8 @@ Future<String?> askFolderName(BuildContext context, {String title = 'New folder'
 
 void _say(BuildContext context, String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
-/// Makes a folder and fills it with the notes whose words clearly match its name. Returns its id.
+/// Makes a folder and fills it with every note whose words clearly match its name (notes may be in other folders too).
+/// Returns its id.
 Future<int?> createFolder(BuildContext context, AppServices s) async {
   final name = await askFolderName(context);
   if (name == null || name.isEmpty || !context.mounted) return null;
@@ -40,13 +41,12 @@ Future<int?> createFolder(BuildContext context, AppServices s) async {
     _say(context, name.toLowerCase() == 'all' ? '"All" is always there.' : 'There is already a folder called "$name".');
     return null;
   }
-  final of = await s.library.folderOf();
   final f = Folder(id, name);
   final moved = {
     for (final r in await s.library.reels())
-      if (!of.containsKey(r.url) && matchFolder(r, [f]) == id) r.url: id,
+      if (matchFolders(r, [f]).isNotEmpty) r.url: {id},
   };
-  await s.library.setFolders(moved);
+  await s.library.addToFolders(moved);
   if (context.mounted) {
     _say(context, moved.isEmpty ? 'Folder "$name" made. Press Organize to sort your notes into it.' : 'Folder "$name" made with ${moved.length} matching notes.');
   }
@@ -82,44 +82,83 @@ Future<void> manageFolder(BuildContext context, AppServices s, Folder f, VoidCal
   onDone();
 }
 
-/// "Move to folder" for selected notes. Returns true when something moved.
-Future<bool> moveToFolder(BuildContext context, AppServices s, List<Reel> notes) async {
+/// The folders of one or more notes, as ticks: a ticked folder holds every one of them, an unticked one none. A folder that
+/// holds only some of them starts unticked and is left alone unless it is changed. Returns true when something changed.
+Future<bool> editFolders(BuildContext context, AppServices s, List<Reel> notes) async {
   final folders = await s.library.folders();
+  final of = await s.library.foldersOf();
+  bool inAll(int id) => notes.every((r) => of[r.url]?.contains(id) ?? false);
+  final start = {for (final f in folders) if (inAll(f.id)) f.id};
+  final ticked = {...start};
   if (!context.mounted) return false;
-  final picked = await showModalBottomSheet<int>(
+  final picked = await showModalBottomSheet<String>(
     context: context,
+    isScrollControlled: true,
     showDragHandle: true,
-    builder: (c) => SafeArea(
-      child: ListView(shrinkWrap: true, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          child: Text('Move ${notes.length == 1 ? '1 note' : '${notes.length} notes'} to', style: Theme.of(c).textTheme.titleMedium),
+    builder: (c) => StatefulBuilder(
+      builder: (c, set) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(c).height * 0.8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: Text(notes.length == 1 ? 'Folders of this note' : 'Folders of ${notes.length} notes',
+                  style: Theme.of(c).textTheme.titleMedium),
+            ),
+            Flexible(
+              child: ListView(shrinkWrap: true, children: [
+                const ListTile(leading: Icon(Icons.all_inbox_outlined), title: Text('All'), subtitle: Text('Every note is always here')),
+                for (final f in folders)
+                  CheckboxListTile(
+                    value: ticked.contains(f.id),
+                    secondary: const Icon(Icons.folder_outlined),
+                    title: Text(f.name),
+                    onChanged: (v) => set(() => v == true ? ticked.add(f.id) : ticked.remove(f.id)),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.create_new_folder_outlined),
+                  title: const Text('New folder…'),
+                  onTap: () => Navigator.pop(c, 'new'),
+                ),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Row(children: [
+                TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+                const Spacer(),
+                FilledButton(onPressed: () => Navigator.pop(c, 'save'), child: const Text('Save')),
+              ]),
+            ),
+          ]),
         ),
-        ListTile(leading: const Icon(Icons.all_inbox_outlined), title: const Text('All only (no folder)'), onTap: () => Navigator.pop(c, 0)),
-        for (final f in folders)
-          ListTile(leading: const Icon(Icons.folder_outlined), title: Text(f.name), onTap: () => Navigator.pop(c, f.id)),
-        ListTile(leading: const Icon(Icons.create_new_folder_outlined), title: const Text('New folder…'), onTap: () => Navigator.pop(c, -1)),
-      ]),
+      ),
     ),
   );
   if (picked == null || !context.mounted) return false;
-  var id = picked == 0 ? null : picked;
-  if (picked == -1) {
+  if (picked == 'new') {
     final name = await askFolderName(context);
     if (name == null || name.isEmpty || !context.mounted) return false;
-    id = await s.library.addFolder(name, DateTime.now().millisecondsSinceEpoch);
+    final id = await s.library.addFolder(name, DateTime.now().millisecondsSinceEpoch);
     if (id == null) {
       if (context.mounted) _say(context, 'There is already a folder called "$name".');
       return false;
     }
+    ticked.add(id);
   }
-  await s.library.setFolders({for (final r in notes) r.url: id});
+  final urls = [for (final r in notes) r.url];
+  final added = ticked.difference(start), removed = start.difference(ticked);
+  await s.library.addToFolders({for (final u in urls) u: added});
+  for (final f in removed) {
+    await s.library.removeFromFolder(urls, f);
+  }
+  if (added.isEmpty && removed.isEmpty) return false;
   Haptics.medium();
   return true;
 }
 
-/// Organize: the AI sorts every note into the person's folders first, then suggests new folders for real topics, which they
-/// approve. Notes that fit nothing stay in All only.
+/// Organize: the AI adds every note to each of the person's folders it fits, then suggests new folders for new topics, which
+/// they approve. Nothing is taken out of a folder; notes that fit nothing stay in All only.
 Future<void> organize(BuildContext context, AppServices s, VoidCallback onDone) async {
   if ((await s.chatProviders()).isEmpty) {
     if (context.mounted) _say(context, 'Add an AI key in Settings first: Organize uses it.');
@@ -131,8 +170,9 @@ Future<void> organize(BuildContext context, AppServices s, VoidCallback onDone) 
     builder: (d) => AlertDialog(
       icon: const Icon(Icons.auto_awesome_rounded),
       title: const Text('Organize your notes?'),
-      content: const Text('Your AI sorts every note into your folders first. For a real topic shared by at least $minSuggested notes '
-          'it may suggest a new folder, which you can accept or skip. Notes that fit nothing stay in All.\n\n'
+      content: const Text('Your AI adds every note to each of your folders it fits; a note can be in several. For a new topic '
+          'shared by at least $minSuggested notes, and not already a folder, it may suggest a new folder, which you can accept or skip. '
+          'Nothing is taken out of a folder.\n\n'
           'The title, tags and first line of each note are sent to your own AI provider. Nothing else.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
@@ -159,12 +199,16 @@ Future<void> organize(BuildContext context, AppServices s, VoidCallback onDone) 
   nav.pop();
   if (!context.mounted) return;
   if (plan == null) return _say(context, 'Could not organize right now: $error');
-  final sorted = plan.assign.values.where((v) => v != null).length;
-  final suggestions = plan.suggestions();
+  final before = await s.library.foldersOf();
+  final sorted = [
+    for (final e in plan.assign.entries)
+      if (e.value.difference(before[e.key] ?? const <int>{}).isNotEmpty) e.key,
+  ].length;
+  final suggestions = plan.suggestions(await s.library.folders(), before);
   final all = {for (final r in await s.library.reels()) r.url: r};
   if (!context.mounted) return;
   final accepted = suggestions.isEmpty ? const <String>{} : await _approve(context, suggestions, all);
-  final updates = <String, int?>{...plan.assign};
+  final updates = <String, Set<int>>{for (final e in plan.assign.entries) e.key: {...e.value}};
   var made = 0;
   for (final (name, urls) in suggestions) {
     if (!accepted.contains(name)) continue;
@@ -172,15 +216,15 @@ Future<void> organize(BuildContext context, AppServices s, VoidCallback onDone) 
     if (id == null) continue;
     made++;
     for (final u in urls) {
-      updates[u] = id;
+      updates.putIfAbsent(u, () => {}).add(id);
     }
   }
-  await s.library.setFolders(updates);
+  await s.library.addToFolders(updates);
   onDone();
   if (context.mounted) {
     Haptics.success();
-    _say(context, 'Sorted $sorted ${sorted == 1 ? 'note' : 'notes'} into your folders'
-        '${made == 0 ? '' : ', and made $made new ${made == 1 ? 'folder' : 'folders'}'}. The rest are in All.');
+    _say(context, 'Added $sorted ${sorted == 1 ? 'note' : 'notes'} to your folders'
+        '${made == 0 ? '' : ', and made $made new ${made == 1 ? 'folder' : 'folders'}'}. Every note is still in All.');
   }
 }
 

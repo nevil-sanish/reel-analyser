@@ -71,8 +71,18 @@ class Gemini {
   static const prompt = '''Turn this short video (Instagram Reel / YouTube Short) into a note, in the video's language and simple words.
 Use the speech, on-screen text and visuals. Return JSON:
 - title: specific, max 8 words.
-- overview: 3-6 bullets, each one short line (max 15 words), that together cover ALL the important information:
-  what it is about, the main points, key numbers, steps, tools or names, and the conclusion. No filler.
+- overview: the quick read: 3-6 bullets, each one short line (max 14 words), that together give ALL the important information,
+  so someone who reads only these knows everything that matters. Write them like this:
+  * Bullet 1 is the takeaway itself, the answer or result, never a description of the video
+    (write "**Antigravity AI** turns a creator's video into ready shorts in minutes", not "This video shows how to make shorts").
+  * Never use "the video", "this post", "the speaker", "shows", "explains", "highlights", "covers".
+  * Start each bullet with its key word or name in **double asterisks** (one bold part per bullet).
+  * Put a list in ONE bullet, separated by " · ", keeping numbers and order
+    (write "**Top 5:** AI Visibility Audit (27) · Keyword Research (23) · Keyword Gap (17) · ...", not one bullet per item).
+  * Steps as one bullet with arrows: "**Steps:** skill backbone → Obsidian memory → voice mode → routing → UI".
+  * Keep every number, price, name, tool and step. Drop greetings, hype and "comment X to get it" (unless that is the only way to get
+    the resource: then "**Link:** comment RANK on the post").
+  * Plain words a 12-year-old understands; no full sentences needed.
 - summary: 2-4 sentences explaining it in more detail.
 - keyPoints: every concrete takeaway, step, tip, number, example or claim, as many as there are (up to 12), each a clear sentence.
 - mentions: tools, apps, products, people, books, websites or links named (empty if none).

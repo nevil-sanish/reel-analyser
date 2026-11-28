@@ -12,7 +12,18 @@ Future<void> frames(WidgetTester t, [int n = 20]) async {
 }
 
 void main() {
-  testWidgets('intro: Next three times, a short slide springs back, a full slide unlocks', (tester) async {
+  test('the blocker, goals and scroll pages are only in the full build; privacy is always last', () {
+    final full = introSlides(blocker: true), semi = introSlides(blocker: false);
+    expect(full.length, semi.length + 3);
+    for (final t in ['Know your scroll', 'Block what pulls you in', 'Goals that count']) {
+      expect(full.map((s) => s.title), contains(t));
+      expect(semi.map((s) => s.title), isNot(contains(t)));
+    }
+    expect(full.last.points, contains('Settings → Erase all my data deletes everything'));
+    expect(full.first.apps, containsAll(['instagram', 'youtube', 'linkedin', 'x', 'reddit', 'photo']));
+  });
+
+  testWidgets('intro: Next to the last page, a short slide springs back, a full slide unlocks', (tester) async {
     var done = 0;
     final haptics = <Object?>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (c) async {
@@ -24,7 +35,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(theme: Brand.theme(Brightness.dark), home: IntroScreen(onDone: () => done++)));
     await frames(tester, 40);
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < introSlides(blocker: false).length - 1; i++) {
       await tester.tap(find.text('Next'));
       await frames(tester);
     }

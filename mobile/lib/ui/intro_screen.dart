@@ -3,13 +3,54 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'motion.dart';
+import 'source_icon.dart';
 import 'theme.dart';
 
-/// First run: a spinning gradient ring around the mark, four short pages, then "slide to unlock" bursts the
-/// gradient across the screen and opens the app.
+/// One page of the intro: a picture (the platform badges, or an icon), a heading, a line and optional ticked points.
+class IntroSlide {
+  final IconData icon;
+  final List<String> apps;
+  final String title;
+  final String body;
+  final List<String> points;
+  const IntroSlide(this.icon, this.title, this.body, {this.apps = const [], this.points = const []});
+}
+
+/// What the app does, page by page. The scroll count, blocker and goals pages are only in the full build. Every claim here must stay true
+/// (see assets/legal): the only things that leave the phone are what you share to the AI you chose, and update checks.
+List<IntroSlide> introSlides({required bool blocker}) => [
+      const IntroSlide(Icons.ios_share_rounded, 'Save from anywhere',
+          'Share a reel, short, post or screenshot to the app. It reads it and saves a note: a quick summary, every detail, and every word spoken.',
+          apps: ['instagram', 'youtube', 'linkedin', 'x', 'reddit', 'photo']),
+      const IntroSlide(Icons.forum_rounded, 'Ask what you saved',
+          'Chat with all your notes, one folder, or a single note. Answers come from what you saved, and say when they add general knowledge.'),
+      const IntroSlide(Icons.folder_copy_rounded, 'Folders by topic',
+          'Organize groups notes on the same topic into folders. A note can sit in several, and new notes go to the right folders by themselves.'),
+      if (blocker) ...[
+        const IntroSlide(Icons.insights_rounded, 'Know your scroll',
+            'See how many reels and shorts you watch each day, and for how long. Counted on the phone, never recorded.'),
+        const IntroSlide(Icons.shield_rounded, 'Block what pulls you in',
+            'Limit reels and shorts, any app, or websites in any browser. When the time is up, you are sent home.'),
+        const IntroSlide(Icons.flag_rounded, 'Goals that count',
+            'Set a daily target on GitHub, LeetCode or Codeforces. Miss a day and Instagram is blocked the next day.'),
+      ],
+      const IntroSlide(Icons.money_off_rounded, 'Free, with your own key',
+          'No subscription and no ads. The app uses your own AI key (Gemini has a free tier), so you only ever deal with your provider.'),
+      const IntroSlide(Icons.lock_rounded, 'Yours, on this phone', 'No account and no server of ours.', points: [
+        'Notes, chats, counts and keys stay on this phone',
+        'No tracking, no analytics, nothing sold or shared',
+        'Only what you share goes to the AI you chose',
+        'Settings → Erase all my data deletes everything',
+      ]),
+    ];
+
+/// First run: a spinning gradient ring around the mark, one page per feature, then "slide to unlock" bursts the gradient
+/// across the screen and opens the app.
 class IntroScreen extends StatefulWidget {
   final VoidCallback onDone;
-  const IntroScreen({required this.onDone, super.key});
+  final String name;
+  final bool blocker;
+  const IntroScreen({required this.onDone, this.name = 'Reel Analyser', this.blocker = false, super.key});
 
   @override
   State<IntroScreen> createState() => _IntroScreenState();
@@ -22,16 +63,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   late final _burst = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
   var _page = 0;
 
-  static const _slides = [
-    (Icons.ios_share_rounded, 'Share a reel.\nGet the point.', 'Tap Share → Reel Analyser on any reel or short. You get a short summary and the key takeaways.'),
-    (
-      Icons.apps_rounded,
-      'What you can save',
-      'Instagram, YouTube, X, LinkedIn, Reddit and photos you share. New Reddit posts and LinkedIn posts that need a login need your own Apify key.',
-    ),
-    (Icons.insights_rounded, 'Know your scroll', 'See how many reels you watch each day and for how long. Counted, never recorded.'),
-    (Icons.lock_rounded, 'Only on your phone', 'No account, no server. Your notes stay here; a reel you share goes only to the AI you choose.'),
-  ];
+  late final _slides = introSlides(blocker: widget.blocker);
 
   @override
   void dispose() {
@@ -67,7 +99,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                 ScaleTransition(
                   scale: CurvedAnimation(parent: _enter, curve: Curves.elasticOut),
                   child: SizedBox.square(
-                    dimension: 150,
+                    dimension: 112,
                     child: Stack(alignment: Alignment.center, children: [
                       AnimatedBuilder(
                         animation: _spin,
@@ -79,17 +111,27 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                           ),
                         ),
                       ),
-                      Container(width: 138, height: 138, decoration: BoxDecoration(color: Brand.base(Theme.of(context).brightness), shape: BoxShape.circle)),
-                      const BrandMark(size: 96),
+                      Container(width: 102, height: 102, decoration: BoxDecoration(color: Brand.base(Theme.of(context).brightness), shape: BoxShape.circle)),
+                      const BrandMark(size: 72),
                     ]),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 FadeTransition(
                   opacity: CurvedAnimation(parent: _enter, curve: const Interval(0.4, 1)),
-                  child: ShaderMask(
-                    shaderCallback: (r) => Brand.gradient.createShader(r),
-                    child: Text('Reel Analyser', style: Brand.serif(const TextStyle(color: Colors.white), size: 46, weight: 600, spacing: 0.5)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(children: [
+                      FittedBox(
+                        child: ShaderMask(
+                          shaderCallback: (r) => Brand.gradient.createShader(r),
+                          child: Text(widget.name, style: Brand.serif(const TextStyle(color: Colors.white), size: 40, weight: 600, spacing: 0.5)),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(widget.blocker ? 'Save what you scroll. Scroll less.' : 'Save what you scroll. Keep the point.',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 15, letterSpacing: 0.3)),
+                    ]),
                   ),
                 ),
                 Expanded(
@@ -259,36 +301,67 @@ class _SlideToUnlockState extends State<_SlideToUnlock> with SingleTickerProvide
 }
 
 class _Slide extends StatelessWidget {
-  final (IconData, String, String) slide;
+  final IntroSlide slide;
   final bool active;
   const _Slide(this.slide, {required this.active});
 
   @override
-  Widget build(BuildContext context) => AnimatedSlide(
-        offset: active ? Offset.zero : const Offset(0, 0.1),
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return AnimatedSlide(
+      offset: active ? Offset.zero : const Offset(0, 0.1),
+      duration: const Duration(milliseconds: 550),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: active ? 1 : 0,
         duration: const Duration(milliseconds: 550),
-        curve: Curves.easeOutCubic,
-        child: AnimatedOpacity(
-          opacity: active ? 1 : 0,
-          duration: const Duration(milliseconds: 550),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                ShaderMask(
-                  shaderCallback: (r) => Brand.gradient.createShader(r),
-                  child: Icon(slide.$1, size: 44, color: Colors.white),
-                ),
-                const SizedBox(height: 16),
-                Text(slide.$2,
+                if (slide.apps.isNotEmpty)
+                  Wrap(spacing: 12, runSpacing: 12, alignment: WrapAlignment.center, children: [
+                    for (final a in slide.apps) SourceIcon(a, size: 44),
+                  ])
+                else
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.primaryContainer.withValues(alpha: 0.6),
+                      border: Border.all(color: Brand.glassEdge(Theme.of(context).brightness)),
+                    ),
+                    child: ShaderMask(
+                      shaderCallback: (r) => Brand.gradient.createShader(r),
+                      child: Icon(slide.icon, size: 38, color: Colors.white),
+                    ),
+                  ),
+                const SizedBox(height: 18),
+                Text(slide.title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 26, fontWeight: FontWeight.w700, height: 1.2)),
-                const SizedBox(height: 12),
-                Text(slide.$3, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16, height: 1.4)),
+                    style: Brand.serif(TextStyle(color: c.onSurface, height: 1.15), size: 32, weight: 600)),
+                const SizedBox(height: 10),
+                Text(slide.body, textAlign: TextAlign.center, style: TextStyle(color: c.onSurfaceVariant, fontSize: 16, height: 1.45)),
+                if (slide.points.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  for (final p in slide.points)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Icon(Icons.check_circle_rounded, size: 20, color: c.primary),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(p, style: TextStyle(color: c.onSurface, fontSize: 15, height: 1.35))),
+                      ]),
+                    ),
+                ],
               ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }

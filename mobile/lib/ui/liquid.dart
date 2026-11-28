@@ -79,11 +79,20 @@ class _Marble extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     final dark = b == Brightness.dark;
-    canvas.drawRect(Offset.zero & s, Paint()..color = Brand.base(b));
-    void pool(Offset c, double r, double a) => canvas.drawCircle(
-        c, r, Paint()..shader = RadialGradient(colors: [Brand.gold.withValues(alpha: a), Brand.gold.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: r)));
-    pool(Offset(s.width * 0.95, s.height * 0.04), s.longestSide * 0.5, dark ? 0.12 : 0.16);
-    pool(Offset(s.width * 0.02, s.height * 0.96), s.longestSide * 0.4, dark ? 0.07 : 0.1);
+    // Drawn once into a picture (see LiquidBackground), so the extra gradients cost nothing while scrolling.
+    canvas.drawRect(
+        Offset.zero & s,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: dark ? const [Color(0xFF16110A), Color(0xFF0B0A07), Color(0xFF070604)] : const [Color(0xFFFDFBF6), Brand.marble, Color(0xFFF5EFE1)],
+          ).createShader(Offset.zero & s));
+    void pool(Offset c, double r, double a, [Color color = Brand.gold]) => canvas.drawCircle(
+        c, r, Paint()..shader = RadialGradient(colors: [color.withValues(alpha: a), color.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: r)));
+    pool(Offset(s.width * 0.95, s.height * 0.04), s.longestSide * 0.5, dark ? 0.17 : 0.16);
+    pool(Offset(s.width * 0.02, s.height * 0.96), s.longestSide * 0.4, dark ? 0.12 : 0.1, dark ? Brand.bronze : Brand.gold);
+    pool(Offset(s.width * 0.1, s.height * 0.42), s.longestSide * 0.3, dark ? 0.05 : 0.05, Brand.goldLight);
     final vein = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
@@ -113,7 +122,7 @@ class Glass extends StatelessWidget {
     final b = Theme.of(context).brightness;
     return RepaintBoundary(child: Container(
       decoration: BoxDecoration(
-        color: solid ? Brand.surface(b) : Brand.glass(b),
+        gradient: Brand.cardFill(b, solid: solid),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: Brand.glassEdge(b)),
       ),

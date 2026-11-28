@@ -23,6 +23,12 @@ abstract class AppFeatures {
   /// `full` or `semi`: which APK of a release this build takes when it updates itself.
   String get flavor;
 
+  /// The name shown in the app (the launcher label is set per flavor in build.gradle).
+  String get appName => 'Reel Analyser';
+
+  /// The full build: the blocker, app and website limits, and daily goals. The intro shows those slides only here.
+  bool get hasBlocker => false;
+
   /// Tabs between Ask and Library (Insights), and between Library and About (the blocker).
   List<AppTab> get afterAsk => const [];
   List<AppTab> get beforeAbout => const [];

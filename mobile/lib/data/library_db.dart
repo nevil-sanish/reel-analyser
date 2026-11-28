@@ -15,7 +15,7 @@ class LibraryDb {
     final db = await f.openDatabase(
       path ?? p.join(await f.getDatabasesPath(), 'reel_brain.db'),
       options: OpenDatabaseOptions(
-        version: 8,
+        version: 9,
         onCreate: (db, _) async {
           await db.execute('''CREATE TABLE reels (
             url TEXT PRIMARY KEY, app TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
@@ -31,6 +31,7 @@ class LibraryDb {
           await _v6(db);
           await _v7(db);
           await _v8(db);
+          await _v9(db);
         },
         onUpgrade: (db, from, _) async {
           if (from < 2) await _v2(db);
@@ -40,6 +41,7 @@ class LibraryDb {
           if (from < 6) await _v6(db);
           if (from < 7) await _v7(db);
           if (from < 8) await _v8(db);
+          if (from < 9) await _v9(db);
         },
       ),
     );
@@ -94,13 +96,21 @@ class LibraryDb {
   /// build keeps the version number (a phone that already has v7 must not see it go down) and creates nothing.
   static Future<void> _v7(Database db) async {}
 
-  /// Version 8: folders (1.2.0.0). A note is in at most one folder; `folder_items` is kept apart from `reels` so re-saving or
+  /// Version 8: folders (1.2.0.0). A note was in at most one folder (see [_v9]); `folder_items` is kept apart from `reels` so re-saving or
   /// re-analysing a note, Undo after a delete and export never touch it. Rows of deleted notes are ignored, not cleaned.
   /// `folder_chats` holds one independent thread per folder (id 0 = the All folder).
   static Future<void> _v8(Database db) async {
     await db.execute('CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE, createdAt INTEGER NOT NULL)');
     await db.execute('CREATE TABLE IF NOT EXISTS folder_items (url TEXT PRIMARY KEY, folderId INTEGER NOT NULL)');
     await db.execute('CREATE TABLE IF NOT EXISTS folder_chats (folderId INTEGER PRIMARY KEY, updatedAt INTEGER NOT NULL, turns TEXT NOT NULL)');
+  }
+
+  /// Version 9 (1.2.7.0): a note may be in several folders. `note_folders` has one row per (note, folder); the one-folder rows
+  /// of `folder_items` move into it.
+  static Future<void> _v9(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS note_folders (url TEXT NOT NULL, folderId INTEGER NOT NULL, PRIMARY KEY (url, folderId))');
+    await db.execute('INSERT OR IGNORE INTO note_folders (url, folderId) SELECT url, folderId FROM folder_items');
+    await db.execute('DROP TABLE IF EXISTS folder_items');
   }
 
   /// Oldest first.
@@ -130,23 +140,32 @@ class LibraryDb {
   /// The folder and its chat go; its notes stay, in All only.
   Future<void> deleteFolder(int id) => _db.transaction((t) async {
         await t.delete('folders', where: 'id = ?', whereArgs: [id]);
-        await t.delete('folder_items', where: 'folderId = ?', whereArgs: [id]);
+        await t.delete('note_folders', where: 'folderId = ?', whereArgs: [id]);
         await t.delete('folder_chats', where: 'folderId = ?', whereArgs: [id]);
       });
 
-  /// Note link → folder id, for every note that is in a folder.
-  Future<Map<String, int>> folderOf() async => {
-        for (final r in await _db.query('folder_items')) r['url'] as String: r['folderId'] as int,
-      };
+  /// Note link → the folders it is in, for every note that is in at least one.
+  Future<Map<String, Set<int>>> foldersOf() async {
+    final out = <String, Set<int>>{};
+    for (final r in await _db.query('note_folders')) {
+      out.putIfAbsent(r['url'] as String, () => {}).add(r['folderId'] as int);
+    }
+    return out;
+  }
 
-  /// Puts each note in its folder (null = All only), all at once.
-  Future<void> setFolders(Map<String, int?> byUrl) => _db.transaction((t) async {
+  /// Adds each note to these folders; the folders it is already in stay.
+  Future<void> addToFolders(Map<String, Set<int>> byUrl) => _db.transaction((t) async {
         for (final e in byUrl.entries) {
-          if (e.value == null) {
-            await t.delete('folder_items', where: 'url = ?', whereArgs: [e.key]);
-          } else {
-            await t.insert('folder_items', {'url': e.key, 'folderId': e.value}, conflictAlgorithm: ConflictAlgorithm.replace);
+          for (final f in e.value) {
+            await t.insert('note_folders', {'url': e.key, 'folderId': f}, conflictAlgorithm: ConflictAlgorithm.ignore);
           }
+        }
+      });
+
+  /// Takes these notes out of one folder (they stay in All and in their other folders).
+  Future<void> removeFromFolder(Iterable<String> urls, int folderId) => _db.transaction((t) async {
+        for (final u in urls) {
+          await t.delete('note_folders', where: 'url = ? AND folderId = ?', whereArgs: [u, folderId]);
         }
       });
 
@@ -252,7 +271,7 @@ class LibraryDb {
     await _db.delete('chats');
     await _db.delete('note_chats');
     await _db.delete('folders');
-    await _db.delete('folder_items');
+    await _db.delete('note_folders');
     await _db.delete('folder_chats');
     await _db.update('meta', {'v': 0}, where: "k = 'gemini_turn'");
   }

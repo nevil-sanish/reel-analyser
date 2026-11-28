@@ -130,8 +130,8 @@ class AppServices {
   Future<List<Reel>> folderNotes(int folderId) async {
     final all = await library.reels();
     if (folderId == 0) return all;
-    final of = await library.folderOf();
-    return [for (final r in all) if (of[r.url] == folderId) r];
+    final of = await library.foldersOf();
+    return [for (final r in all) if (of[r.url]?.contains(folderId) ?? false) r];
   }
 
   /// One chat turn in a folder's own thread: only that folder's notes are given to the model.

@@ -1,5 +1,12 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~18:40 IST): #57, #58, #59 done and pushed to `main`, NOT released (last release v1.2.6.0)
+- #57 Folders: a note can sit in several folders (DB v9, `note_folders`, migrated from `folder_items`). Organize only adds, never moves; new folders need 3+ notes and are dropped when they repeat an existing folder (`sameTopic`, `alreadyGrouped`). A new folder fills with every matching note. Selection bar: "Folders" sheet with checkboxes.
+- #58 Note screen: "name on Platform" under the title (taps to the profile, `lib/core/creator.dart`), folder chips and a Folders button. Quick summary prompt rewritten (bold key word first, no "the video shows"); old notes change only when re-analysed.
+- #59 Intro: 8 slides in Full (6 in Semi) with platform badges, privacy points; About → "What the app does" reopens it. App name from `features.appName`. Dark mode warmer near-black, cards with a soft gradient (drawn in the cached background, no per-frame cost).
+- Phone-checked (Full): Library, note, Settings in dark; Insights, About and every intro slide in light. Not checked: Semi on the phone, frame timings measured.
+- User still has duplicate folders "Claude AI" and "Claude and AI" from before; they delete one by hand.
+
 ## Latest (2026-11-28, ~18:15 IST): v1.2.6.0 RELEASED on GitHub (#56 daily backup, #55 any-browser blocking)
 - Daily backup: `lib/data/auto_backup.dart`; flag `auto_backup`, last day `auto_backup_last`, passphrase `auto_backup_pass` (sealed). Task name `backup-midnight`, unique name `backup-<day>`. Native `deleteDownloads(folder)` deletes only files this install wrote (MediaStore owner); the empty `Backups` folder stays.
 - On the phone: Full and Semi 1.2.6.0 installed; daily backup switched ON in Full, without keys (the user can turn it off and on again to add keys with their own passphrase).

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_services.dart';
+import '../core/creator.dart';
 import '../core/models.dart';
+import 'folders_ui.dart';
 import 'library_screen.dart';
 import 'liquid.dart';
 import 'note_chat_screen.dart';
@@ -29,10 +31,68 @@ class _ReelScreenState extends State<ReelScreen> {
   Reel get reel => widget.reel;
   bool _full = false;
 
+  /// The folders this note is in, besides All.
+  List<Folder> _folders = const [];
+
   @override
   void initState() {
     super.initState();
     services.library.markSeen(reel.url, DateTime.now().millisecondsSinceEpoch);
+    _loadFolders();
+  }
+
+  Future<void> _loadFolders() async {
+    final ids = (await services.library.foldersOf())[reel.url] ?? const <int>{};
+    final all = await services.library.folders();
+    if (mounted) setState(() => _folders = [for (final f in all) if (ids.contains(f.id)) f]);
+  }
+
+  /// Who posted it and the folders it is in, under the title.
+  Widget _origin(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final c = Creator.of(reel);
+    final accent = Theme.of(context).colorScheme.primary;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (c != null)
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: c.profile == null ? null : () => services.bridge.openUrl(c.profile!),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.person_outline_rounded, size: 18, color: accent),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: c.name, style: TextStyle(fontWeight: FontWeight.w700, color: c.profile == null ? null : accent)),
+                    if (c.platform.isNotEmpty) TextSpan(text: ' on ${c.platform}'),
+                  ]),
+                  style: t.bodyMedium,
+                ),
+              ),
+            ]),
+          ),
+        ),
+      const SizedBox(height: 4),
+      Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Icon(Icons.folder_outlined, size: 18, color: accent),
+        for (final f in [const Folder(0, 'All'), ..._folders])
+          Chip(label: Text(f.name), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        ActionChip(
+          avatar: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('Folders'),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onPressed: () async {
+            if (await editFolders(context, services, [reel])) {
+              await _loadFolders();
+              widget.onChanged?.call();
+            }
+          },
+        ),
+      ]),
+    ]);
   }
 
   @override
@@ -131,6 +191,8 @@ class _ReelScreenState extends State<ReelScreen> {
               SelectableText(reel.title, style: t.headlineSmall),
               const SizedBox(height: 10),
               const SizedBox(width: 120, child: MeanderDivider(height: 7, opacity: 0.6)),
+              const SizedBox(height: 10),
+              _origin(context),
             ]),
           ),
           const SizedBox(height: 16),
@@ -151,7 +213,7 @@ class _ReelScreenState extends State<ReelScreen> {
                               height: 7,
                               decoration: const BoxDecoration(gradient: Brand.gradient, shape: BoxShape.circle),
                             ),
-                            Expanded(child: SelectableText(o, style: t.bodyLarge?.copyWith(height: 1.4))),
+                            Expanded(child: SelectableText.rich(boldSpans(o), style: t.bodyLarge?.copyWith(height: 1.4))),
                           ]),
                         ),
                     ]),
@@ -256,4 +318,19 @@ class _ReelScreenState extends State<ReelScreen> {
       ),
     );
   }
+}
+
+/// A quick-read line with its **key words** in bold; the asterisks are not shown. Unpaired asterisks stay as they are.
+TextSpan boldSpans(String line) {
+  final parts = line.split('**');
+  if (parts.length < 3) return TextSpan(text: line);
+  final out = <TextSpan>[];
+  for (final (i, p) in parts.indexed) {
+    if (p.isEmpty) continue;
+    final last = i == parts.length - 1;
+    // An odd number of ** leaves the last part unclosed: show it plainly, with its asterisks.
+    final bold = i.isOdd && !(last && parts.length.isEven);
+    out.add(TextSpan(text: last && parts.length.isEven && i.isOdd ? '**$p' : p, style: bold ? const TextStyle(fontWeight: FontWeight.w700) : null));
+  }
+  return TextSpan(children: out);
 }
