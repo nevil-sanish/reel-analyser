@@ -10,6 +10,8 @@ Instagram and Meta are trademarks of Meta Platforms, Inc. YouTube and Google (in
 
 The app is built with Flutter and open-source packages and libraries (for example Flutter and Dart packages under BSD-3-Clause, and AndroidX, WorkManager and Kotlin libraries under Apache-2.0). Each keeps its own licence. The full list with licence texts is in the app: Settings, About and legal, Open-source licenses.
 
+Reading Firefox's Compose address bar (`AddressBar.kt`, `FirefoxToolbar`) and the list of browser packages and address-bar ids (`Browsers` in `BlockPolicy.kt`) are adapted from expo-accessibility-service by amehmeto (https://github.com/amehmeto/expo-accessibility-service), MIT License, Copyright (c) amehmeto. The MIT License lets anyone use, copy, modify and distribute the software, provided the copyright and permission notice is kept; the software is provided "as is", without warranty of any kind.
+
 ## Fonts
 
 Cormorant Garamond (Christian Thalmann, Catharsis Fonts) and Lato (Lukasz Dziedzic) are bundled in the app, trimmed to Latin characters, under the SIL Open Font License 1.1. The licence texts are in `mobile/assets/fonts/` and in the app (Settings, About and legal, Open-source licenses).

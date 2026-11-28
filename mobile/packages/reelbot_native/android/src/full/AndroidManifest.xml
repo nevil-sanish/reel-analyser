@@ -13,10 +13,11 @@
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
   <!-- Installing an update the app downloaded itself . -->
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
-  <!-- The apps with a launcher icon, so the user can pick one for a daily time limit. No broad package-list permission. -->
+  <!-- The apps with a launcher icon (for a daily time limit) and the installed browsers (for blocking websites). No broad package-list permission. -->
   <queries>
     <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
     <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.HOME"/></intent>
+    <intent><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="https"/></intent>
   </queries>
   <application>
     <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.updates"

@@ -135,7 +135,7 @@ class _LimitsScreenState extends State<LimitsScreen> with WidgetsBindingObserver
       Text(
         st.siteMethod == 'vpn'
             ? 'VPN: a local filter on the phone that only sees which site names are looked up. Works in every browser and app; no screen is read. Only one VPN can run at a time.'
-            : 'Accessibility: reads only the address bar of Chrome, Firefox, Brave, Edge, Samsung Internet, Opera, Vivaldi, DuckDuckGo and Kiwi. No VPN, so another VPN can run. Payment apps such as Google Pay may stop working while Accessibility is on.',
+            : 'Accessibility: reads only the address bar of the browser in front (Chrome, Firefox, Brave, Edge, Samsung Internet, Opera and any other browser), private and incognito tabs too. No VPN, so another VPN can run. Payment apps such as Google Pay may stop working while Accessibility is on.',
         style: t.textTheme.bodySmall,
       ),
     ]);

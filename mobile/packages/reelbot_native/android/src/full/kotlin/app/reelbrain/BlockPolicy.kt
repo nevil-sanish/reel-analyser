@@ -176,14 +176,40 @@ class BlockMeter(private val sink: Sink, private val maxGapMs: Long = 5000, priv
     }
 }
 
-/** Browsers whose address bar the blocker reads (only that one field, only to see if the page is a reel or a short). */
+/**
+ * Browsers whose address bar the blocker reads (only that one field). [packages] is every installed app that opens any web
+ * link (see [refresh]) plus the known browsers, so a browser not on the list is covered too. Package names and address-bar ids
+ * partly from expo-accessibility-service by amehmeto (MIT); see NOTICE.md.
+ */
 object Browsers {
-    val packages = setOf(
-        "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.brave.browser", "com.microsoft.emmx",
-        "org.mozilla.firefox", "org.mozilla.firefox_beta", "com.sec.android.app.sbrowser", "com.opera.browser",
-        "com.vivaldi.browser", "com.duckduckgo.mobile.android", "com.kiwibrowser.browser",
+    private val known = setOf(
+        "com.android.chrome", "com.chrome.beta", "com.chrome.dev", "com.chrome.canary", "com.google.android.apps.chrome",
+        "com.brave.browser", "com.brave.browser_beta", "com.brave.browser_nightly", "com.microsoft.emmx", "com.vivaldi.browser",
+        "com.vivaldi.browser.snapshot", "com.kiwibrowser.browser", "com.ecosia.android", "com.naver.whale", "org.bromite.bromite",
+        "org.chromium.chrome", "org.ungoogled.chromium.stable", "com.sec.android.app.sbrowser", "com.sec.android.app.sbrowser.beta",
+        "com.opera.browser", "com.opera.browser.beta", "com.opera.mini.native", "com.opera.mini.native.beta", "com.opera.gx",
+        "com.opera.touch", "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.fenix", "org.torproject.torbrowser",
+        "org.mozilla.focus", "org.mozilla.klar", "com.duckduckgo.mobile.android", "com.UCMobile.intl", "com.mi.globalbrowser",
+        "com.android.browser",
     )
-    val addressIds = listOf("url_bar", "url_field", "location_bar_edit_text", "mozac_browser_toolbar_url_view", "url_bar_title")
+    @Volatile var packages: Set<String> = known
+        private set
+
+    /** Most specific first; [AddressBar] tries the one that worked last first. */
+    val addressIds = listOf(
+        "url_bar", "url_field", "location_bar_edit_text", "mozac_browser_toolbar_url_view", "url_bar_title", "display_url",
+        "omnibarTextInput", "addressbarEdit", "address_bar", "url",
+    )
+
+    /** The known browsers plus every installed app that opens any https link (a browser, not an app that opens only its own site). */
+    fun refresh(ctx: android.content.Context) {
+        val view = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://example.invalid/"))
+            .addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+        val found = runCatching {
+            ctx.packageManager.queryIntentActivities(view, android.content.pm.PackageManager.MATCH_ALL).map { it.activityInfo.packageName }
+        }.getOrDefault(emptyList())
+        packages = known + found.filter { it != ctx.packageName && !AppLimits.isProtected(it) }
+    }
 }
 
 /**

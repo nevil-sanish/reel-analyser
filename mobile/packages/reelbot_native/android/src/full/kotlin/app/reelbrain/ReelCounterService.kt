@@ -73,6 +73,11 @@ class ReelCounterService : AccessibilityService() {
         }
     }
 
+    /** A new app may be a browser: the browsers the service reads are looked up again. */
+    private val installed = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, i: Intent) = applyScope()
+    }
+
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) { tracker.end(System.currentTimeMillis()); meter.stop() }
     }
@@ -97,6 +102,7 @@ class ReelCounterService : AccessibilityService() {
         meter = BlockMeter(sink)
         BlockPhotos.wipe(this)
         registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        registerReceiver(installed, IntentFilter(Intent.ACTION_PACKAGE_ADDED).apply { addDataScheme("package") })
         instance = this
         applyScope()
         running = true
@@ -108,6 +114,7 @@ class ReelCounterService : AccessibilityService() {
             meter.stop()
             handler.removeCallbacks(tick)
             unregisterReceiver(screenOff)
+            unregisterReceiver(installed)
             running = false
             instance = null
         }
@@ -124,6 +131,7 @@ class ReelCounterService : AccessibilityService() {
     private fun applyScope() {
         val info = serviceInfo ?: return
         val pk = LinkedHashSet<String>()
+        Browsers.refresh(this)
         if (consented()) {
             val now = System.currentTimeMillis()
             val cfg = db.currentBlockState(now).active
@@ -276,12 +284,12 @@ class ReelCounterService : AccessibilityService() {
 
     private val address = FrontAddress()
 
+    private val bar = AddressBar()
+
     /** The open page's address from the browser's address bar, kept while the bar is scrolled away (see [FrontAddress]). */
     private fun readAddress(root: AccessibilityNodeInfo, pkg: String): String? {
-        val n = Browsers.addressIds.firstNotNullOfOrNull { id ->
-            root.findAccessibilityNodeInfosByViewId("$pkg:id/$id").firstOrNull { it.text != null }
-        }
-        return address.read(pkg, n?.text?.toString(), n?.isFocused == true)
+        val b = bar.read(root, pkg)
+        return address.read(pkg, b?.text, b?.typing == true)
     }
 
     /** `browser` when the address bar shows a reel or a short. Only the address bar is read, and only when the browser is blocked. */
