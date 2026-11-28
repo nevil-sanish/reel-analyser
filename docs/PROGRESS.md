@@ -1,5 +1,12 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, evening): #55 any-browser site blocking committed (ba5d3e9), NOT phone-checked, NOT released
+- Checked on the phone with v1.2.5.2: youtube.com blocked in Chrome, Chrome incognito and Brave (typing allowed); NOT blocked in Firefox (152+ draws its toolbar with Compose, no view id). Instagram app limit works.
+- Fix: `AddressBar.kt` tries every address-bar id for every browser (last hit first) and reads Firefox's `ADDRESSBAR_URL_BOX` node under `composable_toolbar`/`homepageView` (adapted from amehmeto/expo-accessibility-service, MIT, in NOTICE.md). `Browsers.refresh()` adds every installed app that opens https links (manifest `<queries>` VIEW+BROWSABLE+https), run again on ACTION_PACKAGE_ADDED.
+- Kotlin tests, `flutter analyze`, `flutter test` pass; both APKs build, `check_apks.sh` OK.
+- Phone pass still to do: install Full; youtube.com in Firefox normal and private, Chrome normal and incognito, Brave, a Chrome Custom Tab from another app; typing still allowed; Instagram limit; `cmd package query-activities -a VIEW -c BROWSABLE -d https://...` for non-browsers that might be blocked by the generic `url`/`address_bar` ids; scroll smoothness with the bar hidden.
+- Accessibility cannot see in-app WebViews (Instagram's in-app browser); VPN mode covers those.
+
 ## Latest (2026-11-28, ~13:40 IST): v1.2.5.2 RELEASED on GitHub (#54)
 
 Website blocker fixes (#51) and less strict chats (#53). Version 1.2.5.2, build 60. Analyze clean, 180 Dart tests, Kotlin Full and Semi tests, `check_apks.sh` OK; both APKs and SHA256SUMS published, downloaded back and checked; `/releases?per_page=1` returns v1.2.5.2. Release Full APK installed on the phone over the old one (same signing key). Open issues: #52 Testing (user), #6 F-Droid (from about 2027-02-05).
