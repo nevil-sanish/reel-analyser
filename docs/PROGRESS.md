@@ -1,5 +1,8 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~18:50 IST): v1.2.7.0 RELEASED on GitHub (#57 folders, #58 note screen, #59 tour/name/themes, #60 logo; release issue #61)
+- Only #52 (Testing) and #6 (F-Droid) are open.
+
 ## Latest (2026-11-28, ~18:45 IST): #60 new logo pushed, NOT released
 - Lens holding a play mark (reel analysed); Full adds a gold shield (blocker), Semi is silver without it. `tool/make_icon.py` draws launcher, monochrome and store icons; `BrandMark` in `lib/ui/theme.dart` draws the same, zoomed 1.5x to fill its disc, shield when `Brand.blocker`. The Greek key ring and its slow spin are gone.
 - Checked: in-app mark in the tour on the phone (Full), off-phone render, store icon renders. Not checked: the launcher icon on the phone's home screen, Semi on the phone.
