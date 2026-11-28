@@ -1,5 +1,10 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~18:15 IST): v1.2.6.0 RELEASED on GitHub (#56 daily backup, #55 any-browser blocking)
+- Daily backup: `lib/data/auto_backup.dart`; flag `auto_backup`, last day `auto_backup_last`, passphrase `auto_backup_pass` (sealed). Task name `backup-midnight`, unique name `backup-<day>`. Native `deleteDownloads(folder)` deletes only files this install wrote (MediaStore owner); the empty `Backups` folder stays.
+- On the phone: Full and Semi 1.2.6.0 installed; daily backup switched ON in Full, without keys (the user can turn it off and on again to add keys with their own passphrase).
+- Not checked: backup with keys + import, the 00:00 run, Semi screens.
+
 ## Latest (2026-11-28, ~18:00 IST): #55 phone-checked and closed, NOT released
 - Phone (Full, ba5d3e9 + a temporary log line, still installed until the next install): youtube.com at 0 min sent home in Chrome, Firefox (the new Compose reader read `m.youtube.com`), Brave and a Firefox launch with `private_browsing_mode` (not confirmed it was a private tab). Typing youtube.com in Firefox's bar was allowed (`typing=true`, no block).
 - A first test right after `install -r` missed Chrome and Firefox; the second build's runs all blocked. Chrome was behind an app-lock fingerprint prompt then; cause of the first miss not proven.
