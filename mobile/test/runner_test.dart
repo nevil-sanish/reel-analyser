@@ -42,7 +42,7 @@ class FakeBridge implements CounterBridge {
         [1, 2, 3],
       ];
   @override
-  Future<void> saveDownload(String name, String text) async {}
+  Future<void> saveDownload(String name, String text, {String? folder}) async {}
   @override
   Future<void> armWatchdog() async {}
   @override

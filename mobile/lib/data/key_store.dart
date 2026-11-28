@@ -75,6 +75,10 @@ class KeyStore {
   Future<void> setGroq(String v) => _write('groq', v);
   Future<void> setApify(String v) => _write('apify', v);
 
+  /// The passphrase the daily backup encrypts the keys with (see AutoBackup). Kept here, like the keys, so the backup can run at night.
+  Future<String?> get autoBackupPassphrase => _read('auto_backup_pass');
+  Future<void> setAutoBackupPassphrase(String? v) => _writePlain('auto_backup_pass', v ?? ''); // not trimmed: it must match what is typed at import
+
   /// When the update check last ran (GH-RELEASE-LATEST: at most once a day).
   Future<int> get updateCheckedAt async => int.tryParse(await _readPlain('update_checked') ?? '') ?? 0;
   Future<void> setUpdateCheckedAt(int v) => _writePlain('update_checked', '$v');
@@ -99,7 +103,7 @@ class KeyStore {
 
   static const _migrated = 'secure_migrated';
   static const _native = MethodChannel('reelbot/counter');
-  static const _secret = {'gemini', 'openai', 'claude', 'groq', 'apify'};
+  static const _secret = {'gemini', 'openai', 'claude', 'groq', 'apify', 'auto_backup_pass'};
   static const _sealed = 'enc1:';
 
   /// API keys are encrypted with a Keystore key of our own before they touch the file. If the phone's Keystore

@@ -1,1 +1,1 @@
-Chats now answer questions related to a note with general knowledge and say which part is not from the note; only unrelated questions are turned away.
+Backup: turn on Back up every day to save your notes, chats and (if you choose) your encrypted API keys to Downloads/ReelBot/Backups every night at 00:00, one file per day named with the date. Delete all backups removes them.

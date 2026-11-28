@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../data/auto_backup.dart';
 import '../data/export.dart';
 import '../data/key_backup.dart';
 import '../data/key_store.dart';
@@ -47,6 +48,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _applyStored();
+    AutoBackup.isOn(s).then((v) {
+      if (mounted) setState(() => _autoBackup = v);
+    });
+  }
+
+  bool _autoBackup = false;
+
+  /// Back up every day: on asks for a passphrase for the keys (Skip leaves the keys out) and makes today's file at once.
+  Future<void> _setAutoBackup(bool on) async {
+    String? pass;
+    if (on) {
+      final withKeys = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Back up every day'),
+          content: const Text('Every night at 00:00 the app writes one file with your notes, chats and blocker rules to '
+              'Downloads/ReelBot/Backups, named with the date. Also include your API keys, encrypted with a passphrase? '
+              'The passphrase is kept on this phone so the backup can run at night; you type it again only when you import.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Without keys')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('With keys')),
+          ],
+        ),
+      );
+      if (withKeys == null) return;
+      if (withKeys) {
+        pass = await _askPassphrase(confirm: true, kept: true);
+        if (pass == null) return;
+      }
+    }
+    setState(() => _autoBackup = on);
+    if (on) _say('Making today\'s backup…');
+    try {
+      await AutoBackup.setOn(s, on, passphrase: pass);
+      if (mounted) {
+        _say(on
+            ? 'Backed up to Downloads/ReelBot/Backups/${AutoBackup.fileName(DateTime.now())}. The next one is at 00:00.'
+            : 'Daily backup is off. The files already made are kept.');
+      }
+    } on Object catch (e) {
+      if (mounted) _say('Could not back up: $e');
+    }
+  }
+
+  Future<void> _deleteBackups() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete all backups?'),
+        content: const Text('This deletes every file in Downloads/ReelBot/Backups. Your notes, chats and keys in the app are not touched. '
+            'It cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(c).colorScheme.error),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Delete all'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final n = await s.bridge.deleteDownloads(AutoBackup.folder);
+      if (mounted) _say(n == 0 ? 'There were no backups to delete.' : 'Deleted ${n == 1 ? '1 backup' : '$n backups'}.');
+    } on Object catch (e) {
+      if (mounted) _say('Could not delete the backups: $e');
+    }
   }
 
   /// Fills the key boxes from secure storage (at start, and after a backup restored keys).
@@ -137,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _withKeys = false;
 
   /// Asks for a passphrase; [confirm] asks twice (when choosing one). Null if cancelled.
-  Future<String?> _askPassphrase({required bool confirm}) {
+  Future<String?> _askPassphrase({required bool confirm, bool kept = false}) {
     final a = TextEditingController(), b = TextEditingController();
     String? error;
     return showDialog<String>(
@@ -147,7 +217,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text(confirm ? 'Choose a passphrase' : 'Backup passphrase'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(confirm
-                ? 'Your keys are encrypted with it. It is never stored; if you forget it, the keys in this backup cannot be opened.'
+                ? (kept
+                    ? 'Your keys are encrypted with it in every daily backup. Remember it: you need it to import a backup on a new phone.'
+                    : 'Your keys are encrypted with it. It is never stored; if you forget it, the keys in this backup cannot be opened.')
                 : 'This backup has encrypted API keys. Enter the passphrase you chose when you exported it.'),
             const SizedBox(height: 12),
             TextField(controller: a, obscureText: true, autofocus: true, decoration: const InputDecoration(labelText: 'Passphrase')),
@@ -366,6 +438,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               OutlinedButton.icon(onPressed: _export, icon: const Icon(Icons.download), label: const Text('Export')),
               OutlinedButton.icon(onPressed: _import, icon: const Icon(Icons.upload), label: const Text('Import')),
             ]),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Back up every day'),
+              subtitle: const Text('At 00:00, one file per day in Downloads/ReelBot/Backups, named with the date.'),
+              value: _autoBackup,
+              onChanged: _setAutoBackup,
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _deleteBackups,
+                icon: Icon(Icons.delete_sweep_outlined, color: Theme.of(context).colorScheme.error),
+                label: Text('Delete all backups', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            ),
           ]),
           _section('Your data', [
             ListTile(

@@ -89,9 +89,10 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             }
             "videoFrames" -> offMain(result) { videoFrames(call.argument<String>("path")!!, call.argument<Int>("count") ?: 6) }
             "saveDownload" -> offMain(result) {
-                saveDownload(call.argument<String>("name")!!, call.argument<String>("text")!!)
+                saveDownload(call.argument<String>("name")!!, call.argument<String>("text")!!, call.argument<String>("folder"))
                 null
             }
+            "deleteDownloads" -> offMain(result) { deleteDownloads(call.argument<String>("folder")!!) }
             "armWatchdog" -> { AnalyseKick.arm(ctx); result.success(null) }
             "disarmWatchdog" -> { AnalyseKick.disarm(ctx); result.success(null) }
             "eraseAll" -> offMain(result) {
@@ -128,9 +129,22 @@ class CounterPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     /** Export: `Downloads/ReelBot/<name>` via MediaStore (minSdk 29, so no storage permission). */
-    private fun saveDownload(name: String, text: String) {
+    private fun downloadDir(folder: String?) =
+        Environment.DIRECTORY_DOWNLOADS + "/ReelBot" + (folder?.takeIf { it.matches(Regex("[A-Za-z0-9_-]+")) }?.let { "/$it" } ?: "")
+
+    /** Every file this app wrote in Downloads/ReelBot/[folder]; files another install wrote are not this app's to delete. */
+    private fun deleteDownloads(folder: String): Int {
+        require(folder.matches(Regex("[A-Za-z0-9_-]+")))
+        return ctx.contentResolver.delete(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            "${MediaStore.MediaColumns.RELATIVE_PATH} = ?",
+            arrayOf(downloadDir(folder) + "/"),
+        )
+    }
+
+    private fun saveDownload(name: String, text: String, folder: String? = null) {
         val resolver = ctx.contentResolver
-        val dir = Environment.DIRECTORY_DOWNLOADS + "/ReelBot"
+        val dir = downloadDir(folder)
         // Replace an earlier export of the same file rather than piling up "name (1)" copies.
         resolver.delete(
             MediaStore.Downloads.EXTERNAL_CONTENT_URI,

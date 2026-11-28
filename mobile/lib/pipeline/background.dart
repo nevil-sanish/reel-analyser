@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../app_services.dart';
+import '../data/auto_backup.dart';
 import '../features.dart';
 import '../native/counter_bridge.dart';
 import 'runner.dart';
@@ -13,10 +14,15 @@ void runBackground(AppFeatures features) {
     WidgetsFlutterBinding.ensureInitialized();
     try {
       final s = await AppServices.create(features);
+      if (task == AutoBackup.task) {
+        await AutoBackup.inBackground(s);
+        return true;
+      }
       // No library.close(): sqflite shares one native connection per path across engines in the process,
       // so closing it here also closed the open app's database (every screen then failed with database_closed).
       final done = await analyseAndNotify(s.runner, s.bridge, notify: (t, x) => features.notifyNotes(s, t, x));
       await features.inBackground(s);
+      await AutoBackup.inBackground(s);
       debugPrint('ReelBot background "$task": ${done ? 'done' : 'failed'}${s.runner.lastProblem == null ? '' : ' (${s.runner.lastProblem})'}');
       return done;
     } on Object catch (e, st) {

@@ -117,6 +117,10 @@ class CounterBridge {
     }
   }
 
-  Future<void> saveDownload(String name, String text) =>
-      _ch.invokeMethod('saveDownload', {'name': name, 'text': text});
+  /// Writes Downloads/ReelBot[/folder]/name, replacing a file of that name.
+  Future<void> saveDownload(String name, String text, {String? folder}) =>
+      _ch.invokeMethod('saveDownload', {'name': name, 'text': text, 'folder': ?folder});
+
+  /// Deletes every file in Downloads/ReelBot/folder that this app wrote. Returns how many were deleted.
+  Future<int> deleteDownloads(String folder) async => await _ch.invokeMethod<int>('deleteDownloads', {'folder': folder}) ?? 0;
 }
