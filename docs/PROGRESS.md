@@ -1,6 +1,11 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
-## Latest (2026-11-28, evening): #55 any-browser site blocking committed (ba5d3e9), NOT phone-checked, NOT released
+## Latest (2026-11-28, ~18:00 IST): #55 phone-checked and closed, NOT released
+- Phone (Full, ba5d3e9 + a temporary log line, still installed until the next install): youtube.com at 0 min sent home in Chrome, Firefox (the new Compose reader read `m.youtube.com`), Brave and a Firefox launch with `private_browsing_mode` (not confirmed it was a private tab). Typing youtube.com in Firefox's bar was allowed (`typing=true`, no block).
+- A first test right after `install -r` missed Chrome and Firefox; the second build's runs all blocked. Chrome was behind an app-lock fingerprint prompt then; cause of the first miss not proven.
+- Not checked: Chrome incognito with this build (worked with 1.2.5.2, same Chrome reader), Custom Tabs, Instagram limit (shade over it), scroll smoothness; moved under #52.
+
+## Earlier (2026-11-28, evening): #55 any-browser site blocking committed (ba5d3e9), NOT phone-checked, NOT released
 - Checked on the phone with v1.2.5.2: youtube.com blocked in Chrome, Chrome incognito and Brave (typing allowed); NOT blocked in Firefox (152+ draws its toolbar with Compose, no view id). Instagram app limit works.
 - Fix: `AddressBar.kt` tries every address-bar id for every browser (last hit first) and reads Firefox's `ADDRESSBAR_URL_BOX` node under `composable_toolbar`/`homepageView` (adapted from amehmeto/expo-accessibility-service, MIT, in NOTICE.md). `Browsers.refresh()` adds every installed app that opens https links (manifest `<queries>` VIEW+BROWSABLE+https), run again on ACTION_PACKAGE_ADDED.
 - Kotlin tests, `flutter analyze`, `flutter test` pass; both APKs build, `check_apks.sh` OK.
