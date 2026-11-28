@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~13:10 IST): only #52 (Testing) and #6 (F-Droid) are open
+
+At the user's request #2, #39, #40, #41 and #50 were closed and their phone checks moved into **#52 Testing** (Snapchat Spotlight, TikTok, goals with own accounts, scroll guard, smoothness). LinkedIn (#12, #44) closed after a phone test: four public posts saved (one alone, three shared together). The old test post `lnkd.in/p/dEG72umG` is login-only (page redirects to sign-up, embed 404) and Apify (key accepted) returns nothing for it; that is expected. Apify has never been seen returning a post, because public posts load from the page or embed first. Still on the phone: the youtube.com 0-min site limit (until midnight) and a failed-share card for the login-only post.
+
 ## Latest (2026-11-28, ~13:00 IST): #51 site blocker (Accessibility method) fixed and phone-checked; NOT released
 
 **#51.** (1) Typing a limited site in Chrome's address bar sent the person home before Enter: `ReelCounterService.readAddress` now ignores the bar while it has focus. (2) Reopening a blocked site could get through: the site re-block gap is 1.2 s (`SITE_GAP_MS`, was the 4 s Home gap), and `FrontAddress` (`SiteFilter.kt`) keeps the last opened address while Chrome hides its bar on scroll, so blocking and site time continue. Unit tests in `FrontAddressTest`. Phone (Full APK from this commit, installed with `install -r`): youtube.com at 0 min, Accessibility method; typing kept Chrome open, Enter sent it home in about 1 s, 5 reopens and 3 `m.youtube.com` links with a swipe were all blocked, example.com stayed open. The youtube.com 0-min limit added for the test stays until midnight (the user agreed). Not checked: a non-zero site limit counting time while the bar is hidden; browsers other than Chrome. Release 1.2.5.2 only when the user asks.
