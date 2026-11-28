@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~18:45 IST): #60 new logo pushed, NOT released
+- Lens holding a play mark (reel analysed); Full adds a gold shield (blocker), Semi is silver without it. `tool/make_icon.py` draws launcher, monochrome and store icons; `BrandMark` in `lib/ui/theme.dart` draws the same, zoomed 1.5x to fill its disc, shield when `Brand.blocker`. The Greek key ring and its slow spin are gone.
+- Checked: in-app mark in the tour on the phone (Full), off-phone render, store icon renders. Not checked: the launcher icon on the phone's home screen, Semi on the phone.
+
 ## Latest (2026-11-28, ~18:40 IST): #57, #58, #59 done and pushed to `main`, NOT released (last release v1.2.6.0)
 - #57 Folders: a note can sit in several folders (DB v9, `note_folders`, migrated from `folder_items`). Organize only adds, never moves; new folders need 3+ notes and are dropped when they repeat an existing folder (`sameTopic`, `alreadyGrouped`). A new folder fills with every matching note. Selection bar: "Folders" sheet with checkboxes.
 - #58 Note screen: "name on Platform" under the title (taps to the profile, `lib/core/creator.dart`), folder chips and a Folders button. Quick summary prompt rewritten (bold key word first, no "the video shows"); old notes change only when re-analysed.

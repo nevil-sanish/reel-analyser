@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +32,9 @@ class Brand {
 
   /// Settings → Reduce motion: no entrance animations, glow or drifting; the look stays.
   static final reduceEffects = ValueNotifier(false);
+
+  /// The Full build: the mark carries the blocker's shield.
+  static bool blocker = false;
 
   static Color base(Brightness b) => b == Brightness.dark ? night : marble;
   static Color surface(Brightness b) => b == Brightness.dark ? nightSurface : Colors.white;
@@ -212,110 +214,85 @@ class Brand {
   }
 }
 
-/// The app's mark, the same drawing as the launcher icon (tool/make_icon.py): a charcoal disc, a thin gold ring, a ring of
-/// Greek key and a play mark. The key ring turns very slowly; it stops when motion is reduced.
-class BrandMark extends StatefulWidget {
+/// The app's mark, the same drawing as the launcher icon (tool/make_icon.py): a charcoal disc, a thin gold ring and a lens
+/// holding a play mark; the Full build ([Brand.blocker]) adds a shield.
+class BrandMark extends StatelessWidget {
   final double size;
-  final bool animate;
-  const BrandMark({this.size = 96, this.animate = true, super.key});
+  const BrandMark({this.size = 96, super.key});
 
   @override
-  State<BrandMark> createState() => _BrandMarkState();
-}
-
-class _BrandMarkState extends State<BrandMark> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 90));
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.animate && !Brand.reduceEffects.value) _c.repeat();
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-        child: SizedBox(
-          width: widget.size,
-          height: widget.size,
-          // One turn takes 90 s, so a step of a degree (every quarter second) looks the same and repaints 4 times a second, not 60.
-          child: AnimatedBuilder(animation: _c, builder: (_, _) => CustomPaint(painter: _EmblemPainter((_c.value * 360).floor() / 360))),
-        ),
-      );
+  Widget build(BuildContext context) =>
+      RepaintBoundary(child: SizedBox(width: size, height: size, child: CustomPaint(painter: _EmblemPainter(Brand.blocker))));
 }
 
 class _EmblemPainter extends CustomPainter {
-  final double turn;
-  _EmblemPainter(this.turn);
+  final bool shield;
+  _EmblemPainter(this.shield);
 
   // The same numbers as tool/make_icon.py, in a 108 x 108 square.
-  static const _c = 54.0, _ring = 31.0, _in = 21.5, _out = 26.5, _inner = 19.0, _n = 24;
-  static const _key = [(0.0, 1.0), (0.0, 0.0), (0.72, 0.0), (0.72, 0.66), (0.32, 0.66), (0.32, 0.33), (0.5, 0.33)];
-
-  static Offset _pt(double theta, double r) => Offset(_c + r * math.cos(theta), _c + r * math.sin(theta));
-
-  static Path _meander(double spin) {
-    final path = Path();
-    const w = 2 * math.pi / _n;
-    for (var k = 0; k < _n; k++) {
-      final a0 = -math.pi / 2 + k * w + spin;
-      (double, double)? prev;
-      for (final (u, v) in _key) {
-        final r = _in + (1 - v) * (_out - _in);
-        if (prev == null) {
-          final o = _pt(a0 + u * w, r);
-          path.moveTo(o.dx, o.dy);
-        } else if ((prev.$2 - v).abs() < 1e-9) {
-          final steps = math.max(2, ((u - prev.$1).abs() * 6).floor());
-          for (var s = 1; s <= steps; s++) {
-            final o = _pt(a0 + (prev.$1 + (u - prev.$1) * s / steps) * w, r);
-            path.lineTo(o.dx, o.dy);
-          }
-        } else {
-          final o = _pt(a0 + u * w, r);
-          path.lineTo(o.dx, o.dy);
-        }
-        prev = (u, v);
-      }
-    }
-    return path;
-  }
+  static const _c = 54.0, _ring = 31.0, _lx = 48.0, _ly = 51.0, _lr = 14.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.scale(size.width / 108);
     const box = Rect.fromLTWH(0, 0, 108, 108);
-    final disc = Path()..addOval(const Rect.fromLTWH(0, 0, 108, 108));
-    canvas.clipPath(disc);
+    canvas.clipPath(Path()..addOval(box));
     canvas.drawRect(
       box,
       Paint()..shader = const RadialGradient(center: Alignment(0, -0.11), radius: 0.67, colors: [Color(0xFF1F1C14), Color(0xFF0C0B08)]).createShader(box),
     );
+    // The launcher icon keeps a safe margin; inside the app the mark fills its disc.
+    canvas
+      ..translate(_c, _c)
+      ..scale(1.5)
+      ..translate(-_c, -_c);
     final gold = const LinearGradient(begin: Alignment(-0.67, 0.67), end: Alignment(0.67, -0.67), colors: [Color(0xFF8A6410), Brand.gold, Color(0xFFEFD98F)]).createShader(box);
-    Paint stroke(double w, [double a = 1]) => Paint()
+    Paint stroke(double w) => Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = w
-      ..shader = gold
-      ..color = Colors.white.withValues(alpha: a);
+      ..shader = gold;
     canvas.drawCircle(const Offset(_c, _c), _ring, stroke(0.9));
-    canvas.drawCircle(const Offset(_c, _c), _inner, stroke(0.55, 0.6));
-    canvas.drawPath(_meander(turn * 2 * math.pi), stroke(1.1)..strokeJoin = StrokeJoin.miter);
+    canvas.drawCircle(const Offset(_lx, _ly), _lr, stroke(3.4));
+    const d = _lr * 0.7071 + 1.6;
+    canvas.drawLine(const Offset(_lx + d, _ly + d), const Offset(69, 72), stroke(5.6)..strokeCap = StrokeCap.round);
     final play = Path()
-      ..moveTo(_c - 5.4, _c - 9.2)
-      ..lineTo(_c - 5.4, _c + 9.2)
-      ..lineTo(_c + 10.2, _c)
+      ..moveTo(_lx - 3.6, _ly - 6.2)
+      ..lineTo(_lx - 3.6, _ly + 6.2)
+      ..lineTo(_lx + 6.8, _ly)
       ..close();
     canvas.drawPath(play, Paint()..shader = gold);
-    canvas.drawPath(play, stroke(2.4)..strokeJoin = StrokeJoin.round);
+    canvas.drawPath(play, stroke(2.0)..strokeJoin = StrokeJoin.round);
+    if (shield) {
+      final s = Path()
+        ..moveTo(68, 27)
+        ..lineTo(76, 30)
+        ..lineTo(76, 36.2)
+        ..cubicTo(76, 41.6, 72.6, 45, 68, 47)
+        ..cubicTo(63.4, 45, 60, 41.6, 60, 36.2)
+        ..lineTo(60, 30)
+        ..close();
+      canvas.drawPath(s, Paint()..shader = gold);
+      canvas.drawPath(
+        s,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4
+          ..strokeJoin = StrokeJoin.round
+          ..color = const Color(0xFF1F1C14),
+      );
+      canvas.drawLine(
+        const Offset(64.2, 37),
+        const Offset(71.8, 37),
+        Paint()
+          ..strokeWidth = 2.6
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xFF0C0B08),
+      );
+    }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_EmblemPainter old) => old.turn != turn;
+  bool shouldRepaint(_EmblemPainter old) => old.shield != shield;
 }

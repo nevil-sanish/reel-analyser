@@ -27,6 +27,7 @@ Future<void> runReelBot(AppFeatures features, void Function() backgroundDispatch
     yield LicenseEntryWithLineBreaks(['Lato (font)'], await rootBundle.loadString('assets/fonts/OFL-Lato.txt'));
   });
   final services = await AppServices.create(features);
+  Brand.blocker = features.hasBlocker;
   // None of these is worth a blank screen at launch if the phone refuses one: the app opens without it.
   for (final step in [() => scheduleBackgroundAnalysis(backgroundDispatcher), services.retryTextOnlyOnce]) {
     try {
