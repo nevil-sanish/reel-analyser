@@ -8,7 +8,7 @@ Android app that turns the Instagram Reels, YouTube Shorts, LinkedIn posts and p
 
 **What is Reel Analyser + Blocker?** A free, open-source Android app with two jobs: (1) save what you watch as searchable AI notes, and (2) limit how much time you waste on Reels, Shorts, apps and websites.
 
-**How do I save a reel or Short as a note?** In Instagram, YouTube or LinkedIn tap Share, then pick the app. A few minutes later the note (summary, key points, tags) is in the Library. You can then ask questions that are answered only from your notes.
+**How do I save a reel or Short as a note?** In Instagram, YouTube or LinkedIn tap Share, then pick the app. A few minutes later the note (summary, key points, tags) is in the Library. You can then ask questions about your notes and their topics.
 
 **Is any data sent to the developer?** No. Nothing is collected, shared or used by the developer: no account, analytics, tracking or crash reports. Notes stay on the phone; only what you analyse goes to the AI service you chose, with your own key.
 
@@ -69,7 +69,7 @@ Each note has a short bulleted overview in simple words that covers every import
 
 ### 3. Use: three tabs
 
-- **Ask:** today's reels, shorts and minutes at the top, then a chat that answers only from your saved notes. Pick the provider and model from the chip above the ask bar. Every chat is saved; the clock icon reopens old ones.
+- **Ask:** today's reels, shorts and minutes at the top, then a chat that starts from your saved notes and says when an answer goes beyond them. Pick the provider and model from the chip above the ask bar. Every chat is saved; the clock icon reopens old ones.
 - **Insights:** a Week or Month view of your watching: minutes per day, the hours you watch most, and your heaviest weekday.
 - **Library:** every note, filterable by Reels, Shorts, Posts and Photos. A dot marks notes you haven't opened. Swipe left to delete, right to archive, or long-press to select several, then mark them read, archive or delete them; every one of these has Undo. Sharing a reel you already saved doesn't analyse it again: its note comes back to the top, unread. Notes you've read move to the Archive after 3 days.
 
@@ -111,7 +111,7 @@ After 9 pm, on days you didn't open the app, you get one digest notification.
 
 *LinkedIn (both builds).* Share a public LinkedIn post (text, pictures or video) to Reel Analyser. The app reads the post's public page without any login, removes the tracking part of the link, and analyses the video, the pictures or the text. Posts that need a login cannot be read.
 
-*Library → Folders (both builds).* Make your own folders (the folder icon) or press **Organize** (the sparkle icon): your own AI key sorts every note into your folders first, then suggests new folders only for real topics shared by at least 3 notes, which you approve. Notes that fit nothing stay in All, which always has every note. New notes go into the folder their words clearly match when they are saved. Each folder has its own chat that answers only from that folder's notes. Long-press notes to move them; long-press a folder to rename or delete it. With no folders the Library looks as before.
+*Library → Folders (both builds).* Make your own folders (the folder icon) or press **Organize** (the sparkle icon): your own AI key sorts every note into your folders first, then suggests new folders only for real topics shared by at least 3 notes, which you approve. Notes that fit nothing stay in All, which always has every note. New notes go into the folder their words clearly match when they are saved. Each folder has its own chat about that folder's notes. Long-press notes to move them; long-press a folder to rename or delete it. With no folders the Library looks as before.
 
 *Blocker tab → Daily goals.* Set a daily number of GitHub commits, Codeforces problems and LeetCode problems. Each day is checked automatically just after midnight, from your public activity (only your username is sent). Miss a day and the whole Instagram app (and YouTube, if you pick it) is blocked the next day only; miss that day too and the day after is blocked as well. A day you could not be read is never counted as a miss.
 

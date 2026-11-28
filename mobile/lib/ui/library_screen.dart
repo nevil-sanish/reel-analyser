@@ -402,7 +402,7 @@ class _FolderChatCard extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Chat with $name', style: Brand.serif(t.textTheme.titleMedium, size: 20, weight: 700)),
                 const SizedBox(height: 2),
-                Text('Answers only from the $count ${count == 1 ? 'note' : 'notes'} in ${name == 'All' ? 'your library' : 'this folder'}',
+                Text('Starts from the $count ${count == 1 ? 'note' : 'notes'} in ${name == 'All' ? 'your library' : 'this folder'}',
                     style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ]),
             ),

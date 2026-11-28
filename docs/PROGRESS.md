@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~13:25 IST): #53 chat less strict, phone-checked; NOT released
+
+All three chats (one note, a folder, Ask) used to say "answer ONLY from the notes, never general knowledge, else say so and stop". Now they share `chatRules` in `app_services.dart`: notes first, related questions answered with general knowledge and labelled "not from the note", only clearly unrelated questions get one line "not related to this chat". Intro texts, the folder chat label and README updated. Phone (Gemini 3.5 Flash-Lite): note chat answered a related and a slightly different question with labels and refused a pizza question; Ask did the same (God Mode question, Paris weather refused). Folder chat uses the same rules but was not tried on the phone. The test conversations are still saved in that note's chat and in Ask.
+
 ## Latest (2026-11-28, ~13:10 IST): only #52 (Testing) and #6 (F-Droid) are open
 
 At the user's request #2, #39, #40, #41 and #50 were closed and their phone checks moved into **#52 Testing** (Snapchat Spotlight, TikTok, goals with own accounts, scroll guard, smoothness). LinkedIn (#12, #44) closed after a phone test: four public posts saved (one alone, three shared together). The old test post `lnkd.in/p/dEG72umG` is login-only (page redirects to sign-up, embed 404) and Apify (key accepted) returns nothing for it; that is expected. Apify has never been seen returning a post, because public posts load from the page or embed first. Still on the phone: the youtube.com 0-min site limit (until midnight) and a failed-share card for the login-only post.

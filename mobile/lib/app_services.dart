@@ -121,9 +121,8 @@ class AppServices {
   Future<String> chat(String provider, List<String> turns, {String? model}) async {
     final notes = await notesContext(turns.last);
     if (notes.isEmpty) return 'Your library is empty. Share a reel to Reel Analyser first.';
-    final system = 'You are Reel Analyser. The saved reel notes below are everything you know: answer ONLY from them, '
-        'never from general knowledge. Cite the note titles you used. If the notes do not cover the question, '
-        'say that they do not and stop. Keep answers short.\n\nSaved notes:\n$notes';
+    final system = 'You are Reel Analyser, chatting about the person\'s saved reel notes. ${chatRules('the saved notes below')} '
+        'Cite the note titles you used.\n\nSaved notes:\n$notes';
     return _complete(provider, system, turns, model);
   }
 
@@ -140,9 +139,8 @@ class AppServices {
     final notes = await folderNotes(folderId);
     if (notes.isEmpty) return 'This folder is empty.';
     final ctx = await notesContext(turns.last, only: notes);
-    final system = 'You are Reel Analyser. The saved notes below, from the folder "$folderName", are everything you know: answer ONLY '
-        'from them, never from general knowledge or other folders. Cite the note titles you used. If the notes do not cover the '
-        'question, say that they do not and stop. Keep answers short.\n\nSaved notes:\n$ctx';
+    final system = 'You are Reel Analyser, chatting about the notes in the folder "$folderName". ${chatRules('the saved notes below')} '
+        'Cite the note titles you used.\n\nSaved notes:\n$ctx';
     return _complete(provider, system, turns, model);
   }
 
@@ -163,9 +161,8 @@ class AppServices {
 
   /// One chat turn about a single note: that note is all the model is given, and [turns] is only that note's thread.
   Future<String> noteChat(String provider, Reel reel, List<String> turns, {String? model}) {
-    final system = 'You are Reel Analyser. The saved note below is everything you know: answer ONLY from it, '
-        'never from general knowledge. If the note does not cover the question, say so and stop. '
-        'Keep answers short.\n\nSaved note:\n${noteDetail(reel)}';
+    final system = 'You are Reel Analyser, chatting about one saved note. ${chatRules('the saved note below')}'
+        '\n\nSaved note:\n${noteDetail(reel)}';
     return _complete(provider, system, turns, model);
   }
 
@@ -199,6 +196,14 @@ class AppServices {
     throw last ?? GeminiException(GeminiFailure.badKey, 'Add a ${ChatModel.labels[provider]} key in Settings');
   }
 }
+
+/// How every chat answers (#53): [source] first; related questions are answered with general knowledge too, and only a question
+/// with nothing to do with [source] is turned away.
+String chatRules(String source) =>
+    'Use $source first. When a question is on the same topic (a follow-up, an explanation, an example, a slightly different '
+    'question, or how to use it), answer it fully, adding your own general knowledge where $source says nothing, and say in a few '
+    'words which part is not from $source. Only when a question has nothing to do with $source, reply in one short line that it '
+    'is not related to this chat. Keep answers short.';
 
 /// One line per note: title, kind, age and the overview.
 String noteBrief(Reel r) =>

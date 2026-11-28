@@ -41,7 +41,7 @@ class ChatThread {
   factory ChatThread.note(AppServices s, Reel reel) => ChatThread(
         title: 'Chat about this note',
         heading: reel.title,
-        intro: 'Ask anything about this analysis. This chat only knows this note.',
+        intro: 'Ask anything about this note or its topic. Answers start from the note and say when they go beyond it.',
         shareSubject: reel.title,
         link: reel.app == 'photo' ? null : reel.url,
         brief: true,
@@ -55,7 +55,7 @@ class ChatThread {
   factory ChatThread.folder(AppServices s, int id, String name) => ChatThread(
         title: 'Chat · $name',
         heading: name,
-        intro: 'Ask anything about the notes in this folder. This chat only knows them, and its thread is separate from every other folder.',
+        intro: 'Ask anything about the notes in this folder or their topics. Its thread is separate from every other folder.',
         shareSubject: 'Chat about $name',
         starters: const ['What are the main ideas here?', 'Make me a short study list', 'What should I try first?'],
         hint: id == 0 ? 'Ask about all your notes…' : 'Ask about $name…',
