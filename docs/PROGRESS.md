@@ -1,5 +1,9 @@
 # Progress (written 2026-11-09, about 21:20 IST)
 
+## Latest (2026-11-28, ~13:40 IST): v1.2.5.2 RELEASED on GitHub (#54)
+
+Website blocker fixes (#51) and less strict chats (#53). Version 1.2.5.2, build 60. Analyze clean, 180 Dart tests, Kotlin Full and Semi tests, `check_apks.sh` OK; both APKs and SHA256SUMS published, downloaded back and checked; `/releases?per_page=1` returns v1.2.5.2. Release Full APK installed on the phone over the old one (same signing key). Open issues: #52 Testing (user), #6 F-Droid (from about 2027-02-05).
+
 ## Latest (2026-11-28, ~13:25 IST): #53 chat less strict, phone-checked; NOT released
 
 All three chats (one note, a folder, Ask) used to say "answer ONLY from the notes, never general knowledge, else say so and stop". Now they share `chatRules` in `app_services.dart`: notes first, related questions answered with general knowledge and labelled "not from the note", only clearly unrelated questions get one line "not related to this chat". Intro texts, the folder chat label and README updated. Phone (Gemini 3.5 Flash-Lite): note chat answered a related and a slightly different question with labels and refused a pizza question; Ask did the same (God Mode question, Paris weather refused). Folder chat uses the same rules but was not tried on the phone. The test conversations are still saved in that note's chat and in Ask.
